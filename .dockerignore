@@ -1,0 +1,9 @@
+# Never ship secrets or data into the image.
+.env
+data/
+.venv/
+staticfiles/
+.git/
+.claude/
+**/__pycache__/
+*.sqlite3

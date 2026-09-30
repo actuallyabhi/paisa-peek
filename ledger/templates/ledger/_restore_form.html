@@ -1,0 +1,10 @@
+<form method="post" action="{% url 'backup_restore' %}" enctype="multipart/form-data" class="space-y-2 rounded-lg bg-sunk p-3">
+  {% csrf_token %}{% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+  <label class="block text-sm"><span class="font-medium">Restore from backup</span>
+    <input type="file" name="file" accept=".json,application/json" required></label>
+  {% if not onboarding %}
+  <label class="flex items-start gap-2 text-sm"><input type="checkbox" name="confirm" required class="mt-0.5">
+    <span>Replace my current data with the backup's. <span class="text-muted">A safety copy of the current data is saved on the server first.</span></span></label>
+  {% endif %}
+  <button class="btn-secondary w-full sm:w-auto">Restore</button>
+</form>

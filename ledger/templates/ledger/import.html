@@ -1,0 +1,42 @@
+{% extends "base.html" %}{% load static %}
+{% block title %}Import CSV{% endblock %}
+{% block content %}
+<h1 class="mb-1 text-2xl font-semibold">Import CSV</h1>
+<p class="mb-4 text-sm text-muted">Rows are shown for review first; nothing is saved until you add them. Rows that already exist are flagged and unticked, so re-importing the same file is safe.</p>
+
+<form method="post" enctype="multipart/form-data" class="space-y-3 card p-4">
+  {% csrf_token %}
+  {% if error %}<p class="text-sm text-bad">{{ error }}</p>{% endif %}
+  <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    <label class="block text-sm"><span class="text-muted">CSV file</span><input type="file" name="file" accept=".csv,text/csv" required></label>
+    <label class="block text-sm"><span class="text-muted">Date for rows without one</span><input type="date" name="default_date" value="{{ default_date|date:'Y-m-d' }}"></label>
+  </div>
+  <button class="btn">Preview</button>
+</form>
+
+<details class="mt-4 text-sm">
+  <summary class="cursor-pointer text-muted">CSV format · <a class="underline" href="{% static 'ledger/import-sample.csv' %}" download>download sample</a></summary>
+  <div class="mt-2 space-y-1 card p-4">
+    <p>Header row, any column order. Only <code>amount</code> is required.</p>
+    <pre class="overflow-x-auto rounded bg-sunk p-2 text-xs">date,type,amount,description,party,category,account,tags,notes
+2026-01-24,expense,500,Pizzahut,,Food &amp; Outings,,JAN 24-25 Outing,
+,lent,3000 + 1800,Lent,Saurabh,,,,
+2026-02-10,repaid_to_me,2000,Paid back via UPI,Saurabh,,HDFC xx1234,,</pre>
+    <ul class="list-disc pl-5">
+      <li><b>date</b>: YYYY-MM-DD or DD/MM/YYYY. Blank uses the date above.</li>
+      <li><b>type</b>: expense (default), income, transfer, <b>lent</b>, <b>borrowed</b>, <b>repaid_to_me</b>, <b>repaid_by_me</b>.</li>
+      <li><b>amount</b>: <code>450</code>, <code>1,23,456.50</code>, or an Excel-style breakdown <code>720 + 775 + 380</code> (summed; the breakdown goes into notes).</li>
+      <li><b>party</b>: person or company, created if new. Needed for lent / borrowed / repaid rows.</li>
+      <li><b>category</b>, <b>account</b>: an existing name (account can also be its last 4 digits). Blank category is guessed.</li>
+      <li><b>tags</b>: separated by <code>;</code></li>
+    </ul>
+  </div>
+</details>
+
+<div id="review" class="mt-6">
+  {% if forms is not None %}
+    <p class="mb-3 text-sm text-muted">{{ forms|length }} rows{% if n_dup %} · {{ n_dup }} look already imported (unticked){% endif %}{% if n_bad %} · <span class="text-bad">{{ n_bad }} need fixing</span>{% endif %}</p>
+    {% include "ledger/_ramble_review.html" %}
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}{% load money %}
+{% block title %}{% if a %}{{ a.name }}{% else %}New account{% endif %}{% endblock %}
+{% block content %}
+<a href="{% url 'accounts' %}" class="text-sm text-muted hover:underline">← Accounts</a>
+<h1 class="mb-4 mt-1 text-xl font-semibold sm:text-2xl">{% if a %}{{ a.name }}{% else %}New account{% endif %}</h1>
+
+<form method="post" class="card space-y-3 p-4">
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+  <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    {% for field in form %}
+      <label class="block text-sm {% if field.field.widget.input_type == 'checkbox' %}flex items-center gap-2 sm:col-span-2{% endif %}"
+             {% if field.name == "credit_limit" or field.name == "statement_day" or field.name == "due_day" %}data-credit{% endif %}>
+        {% if field.field.widget.input_type == 'checkbox' %}{{ field }} <span>{{ field.label }}</span>
+        {% else %}<span class="text-muted">{{ field.label }}</span>{{ field }}{% endif %}
+        {% if field.help_text %}<span class="mt-0.5 block text-xs text-muted">{{ field.help_text }}</span>{% endif %}
+        {% for e in field.errors %}<span class="block text-xs text-bad">{{ e }}</span>{% endfor %}
+      </label>
+    {% endfor %}
+  </div>
+  <button class="btn w-full sm:w-auto">Save</button>
+</form>
+<script>
+  // Limit, statement and due day only matter for cards, credit lines and loans.
+  (() => {
+    const kind = document.querySelector('[name=kind]'), credit = {{ credit_kinds|safe }};
+    const sync = () => document.querySelectorAll('[data-credit]').forEach(el => el.hidden = !credit.includes(kind.value));
+    kind.addEventListener('change', sync); sync();
+  })();
+</script>
+
+{% if a %}
+<h2 class="mb-1 mt-6 px-1 text-xs font-medium uppercase tracking-wide text-muted">Recent</h2>
+<ul class="card divide-y divide-line">
+{% for t in recent %}
+  <li><a href="{% url 'txn_edit' t.pk %}?next={% url 'account_edit' a.pk %}" class="flex items-center gap-3 px-3 py-2.5">
+    <div class="min-w-0 flex-1">
+      <div class="truncate">{{ t.description|default:t.merchant|default:t.get_kind_display }}</div>
+      <div class="truncate text-xs text-muted">{{ t.date|date:"d M Y" }}{% if t.time %}, {{ t.time|time:"g:i A" }}{% endif %}{% if t.category %} · {{ t.category }}{% endif %}{% if t.party %} · @{{ t.party }}{% endif %}{% if t.status == "pending" %} · pending{% endif %}</div>
+    </div>
+    <div class="whitespace-nowrap tabular-nums">{% if t.to_account_id == a.pk %}+{% else %}{{ t.sign|default:"−" }}{% endif %}{{ t.amount|inr }}</div>
+  </a></li>
+{% empty %}
+  <li class="p-4 text-center text-sm text-muted">No transactions yet.</li>
+{% endfor %}
+</ul>
+<form method="post" class="mt-4" onsubmit="return confirm('Delete this account?')">
+  {% csrf_token %}<input type="hidden" name="action" value="delete"><button class="text-sm text-bad hover:underline">Delete account</button>
+</form>
+{% endif %}
+{% endblock %}

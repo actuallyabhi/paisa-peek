@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "budget",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": ["run", "manage.py", "runserver", "8000"],
+      "port": 8000
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<rect width="512" height="512" rx="0" fill="#E4572E"/>
+<circle cx="256" cy="269.0" r="108.0" fill="#9C5B12"/>
+<circle cx="256" cy="256" r="108.0" fill="#F5B83D"/>
+<circle cx="353.9" cy="256.0" r="5.0" fill="#C98318"/><circle cx="351.5" cy="277.8" r="5.0" fill="#C98318"/><circle cx="344.2" cy="298.5" r="5.0" fill="#C98318"/><circle cx="332.6" cy="317.1" r="5.0" fill="#C98318"/><circle cx="317.1" cy="332.6" r="5.0" fill="#C98318"/><circle cx="298.5" cy="344.2" r="5.0" fill="#C98318"/><circle cx="277.8" cy="351.5" r="5.0" fill="#C98318"/><circle cx="256.0" cy="353.9" r="5.0" fill="#C98318"/><circle cx="234.2" cy="351.5" r="5.0" fill="#C98318"/><circle cx="213.5" cy="344.2" r="5.0" fill="#C98318"/><circle cx="194.9" cy="332.6" r="5.0" fill="#C98318"/><circle cx="179.4" cy="317.1" r="5.0" fill="#C98318"/><circle cx="167.8" cy="298.5" r="5.0" fill="#C98318"/><circle cx="160.5" cy="277.8" r="5.0" fill="#C98318"/><circle cx="158.1" cy="256.0" r="5.0" fill="#C98318"/><circle cx="160.5" cy="234.2" r="5.0" fill="#C98318"/><circle cx="167.8" cy="213.5" r="5.0" fill="#C98318"/><circle cx="179.4" cy="194.9" r="5.0" fill="#C98318"/><circle cx="194.9" cy="179.4" r="5.0" fill="#C98318"/><circle cx="213.5" cy="167.8" r="5.0" fill="#C98318"/><circle cx="234.2" cy="160.5" r="5.0" fill="#C98318"/><circle cx="256.0" cy="158.1" r="5.0" fill="#C98318"/><circle cx="277.8" cy="160.5" r="5.0" fill="#C98318"/><circle cx="298.5" cy="167.8" r="5.0" fill="#C98318"/><circle cx="317.1" cy="179.4" r="5.0" fill="#C98318"/><circle cx="332.6" cy="194.9" r="5.0" fill="#C98318"/><circle cx="344.2" cy="213.5" r="5.0" fill="#C98318"/><circle cx="351.5" cy="234.2" r="5.0" fill="#C98318"/>
+<circle cx="256" cy="256" r="80.6" fill="none" stroke="#C98318" stroke-width="7.2"/>
+<path d="M186.9 227.2 A 74.9 74.9 0 0 1 227.2 186.9" fill="none" stroke="#FFE3A1" stroke-width="10.1" stroke-linecap="round"/>
+<circle cx="256" cy="256" r="28.8" fill="#E4572E"/>
+<path d="M364.0 119.2 Q369.2 142.8 392.8 148.0 Q369.2 153.2 364.0 176.8 Q358.8 153.2 335.2 148.0 Q358.8 142.8 364.0 119.2Z" fill="#FFF4E4"/>
+</svg>

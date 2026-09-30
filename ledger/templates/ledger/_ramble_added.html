@@ -1,0 +1,5 @@
+{% load money %}
+<div class="flex items-center justify-between rounded-lg bg-good-soft p-3 text-sm">
+  <span>✓ Added {{ t.sign }}{{ t.amount|inr }} · {{ t.description }} · {{ t.date|date:"d M" }}{% if t.category %} · {{ t.category }}{% endif %}</span>
+  <a href="{% url 'txn_edit' t.pk %}" class="hover:underline">Edit</a>
+</div>

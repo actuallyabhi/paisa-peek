@@ -1,0 +1,12 @@
+{% csrf_token %}
+{{ form.non_field_errors }}
+{# Phones: short fields (date/time, amount/type, numbers) pair up two per row; text fields take the full width. #}
+<div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+  {% for field in form %}
+    <label class="block text-sm {% if field.name == 'description' or field.name == 'notes' %}col-span-2 sm:col-span-3{% elif field.name in 'date time amount kind every unit next_due remind_days_before' %}{% else %}col-span-2 sm:col-span-1{% endif %}">
+      <span class="text-muted">{{ field.label }}</span>
+      {{ field }}
+      {% for e in field.errors %}<span class="text-xs text-bad">{{ e }}</span>{% endfor %}
+    </label>
+  {% endfor %}
+</div>

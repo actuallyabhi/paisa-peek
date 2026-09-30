@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ r.name }}{% endblock %}
+{% block content %}
+<a href="{% url 'recurring' %}" class="text-sm text-muted hover:underline">← Recurring</a>
+<h1 class="mb-4 mt-1 text-xl font-semibold sm:text-2xl">{{ r.name }}</h1>
+<form method="post" class="card space-y-3 p-4">{% include "ledger/_form.html" %}<button class="btn w-full sm:w-auto">Save</button></form>
+<form method="post" class="mt-4" onsubmit="return confirm('Delete {{ r.name|escapejs }}?')">
+  {% csrf_token %}<input type="hidden" name="action" value="delete"><button class="text-sm text-bad hover:underline">Delete</button>
+</form>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}{% load money %}
+{% block title %}Accounts{% endblock %}
+{% block content %}
+<div class="mb-4 flex items-center justify-between">
+  <h1 class="text-xl font-semibold sm:text-2xl">Accounts</h1>
+  <a href="{% url 'account_new' %}" class="btn">+ Add</a>
+</div>
+
+<div class="mb-4 grid grid-cols-3 gap-2 sm:gap-3">
+  <div class="card p-3"><div class="text-xs text-muted">Money</div><div class="font-semibold tabular-nums sm:text-lg">{{ assets|inr }}</div></div>
+  <div class="card p-3"><div class="text-xs text-muted">Card/loan dues</div><div class="font-semibold tabular-nums text-bad sm:text-lg">{{ dues|inr }}</div></div>
+  <div class="card p-3"><div class="text-xs text-muted">Net</div><div class="font-semibold tabular-nums sm:text-lg">{{ net|inr }}</div></div>
+</div>
+
+<ul class="card divide-y divide-line">
+{% for a in accounts %}
+  <li><a href="{% url 'account_edit' a.pk %}" class="flex items-center gap-3 px-3 py-3 active:bg-sunk">
+    <div class="min-w-0 flex-1">
+      <div class="truncate font-medium">{{ a.name }}{% if a.is_default %} <span class="rounded bg-brand-soft px-1.5 text-xs font-normal text-brand">default</span>{% endif %}</div>
+      <div class="truncate text-xs text-muted">
+        {{ a.get_kind_display }}{% if a.last4 %} · xx{{ a.last4 }}{% endif %}
+        {% if a.statement_day %} · statement {{ a.statement_day }}{% endif %}{% if a.due_day %} · due {{ a.due_day }}{% endif %}
+      </div>
+    </div>
+    <div class="text-right">
+      {% if a.is_credit %}
+        <div class="font-medium tabular-nums {% if a.bal < 0 %}text-bad{% endif %}">{{ a.bal|neg|inr }}</div>
+        <div class="text-xs text-muted">{% if a.credit_limit %}of {{ a.credit_limit|inr }} limit{% else %}outstanding{% endif %}</div>
+      {% else %}
+        <div class="font-medium tabular-nums">{{ a.bal|inr }}</div>
+      {% endif %}
+    </div>
+  </a></li>
+{% empty %}
+  <li class="p-6 text-center text-sm text-muted">No accounts yet. Add your savings account, cards and cash — and pick one as the default for new transactions.</li>
+{% endfor %}
+</ul>
+{% endblock %}

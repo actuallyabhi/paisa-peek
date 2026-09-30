@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}More{% endblock %}
+{% block content %}
+<h1 class="mb-4 text-xl font-semibold sm:text-2xl">More</h1>
+
+<ul class="card mb-6 divide-y divide-line">
+  {% for url, label, hint in links %}
+  <li><a href="{{ url }}" class="flex items-center justify-between px-4 py-3 active:bg-sunk">
+    <span><span class="font-medium">{{ label }}</span><span class="block text-xs text-muted">{{ hint }}</span></span><span aria-hidden="true" class="text-muted">›</span>
+  </a></li>
+  {% endfor %}
+</ul>
+
+<section id="notifications" class="card mb-6 space-y-4 p-4">
+  <h2 class="font-medium">Notifications</h2>
+  <div id="push-box" class="rounded-lg bg-sunk p-3 text-sm">
+    <p id="push-status">Checking this device…</p>
+    <div class="mt-2 flex flex-wrap gap-2">
+      <button type="button" id="push-enable" class="btn" hidden>Enable on this device</button>
+      <button type="button" id="push-test" class="btn-secondary" {% if not devices %}hidden{% endif %}>Send a test</button>
+    </div>
+    <p class="mt-2 text-xs text-muted">{{ devices }} device{{ devices|pluralize }} subscribed. On iPhone, add Damdi to your Home Screen first (Share → Add to Home Screen), then enable here.</p>
+  </div>
+
+  <form method="post" class="space-y-3">
+    {% csrf_token %}<input type="hidden" name="action" value="notify">
+    <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+      <label class="flex items-center gap-2">{{ notify.daily_enabled }} {{ notify.daily_enabled.label }}</label>
+      <label class="flex items-center gap-2 text-sm text-muted">at {{ notify.daily_time }}</label>
+    </div>
+    <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+      <label class="flex items-center gap-2">{{ notify.reminders_enabled }} {{ notify.reminders_enabled.label }}</label>
+      <label class="flex items-center gap-2 text-sm text-muted">at {{ notify.reminder_time }}</label>
+    </div>
+    <p class="text-xs text-muted">Bills use each <a class="underline" href="{% url 'recurring' %}">recurring item</a>'s due date and “remind days before”. Card reminders use the statement and due day set on each <a class="underline" href="{% url 'accounts' %}">account</a>.</p>
+    {% for e in notify.non_field_errors %}<p class="text-xs text-bad">{{ e }}</p>{% endfor %}
+    <button class="btn-secondary">Save</button>
+  </form>
+</section>
+
+<section id="backup" class="card mb-6 space-y-4 p-4">
+  <h2 class="font-medium">Backup &amp; restore</h2>
+  <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+    <a href="{% url 'backup_export' %}" class="btn">Export full backup (.json)</a>
+    <a href="{% url 'backup_export_csv' %}" class="btn-secondary">Export transactions (.csv)</a>
+  </div>
+  <p class="text-xs text-muted">The backup has everything — accounts &amp; balances, people &amp; companies with lent/borrowed history,
+    transactions, tags, recurring bills, categories, SMS templates and notification settings — and restores on any Damdi
+    install. The CSV opens in Excel/Sheets and uses the same columns as <a class="underline" href="{% url 'import_csv' %}">Import CSV</a>.</p>
+  {% include "ledger/_restore_form.html" %}
+</section>
+
+<section class="card mb-6 space-y-3 p-4">
+  <h2 class="font-medium">SMS auto-capture</h2>
+  <p class="text-sm">Point your SMS forwarder (SMS to URL Forwarder, MacroDroid, Tasker) at this URL with JSON
+    <code class="rounded bg-sunk px-1">{"sender": "…", "text": "…", "ts": …}</code>:</p>
+  <pre class="overflow-x-auto rounded bg-sunk p-2 text-xs">{{ base }}/api/ingest/sms?token={{ token }}</pre>
+  <p class="text-sm">Or header <code class="rounded bg-sunk px-1">Authorization: Bearer {{ token }}</code> · <a class="underline" href="/api/docs">API docs</a></p>
+  <form method="post" onsubmit="return confirm('The old URL will stop working. Continue?')">
+    {% csrf_token %}<input type="hidden" name="action" value="token"><button class="btn-secondary">Regenerate token</button>
+  </form>
+</section>
+
+<form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn-secondary w-full sm:w-auto">Log out</button></form>
+
+<script>
+(() => {
+  const status = document.getElementById("push-status"), enable = document.getElementById("push-enable"),
+        test = document.getElementById("push-test"), csrf = "{{ csrf_token }}";
+  const post = (url, body) => fetch(url, {method: "POST", headers: {"X-CSRFToken": csrf, "Content-Type": "application/json"}, body});
+  const key = Uint8Array.from(atob("{{ vapid_key }}".replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
+
+  async function refresh() {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+      status.textContent = window.isSecureContext ? "This browser can't receive push. On iPhone, open Damdi from the Home Screen icon."
+                                                  : "Notifications need HTTPS. Open Damdi via its https:// address.";
+      return;
+    }
+    if (Notification.permission === "denied") { status.textContent = "Notifications are blocked for this site in your browser settings."; return; }
+    const reg = await navigator.serviceWorker.ready, sub = await reg.pushManager.getSubscription();
+    if (sub) { status.textContent = "✓ This device gets notifications."; enable.hidden = true; test.hidden = false; await post("{% url 'push_subscribe' %}", JSON.stringify(sub)); }
+    else { status.textContent = "This device isn't subscribed yet."; enable.hidden = false; }
+  }
+  enable.onclick = async () => {
+    if (await Notification.requestPermission() !== "granted") return refresh();
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.subscribe({userVisibleOnly: true, applicationServerKey: key});
+    await post("{% url 'push_subscribe' %}", JSON.stringify(sub));
+    location.reload();
+  };
+  test.onclick = async () => {
+    const r = await (await post("{% url 'push_test' %}", "{}")).json();
+    test.textContent = r.sent ? "Sent ✓" : "No devices reached";
+  };
+  refresh();
+})();
+</script>
+{% endblock %}

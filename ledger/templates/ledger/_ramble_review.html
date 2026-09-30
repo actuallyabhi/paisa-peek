@@ -1,0 +1,14 @@
+{% if forms %}
+<form hx-post="{% url 'ramble_save' %}" hx-target="#review" hx-disabled-elt="find button[type=submit]" class="space-y-3">
+  <input type="hidden" name="source" value="{{ source|default:'ramble' }}">
+  <div class="flex flex-wrap items-center justify-between gap-2">
+    <h2 class="font-medium">{{ forms|length }} found{% if parser %} <span class="text-xs font-normal text-muted">· {{ parser }}</span>{% endif %}</h2>
+    <button type="submit" class="btn">Add selected</button>
+  </div>
+  {% if error %}<p class="text-sm text-bad">{{ error }}</p>{% endif %}
+  {% for f in forms %}{% include "ledger/_ramble_row.html" with i=forloop.counter0 %}{% endfor %}
+  <button type="submit" class="btn w-full sm:w-auto">Add selected</button>
+</form>
+{% elif text or parser %}
+<p class="text-muted">Couldn't find any amounts in that. Try something like "450 petrol yesterday".</p>
+{% endif %}

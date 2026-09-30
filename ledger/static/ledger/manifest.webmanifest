@@ -1,0 +1,23 @@
+{
+  "id": "/",
+  "name": "Damdi",
+  "short_name": "Damdi",
+  "description": "Your self-hosted money diary. Chamdi jaaye, par damdi na jaaye.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4efe6",
+  "theme_color": "#e4572e",
+  "categories": ["finance", "productivity"],
+  "icons": [
+    {"src": "/static/ledger/icon.svg", "sizes": "any", "type": "image/svg+xml"},
+    {"src": "/static/ledger/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "/static/ledger/icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "/static/ledger/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ],
+  "shortcuts": [
+    {"name": "Log spending", "short_name": "Log", "url": "/?log=1", "icons": [{"src": "/static/ledger/icon-192.png", "sizes": "192x192"}]},
+    {"name": "People", "url": "/people/", "icons": [{"src": "/static/ledger/icon-192.png", "sizes": "192x192"}]}
+  ]
+}

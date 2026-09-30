@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Log in{% endblock %}
+{% block content %}
+<form method="post" class="mx-auto mt-10 max-w-sm space-y-3 card p-6">
+  {% csrf_token %}
+  <h1 class="text-2xl font-extrabold">Welcome back 🪙</h1>
+  <p class="mt-0! text-sm italic text-muted">Chamdi jaaye, par damdi na jaaye.</p>
+  {% if form.errors %}<p class="text-sm text-bad">Wrong username or password.</p>{% endif %}
+  <label class="block text-sm"><span class="text-muted">Username</span>{{ form.username }}</label>
+  <label class="block text-sm"><span class="text-muted">Password</span>{{ form.password }}</label>
+  <input type="hidden" name="next" value="{{ next }}">
+  <button class="btn w-full">Let me in</button>
+</form>
+{% endblock %}

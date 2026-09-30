@@ -1,0 +1,71 @@
+@import "tailwindcss";
+@source "./templates";
+@source "./views.py";
+
+/* Dark mode follows <html data-theme="dark">, set by the toggle (or the OS preference until you pick). */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+@font-face { font-family: "Figtree"; font-weight: 400; font-display: swap; src: url("fonts/figtree-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Figtree"; font-weight: 500; font-display: swap; src: url("fonts/figtree-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "Figtree"; font-weight: 600; font-display: swap; src: url("fonts/figtree-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Bricolage Grotesque"; font-weight: 600; font-display: swap; src: url("fonts/bricolage-grotesque-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Bricolage Grotesque"; font-weight: 800; font-display: swap; src: url("fonts/bricolage-grotesque-latin-800-normal.woff2") format("woff2"); }
+
+/* Palette: warm paper + ink, a chilli-persimmon accent, old-copper gold. Semantic names so templates never
+   mention a hue; each theme just re-points the variables. */
+:root {
+  color-scheme: light;
+  --paper: #f4efe6; --card: #fffcf6; --sunk: #ebe4d6; --line: #e2d9c8;
+  --ink: #231f1a; --muted: #766d61;
+  --brand: #e4572e; --brand-soft: #fbe3d7; --on-brand: #fffaf3;
+  --gold: #d99a1e; --gold-soft: #fcefc7;
+  --good: #1d8457; --good-soft: #dcf0e4;
+  --bad: #c7343f; --bad-soft: #f9dfdf;
+}
+[data-theme=dark] {
+  color-scheme: dark;
+  --paper: #15130f; --card: #1f1c17; --sunk: #2a2620; --line: #37322a;
+  --ink: #f2ece1; --muted: #a69d8e;
+  --brand: #ff7048; --brand-soft: #3d2319; --on-brand: #1a0f0a;
+  --gold: #f5b83d; --gold-soft: #3a2e12;
+  --good: #4cc38a; --good-soft: #163226;
+  --bad: #ff6b6b; --bad-soft: #3a1c1e;
+}
+
+@theme inline {
+  --color-paper: var(--paper); --color-card: var(--card); --color-sunk: var(--sunk); --color-line: var(--line);
+  --color-ink: var(--ink); --color-muted: var(--muted);
+  --color-brand: var(--brand); --color-brand-soft: var(--brand-soft); --color-on-brand: var(--on-brand);
+  --color-gold: var(--gold); --color-gold-soft: var(--gold-soft);
+  --color-good: var(--good); --color-good-soft: var(--good-soft);
+  --color-bad: var(--bad); --color-bad-soft: var(--bad-soft);
+  --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Bricolage Grotesque", "Figtree", ui-sans-serif, sans-serif;
+}
+
+@layer base {
+  body { @apply bg-paper font-sans text-ink; }
+  h1, h2, .num-big { @apply font-display; }
+  ::selection { @apply bg-gold-soft; }
+  :focus-visible { @apply outline-2 outline-offset-2 outline-brand; }
+}
+
+@layer components {
+  /* 16px text on phones stops iOS Safari zooming into focused fields. */
+  input:not([type=checkbox]):not([type=hidden]):not([type=file]), select, textarea {
+    @apply mt-1 block w-full rounded-xl border border-line bg-card px-3 py-2 text-base text-ink placeholder:text-muted/80 focus:border-brand focus:outline-none sm:text-sm;
+  }
+  input[type=file] { @apply mt-1 block w-full text-sm file:mr-3 file:rounded-full file:border-0 file:bg-sunk file:px-3 file:py-1.5 file:text-ink; }
+  input[type=checkbox] { @apply h-5 w-5 accent-brand; }
+  /* 44px-tall touch targets, a little squish when pressed. */
+  .btn { @apply inline-flex min-h-11 items-center justify-center rounded-full bg-brand px-5 font-semibold text-on-brand shadow-[0_2px_0_0] shadow-ink/15 transition hover:brightness-105 active:translate-y-px active:shadow-none disabled:opacity-60; }
+  .btn-secondary { @apply inline-flex min-h-11 items-center justify-center rounded-full border border-line bg-card px-5 font-medium transition hover:bg-sunk active:translate-y-px; }
+  .card { @apply rounded-2xl border border-line bg-card; }
+  .chip { @apply rounded-full px-2 py-px text-xs font-medium; }
+}
+
+@keyframes wiggle { 0%, 100% { transform: rotate(0) } 25% { transform: rotate(-12deg) } 75% { transform: rotate(10deg) } }
+@keyframes pop { 0% { transform: scale(.9); opacity: 0 } 60% { transform: scale(1.03) } 100% { transform: scale(1); opacity: 1 } }
+@utility animate-wiggle { animation: wiggle .6s ease-in-out 1; }
+@utility animate-pop { animation: pop .35s ease-out 1; }
+@media (prefers-reduced-motion: reduce) { .animate-wiggle, .animate-pop { animation: none; } }

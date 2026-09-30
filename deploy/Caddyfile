@@ -1,0 +1,5 @@
+# Caddy gets and renews the HTTPS certificate for $DOMAIN automatically (ports 80 + 443 must reach this server).
+{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy app:8000
+}

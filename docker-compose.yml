@@ -1,0 +1,58 @@
+# Damdi. Quick start: cp .env.example .env && edit it, then:
+#   docker compose --profile https up -d      (public server with a domain → automatic HTTPS via Caddy)
+#   docker compose up -d                       (behind your own proxy / Tailscale; app on 127.0.0.1:8000)
+services:
+  app:
+    build: .
+    image: damdi:latest
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "${BIND:-127.0.0.1}:8089:8000"
+    volumes:
+      - data:/data
+
+  # Sends push reminders (daily log, bills, card statements, income) — checks once a minute.
+  scheduler:
+    build: .
+    image: damdi:latest
+    restart: unless-stopped
+    command: python manage.py reminders --loop
+    env_file: .env
+    volumes:
+      - data:/data
+    depends_on:
+      - app
+
+  # HTTPS for DOMAIN with auto-renewed Let's Encrypt certificates.
+  caddy:
+    image: caddy:2
+    profiles: [https]
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in .env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+
+  # Optional local LLM for Ramble: docker compose --profile llm up -d, then
+  #   docker compose exec ollama ollama pull qwen2.5:7b   and set LLM_MODEL=qwen2.5:7b, LLM_BASE_URL=http://ollama:11434/v1
+  ollama:
+    image: ollama/ollama
+    profiles: [llm]
+    restart: unless-stopped
+    volumes:
+      - ollama:/root/.ollama
+
+volumes:
+  data:
+  caddy_data:
+  caddy_config:
+  ollama:
