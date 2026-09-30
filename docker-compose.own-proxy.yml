@@ -1,0 +1,37 @@
+# Paisapeek for servers that ALREADY run a reverse proxy (Caddy, nginx, Traefik): just the app + the reminder
+# scheduler, no bundled Caddy.
+#
+#   docker compose -f docker-compose.own-proxy.yml up -d --build
+#
+# The app listens on 127.0.0.1:${PORT:-8089} (only this machine), so point your proxy there, e.g. in your Caddyfile:
+#
+#   paisapeek.example.com {
+#       reverse_proxy 127.0.0.1:8089
+#   }
+#
+# Same project directory => same "data" volume as docker-compose.yml, so switching files never loses data.
+services:
+  app:
+    build: .
+    image: paisapeek:latest
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "${BIND:-127.0.0.1}:${PORT:-8089}:8000"
+    volumes:
+      - data:/data
+
+  # Sends push reminders (daily log, bills, card statements, income) — checks once a minute.
+  scheduler:
+    build: .
+    image: paisapeek:latest
+    restart: unless-stopped
+    command: python manage.py reminders --loop
+    env_file: .env
+    volumes:
+      - data:/data
+    depends_on:
+      - app
+
+volumes:
+  data:

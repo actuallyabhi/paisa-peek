@@ -32,9 +32,9 @@ def party_named(name: str, kind: str = "person") -> Party:
 class TxnForm(forms.ModelForm):
     party_name = forms.CharField(
         label=_("Person / company"), required=False, max_length=100,
-        widget=forms.TextInput(attrs={"list": "party-names", "placeholder": _("e.g. Akhand"), "autocomplete": "off"}),
+        widget=forms.TextInput(attrs={"list": "party-names", "placeholder": _("e.g. Rohan"), "autocomplete": "off"}),
     )
-    tag_names = forms.CharField(label=_("Tags"), required=False, widget=forms.TextInput(attrs={"placeholder": _("PRYJ, Goa trip")}))
+    tag_names = forms.CharField(label=_("Tags"), required=False, widget=forms.TextInput(attrs={"placeholder": _("Goa trip, Office")}))
 
     class Meta:
         model = Transaction

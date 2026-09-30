@@ -34,7 +34,7 @@
   <form hx-post="{% url 'ramble_parse' %}" hx-target="#review" hx-indicator="#parsing" hx-disabled-elt="find button" class="space-y-3">
     <label for="ramble-text" class="block">
       <span class="font-display text-lg font-extrabold">{% translate "What have you spent today?" %}</span>
-      <span class="block text-xs opacity-70">{% translate "Say it or type it — “450 petrol, 200 chai with Akhand, lent 500 to Om”." %}</span>
+      <span class="block text-xs opacity-70">{% translate "Say it or type it — “450 petrol, 200 chai with Rohan, lent 500 to Priya”." %}</span>
     </label>
     <textarea id="ramble-text" name="text" rows="2" required {% if focus_log %}autofocus{% endif %}
       class="border-transparent! bg-paper! text-ink!" placeholder="{% translate "🎤 tap the mic on your keyboard…" %}"></textarea>

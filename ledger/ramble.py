@@ -1,4 +1,4 @@
-"""Turn a spoken/typed ramble ("yesterday 450 petrol, 200 chai with Akhand") into draft transactions.
+"""Turn a spoken/typed ramble ("yesterday 450 petrol, 200 chai with Rohan") into draft transactions.
 
 Uses the LLM when configured, else (or on LLM failure) a small heuristic parser. Either way the output is
 only a draft: every row goes through the review screen before anything is saved.
@@ -118,7 +118,7 @@ Rules:
 - One item per distinct payment or receipt. Amount is a plain number ("1.5k" = 1500, "2 hundred" = 200).
 - Resolve relative dates ("yesterday", "last Friday") against today. A date said once applies to following items until another is said. No date = today. Never a future date.
 - kind: expense by default; income if money came in; lend = I gave someone a loan; borrow = I took a loan; repay_in = someone paid me back; repay_out = I paid someone back.
-- description: short and clean, e.g. "Petrol", "Chai with Akhand", "Swiggy dinner".
+- description: short and clean, e.g. "Petrol", "Chai with Rohan", "Swiggy dinner".
 - category: exactly one of {categories}, or null if none fits.
 - account: exactly one of {accounts}, or null if not mentioned.
 - party: the person or company money was lent to, borrowed from, or repaid by/to (and optionally who was paid).
@@ -200,7 +200,7 @@ def _kind_and_party(chunk: str, parties) -> tuple[str, str]:
     if not party and loan and (m := NAME_AFTER.search(chunk)):
         party = m.group(1)[:1].upper() + m.group(1)[1:]
     if m := REPAY.search(chunk):
-        # "got back 500 from Om" / "Om returned 500" -> repaid to me; "returned 500 to Om" / "repaid Om" -> by me.
+        # "got back 500 from Priya" / "Priya returned 500" -> repaid to me; "returned 500 to Priya" / "repaid Priya" -> by me.
         named_first = bool(party) and chunk.lower().find(party.lower()) < m.start()
         into_me = m.group(1).lower() == "got back" or re.search(r"\bfrom\b", chunk, re.I) or named_first
         return ("repay_in" if into_me else "repay_out"), party

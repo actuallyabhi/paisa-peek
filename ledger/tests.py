@@ -17,8 +17,8 @@ SMS_CASES = [
      "270.00", "expense", "AIRTEL", "1234", "526712345678", "HDFC", "2026-09-29"),
     ("VM-HDFCBK", "Spent Rs.1,100.00 On HDFC Bank Card 5678 At SWIGGY On 2026-09-28:20:11:05.Not You? To Block+Reissue Call 18002323232/SMS BLOCK CC 5678 to 7308080808",
      "1100.00", "expense", "SWIGGY", "5678", "", "HDFC", "2026-09-28"),
-    ("VM-HDFCBK", "Money Received - INR 500.00 in HDFC Bank A/c xx1234 on 27-09-26 from VPA shraddha@okicici (UPI 526712345679)",
-     "500.00", "income", "shraddha@okicici", "1234", "526712345679", "HDFC", "2026-09-27"),
+    ("VM-HDFCBK", "Money Received - INR 500.00 in HDFC Bank A/c xx1234 on 27-09-26 from VPA meera@okicici (UPI 526712345679)",
+     "500.00", "income", "meera@okicici", "1234", "526712345679", "HDFC", "2026-09-27"),
     ("AD-ICICIB", "ICICI Bank Acct XX123 debited for Rs 1700.00 on 29-Sep-26; BSNL credited. UPI:526712345680. Call 18002662 for dispute. SMS BLOCK 123 to 9215676766.",
      "1700.00", "expense", "BSNL", "123", "526712345680", "ICICI", "2026-09-29"),
     ("AD-ICICIB", "INR 12,101.00 spent using ICICI Bank Card XX4321 on 25-Sep-26 on AMAZON PAY. Avl Limit: INR 50,000.00. If not you, call 1800 2662/SMS BLOCK 4321 to 9215676766",
@@ -29,8 +29,8 @@ SMS_CASES = [
      "11500.00", "expense", "Flipkart", "2468", "", "Axis", "2026-09-26"),
     ("BZ-SBIUPI", "Dear UPI user A/C X1234 debited by 270.0 on date 29Sep26 trf to AIRTEL Refno 526712345682. If not u? call 1800111109. -SBI",
      "270.00", "expense", "AIRTEL", "1234", "526712345682", "SBI", "2026-09-29"),
-    ("BZ-SBIUPI", "Dear SBI UPI User, ur A/cX5555 credited by Rs500 on 29Sep26 by Akhand (Ref no 526712345683)",
-     "500.00", "income", "Akhand", "5555", "526712345683", "SBI", "2026-09-29"),
+    ("BZ-SBIUPI", "Dear SBI UPI User, ur A/cX5555 credited by Rs500 on 29Sep26 by Rohan (Ref no 526712345683)",
+     "500.00", "income", "Rohan", "5555", "526712345683", "SBI", "2026-09-29"),
     ("VK-KOTAKB", "Sent Rs.270.00 from Kotak Bank AC X1234 to airtel@upi on 29-09-26.UPI Ref 526712345684. Not you, https://kotak.com/KBANKT/Fraud",
      "270.00", "expense", "airtel@upi", "1234", "526712345684", "Kotak", "2026-09-29"),
     # No template for this bank: generic heuristic, date falls back to the receive date.
@@ -111,7 +111,7 @@ class RambleTests(TestCase):
     def setUp(self):
         from .models import Tag
         self.hdfc = Account.objects.create(name="HDFC xx1234", kind="credit_card", last4="1234")
-        Tag.objects.create(name="PRYJ")
+        Tag.objects.create(name="GOA")
 
     def rows(self, text, **kw):
         from . import ramble
@@ -121,14 +121,14 @@ class RambleTests(TestCase):
                  r["account"], r["tag_names"], r["party_name"]) for r in rows], parser
 
     def test_heuristic(self):
-        rows, parser = self.rows("yesterday 450 petrol, 200 chai with Akhand for PRYJ, and 1.2k swiggy on hdfc card\n"
-                                 "received 5000 from Sameer last friday")
+        rows, parser = self.rows("yesterday 450 petrol, 200 chai with Rohan for GOA, and 1.2k swiggy on hdfc card\n"
+                                 "received 5000 from Kabir last friday")
         self.assertEqual(parser, "heuristic")
         self.assertEqual(rows, [
             ("2026-09-29", "450.00", "expense", "Petrol", "Fuel & Transport", None, "", ""),
-            ("2026-09-29", "200.00", "expense", "Chai with Akhand PRYJ", "Food & Outings", None, "PRYJ", ""),
+            ("2026-09-29", "200.00", "expense", "Chai with Rohan GOA", "Food & Outings", None, "GOA", ""),
             ("2026-09-29", "1200.00", "expense", "Swiggy", "Food & Outings", self.hdfc.pk, "", ""),
-            ("2026-09-25", "5000.00", "income", "From Sameer", None, None, "", ""),
+            ("2026-09-25", "5000.00", "income", "From Kabir", None, None, "", ""),
         ])
 
     def test_category_memory_beats_keywords(self):
@@ -139,13 +139,13 @@ class RambleTests(TestCase):
 
     def test_loans(self):
         from .models import Party
-        Party.objects.create(name="Om")
-        Party.objects.create(name="Bade Papa", kind="person")
-        rows, _ = self.rows("lent 500 to Akhand, Om paid back 2000, borrowed 1000 from Bade Papa, "
-                            "returned 300 to Shahid, got back 200 from Sameer")
+        Party.objects.create(name="Priya")
+        Party.objects.create(name="Chacha ji", kind="person")
+        rows, _ = self.rows("lent 500 to Rohan, Priya paid back 2000, borrowed 1000 from Chacha ji, "
+                            "returned 300 to Shahid, got back 200 from Kabir")
         self.assertEqual([(r[1], r[2], r[7]) for r in rows], [
-            ("500.00", "lend", "Akhand"), ("2000.00", "repay_in", "Om"), ("1000.00", "borrow", "Bade Papa"),
-            ("300.00", "repay_out", "Shahid"), ("200.00", "repay_in", "Sameer"),
+            ("500.00", "lend", "Rohan"), ("2000.00", "repay_in", "Priya"), ("1000.00", "borrow", "Chacha ji"),
+            ("300.00", "repay_out", "Shahid"), ("200.00", "repay_in", "Kabir"),
         ])
         self.assertTrue(all(r[4] is None for r in rows))  # loans aren't spending categories
 
@@ -157,20 +157,20 @@ class RambleTests(TestCase):
         from unittest.mock import patch
         fake = {"transactions": [
             {"date": "2026-10-05", "amount": 450, "kind": "expense", "description": "Petrol",
-             "category": "fuel & transport", "account": None, "tags": ["Goa"], "party": "Akhand", "quote": "450 petrol"},
+             "category": "fuel & transport", "account": None, "tags": ["Manali"], "party": "Rohan", "quote": "450 petrol"},
             {"date": "2026-09-29", "amount": 200, "kind": "weird", "description": "Chai", "category": "Nope",
-             "account": "hdfc xx1234", "tags": ["pryj", "Office"], "party": "office", "quote": "200 chai"},
+             "account": "hdfc xx1234", "tags": ["goa", "Office"], "party": "office", "quote": "200 chai"},
             {"date": "2026-09-29", "amount": 0, "kind": "expense", "description": "x", "category": None,
              "account": None, "tags": [], "party": None, "quote": "x"},
         ]}
         with self.settings(LLM_MODEL="test"), patch("ledger.llm.chat_json", return_value=fake):
-            rows, parser = self.rows("450 petrol, 200 chai for pryj with office folks")
+            rows, parser = self.rows("450 petrol, 200 chai for goa with office folks")
         self.assertEqual(parser, "llm")
         self.assertEqual(rows, [
             # future date clamped; tag and party the note never mentions are dropped
             ("2026-09-30", "450.00", "expense", "Petrol", "Fuel & Transport", None, "", ""),
             # unknown category guessed; party kept because it was said
-            ("2026-09-29", "200.00", "expense", "Chai", "Food & Outings", self.hdfc.pk, "PRYJ, Office", "office"),
+            ("2026-09-29", "200.00", "expense", "Chai", "Food & Outings", self.hdfc.pk, "GOA, Office", "office"),
         ])
 
     def test_llm_failure_falls_back(self):
@@ -186,8 +186,8 @@ class RambleTests(TestCase):
         yesterday = date.today() - date.resolution
         Transaction.objects.create(date=yesterday, amount=450, description="Petrol (from SMS)")
 
-        r = self.client.post("/ramble/parse/", {"text": "yesterday 450 petrol, 200 chai for pryj"})
-        self.assertContains(r, 'name="r1-tag_names" value="PRYJ"')
+        r = self.client.post("/ramble/parse/", {"text": "yesterday 450 petrol, 200 chai for goa"})
+        self.assertContains(r, 'name="r1-tag_names" value="GOA"')
         self.assertContains(r, "possible duplicate")
         self.assertContains(r, 'id="id_r0-include">')  # duplicate starts unticked
         self.assertContains(r, 'id="id_r1-include" checked')
@@ -195,12 +195,12 @@ class RambleTests(TestCase):
         row = lambda i, **kw: {f"r{i}-{k}": v for k, v in {
             "date": yesterday.isoformat(), "amount": "200", "kind": "expense", "description": "Chai",
             "category": "", "account": "", "tag_names": "", "quote": "200 chai", **kw}.items()}
-        post = {"row": ["0", "1"], **row(0, amount="450"), **row(1, include="on", tag_names="PRYJ, pryj, Goa trip")}
+        post = {"row": ["0", "1"], **row(0, amount="450"), **row(1, include="on", tag_names="GOA, goa, Goa trip")}
         r = self.client.post("/ramble/save/", post)
         self.assertIn("/?view=month&month=", r["HX-Redirect"])
         t = Transaction.objects.get(source="ramble")
         self.assertEqual((t.description, t.raw_text, t.status), ("Chai", "200 chai", "confirmed"))
-        self.assertEqual(sorted(t.tags.values_list("name", flat=True)), ["Goa trip", "PRYJ"])
+        self.assertEqual(sorted(t.tags.values_list("name", flat=True)), ["GOA", "Goa trip"])
 
         # An invalid ticked row blocks the whole save.
         post = {"row": ["0", "1"], **row(0, include="on"), **row(1, include="on", amount="")}
@@ -215,7 +215,7 @@ class PartyTests(TestCase):
     def setUp(self):
         from .models import Party
         self.client.force_login(User.objects.create_user("u", password="x"))
-        self.om = Party.objects.create(name="Om")
+        self.om = Party.objects.create(name="Priya")
 
     def add(self, kind, amount, status="confirmed", day=date(2026, 9, 1)):
         return Transaction.objects.create(date=day, amount=amount, kind=kind, party=self.om, status=status)
@@ -228,7 +228,7 @@ class PartyTests(TestCase):
         self.add("lend", 9999, status="pending")  # not counted until confirmed
         self.add("expense", 300)  # listed, doesn't change who owes whom
         r = self.client.get(f"/people/{self.om.pk}/")
-        self.assertContains(r, "Om owes you ₹4,900.00")  # 8000 - 2500 - 1000 + 400
+        self.assertContains(r, "Priya owes you ₹4,900.00")  # 8000 - 2500 - 1000 + 400
         self.assertEqual([run for t, run in r.context["rows"] if t.status == "confirmed"][-1], Decimal("4900"))
         people = self.client.get("/people/")
         self.assertEqual(people.context["owed_to_me"], Decimal("4900"))
@@ -261,7 +261,7 @@ class CSVImportTests(TestCase):
 2026-09-10,repaid_to_me,1500,UPI,asha,,,,
 ,lent,700,Lent,Ravi,,,,
 2026-09-12,borrowed,400,Cash,Ravi,,,,
-2025-10-01,expense,720 + 775 + 380,Movie outing + food,,Food & Outings,,JAN trip; PRYJ,
+2025-10-01,expense,720 + 775 + 380,Movie outing + food,,Food & Outings,,JAN trip; GOA,
 2025-10-01,expense,"1,234.50",Router,,,,,
 """
 
@@ -287,7 +287,7 @@ class CSVImportTests(TestCase):
         self.assertEqual(balances, {"Asha": Decimal("3500"), "Ravi": Decimal("300")})  # 3000+2000-1500 ; 700-400
         t = Transaction.objects.get(description="Movie outing + food")
         self.assertEqual((t.amount, t.notes, t.source), (Decimal("1875"), "Breakdown: 720 + 775 + 380", "import"))
-        self.assertEqual(sorted(t.tags.values_list("name", flat=True)), ["JAN trip", "PRYJ"])
+        self.assertEqual(sorted(t.tags.values_list("name", flat=True)), ["GOA", "JAN trip"])
         self.assertEqual(Transaction.objects.get(description="Router").amount, Decimal("1234.50"))
         self.assertEqual(Transaction.objects.filter(date="2026-09-30").count(), 3)  # blank dates -> default date
         # Re-importing the same file: every row is flagged and unticked.
@@ -297,8 +297,8 @@ class CSVImportTests(TestCase):
         from django.core.files.uploadedfile import SimpleUploadedFile
         self.client.force_login(User.objects.create_user("u", password="x"))
         csv_text = ("Date,Type,Amount,Description,Party,Category,Account,Tags,Notes\n"
-                    "01/09/2026,lent,1000,Cash,Akhand,,,trip;PRYJ,\n"
-                    ",borrowed,,Loan,Om,,,,\n"  # missing amount -> flagged
+                    "01/09/2026,lent,1000,Cash,Rohan,,,trip;GOA,\n"
+                    ",borrowed,,Loan,Priya,,,,\n"  # missing amount -> flagged
                     "2026-09-02,expense,450,Petrol,,Nope,,,\n")
         up = SimpleUploadedFile("x.csv", csv_text.encode("utf-8-sig"), content_type="text/csv")
         r = self.client.post("/import/", {"file": up, "default_date": "2026-09-15"})
@@ -306,8 +306,8 @@ class CSVImportTests(TestCase):
         self.assertContains(r, "unknown category")
         self.assertContains(r, 'name="source" value="import"')
         post = {"source": "import", "row": ["0", "1"]}
-        for i, (d, k, a, desc, party, tags) in enumerate([("2026-09-01", "lend", "1000", "Cash", "Akhand", "trip, PRYJ"),
-                                                          ("2026-09-15", "borrow", "", "Loan", "Om", "")]):
+        for i, (d, k, a, desc, party, tags) in enumerate([("2026-09-01", "lend", "1000", "Cash", "Rohan", "trip, GOA"),
+                                                          ("2026-09-15", "borrow", "", "Loan", "Priya", "")]):
             post.update({f"r{i}-date": d, f"r{i}-kind": k, f"r{i}-amount": a, f"r{i}-description": desc,
                          f"r{i}-party_name": party, f"r{i}-tag_names": tags, f"r{i}-quote": "CSV", f"r{i}-include": "on"})
         self.assertContains(self.client.post("/ramble/save/", post), "Fix the highlighted rows")
@@ -315,7 +315,7 @@ class CSVImportTests(TestCase):
         r = self.client.post("/ramble/save/", post)
         self.assertEqual(r["HX-Redirect"], "/people/")
         t = Transaction.objects.get()
-        self.assertEqual((t.source, t.party.name, t.kind), ("import", "Akhand", "lend"))
+        self.assertEqual((t.source, t.party.name, t.kind), ("import", "Rohan", "lend"))
 
     def test_bad_files(self):
         from io import BytesIO
@@ -590,11 +590,11 @@ class BackupTests(TestCase):
         from .models import NotifySettings, Party, Recurring, Tag
         sav = Account.objects.create(name="HDFC Savings", kind="savings", opening_balance=50000, is_default=True)
         card = Account.objects.create(name="ICICI Card", kind="credit_card", opening_balance=-2000, statement_day=15, due_day=5)
-        om = Party.objects.create(name="Om", kind="person")
+        om = Party.objects.create(name="Priya", kind="person")
         food = Category.objects.get(name="Food & Outings")
         t = Transaction.objects.create(date=date(2026, 9, 29), time="21:05", amount=450, description="Dinner",
                                        category=food, account=card, party=om, notes="split")
-        t.tags.add(Tag.objects.create(name="PRYJ"))
+        t.tags.add(Tag.objects.create(name="GOA"))
         Transaction.objects.create(date=date(2026, 9, 30), amount=8000, kind="lend", party=om, account=sav)
         Transaction.objects.create(date=date(2026, 9, 30), amount=1000, kind="transfer", account=sav, to_account=card)
         Recurring.objects.create(name="Rent", amount=12000, next_due=date(2026, 1, 31), essential=True)
@@ -633,7 +633,7 @@ class BackupTests(TestCase):
         r = self.client.post("/backup/restore/", {"file": up, "confirm": "on"}, follow=True)
         self.assertContains(r, "Restored:")
         self.assertEqual(self.snapshot(), before)
-        self.assertEqual(before["owed"], {"Om": Decimal("8000")})
+        self.assertEqual(before["owed"], {"Priya": Decimal("8000")})
         from django.conf import settings
         self.assertTrue(list((settings.DATA_DIR / "backups").glob("before-restore-*.json")))  # safety copy
 
@@ -673,7 +673,7 @@ class BackupTests(TestCase):
         Transaction.objects.all().delete()
         counts = backup.restore(out.getvalue().encode())
         self.assertEqual(counts["transaction"], 3)
-        self.assertEqual(Transaction.objects.get(description="Dinner").tags.get().name, "PRYJ")
+        self.assertEqual(Transaction.objects.get(description="Dinner").tags.get().name, "GOA")
 
     def test_csv_export_reimports(self):
         from io import BytesIO
@@ -682,7 +682,7 @@ class BackupTests(TestCase):
         r = self.client.get("/backup/export.csv")
         self.assertEqual(r["Content-Type"], "text/csv; charset=utf-8")
         text = r.content.decode()
-        self.assertIn("2026-09-30,,lent,8000.00,,Om,,HDFC Savings,", text)
+        self.assertIn("2026-09-30,,lent,8000.00,,Priya,,HDFC Savings,", text)
         forms_ = to_forms(read_rows(BytesIO(r.content)), date(2026, 10, 1))
         self.assertEqual([f.errors for f in forms_ if f.errors], [])
         self.assertTrue(all(f.dup for f in forms_))  # same data already here -> all flagged, nothing doubled
@@ -748,7 +748,7 @@ class LanguageTests(TestCase):
         self.assertContains(self.client.get("/people/"), "लोग और कंपनियाँ")
         # Direction matters: "owes you" = you RECEIVE (मिलना), not pay (देना).
         from .models import Party
-        Transaction.objects.create(date=date(2026, 9, 1), amount=500, kind="lend", party=Party.objects.create(name="Om"))
+        Transaction.objects.create(date=date(2026, 9, 1), amount=500, kind="lend", party=Party.objects.create(name="Priya"))
         self.assertContains(self.client.get("/people/"), "आपको ₹500.00 मिलने हैं")
         form = self.client.get("/").context["form"]
         self.assertEqual(str(form.fields["kind"].label), "प्रकार")
@@ -831,7 +831,7 @@ class PaginationTests(TestCase):
 
     def test_every_list_uses_the_pager(self):
         from .models import Party, Recurring
-        om = Party.objects.create(name="Om")
+        om = Party.objects.create(name="Priya")
         acct = Account.objects.create(name="Cash", kind="cash")
         for i in range(30):
             Transaction.objects.create(date=date(2026, 9, 1), amount=1, kind="lend", party=om, account=acct, status="pending")
@@ -896,7 +896,7 @@ class TransferAndChartTests(TestCase):
 
     def test_charts_render_and_can_be_hidden(self):
         from .models import Party
-        om = Party.objects.create(name="Om")
+        om = Party.objects.create(name="Priya")
         Transaction.objects.create(date=date(2026, 9, 3), amount=1000, kind="lend", party=om)
         Transaction.objects.create(date=date(2026, 9, 9), amount=400, kind="repay_in", party=om)
         Transaction.objects.create(date=date(2026, 9, 5), amount=250, description="Chai")
@@ -924,13 +924,13 @@ class SearchTests(TestCase):
         from .models import Party, Recurring, Tag
         self.client.force_login(User.objects.create_user("u", password="x"))
         self.hdfc = Account.objects.create(name="HDFC Savings", kind="savings", last4="1234")
-        self.akhand = Party.objects.create(name="Akhand")
+        self.rohan = Party.objects.create(name="Rohan")
         t = Transaction.objects.create(date=date(2026, 9, 29), amount=450, description="Petrol pump", account=self.hdfc,
                                        category=Category.objects.get(name="Fuel & Transport"))
-        t.tags.add(Tag.objects.create(name="PRYJ"))
-        Transaction.objects.create(date=date(2026, 9, 28), amount=200, description="Chai", party=self.akhand, kind="lend")
+        t.tags.add(Tag.objects.create(name="GOA"))
+        Transaction.objects.create(date=date(2026, 9, 28), amount=200, description="Chai", party=self.rohan, kind="lend")
         Transaction.objects.create(date=date(2026, 9, 27), amount=99, description="Hidden", status="ignored")
-        Recurring.objects.create(name="Akhand gym share", amount=500, next_due=date(2026, 10, 5))
+        Recurring.objects.create(name="Rohan gym share", amount=500, next_due=date(2026, 10, 5))
 
     def results(self, q):
         r = self.client.get("/search/", {"q": q})
@@ -938,12 +938,12 @@ class SearchTests(TestCase):
         return r, [t.description for t in (r.context.get("txns") or [])]
 
     def test_finds_every_kind_of_thing(self):
-        r, txns = self.results("akhand")
+        r, txns = self.results("rohan")
         self.assertEqual(txns, ["Chai"])  # via the person
-        self.assertEqual([p.name for p in r.context["parties"]], ["Akhand"])
-        self.assertEqual([x.name for x in r.context["recurring"]], ["Akhand gym share"])
+        self.assertEqual([p.name for p in r.context["parties"]], ["Rohan"])
+        self.assertEqual([x.name for x in r.context["recurring"]], ["Rohan gym share"])
         self.assertEqual(r.context["total"], 3)
-        self.assertEqual(self.results("pryj")[1], ["Petrol pump"])       # tag
+        self.assertEqual(self.results("goa")[1], ["Petrol pump"])       # tag
         self.assertEqual(self.results("fuel")[1], ["Petrol pump"])       # category
         self.assertEqual(self.results("₹450")[1], ["Petrol pump"])       # exact amount
         self.assertEqual([a.name for a in self.results("1234")[0].context["accounts"]], ["HDFC Savings"])  # last 4

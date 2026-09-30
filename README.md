@@ -6,7 +6,7 @@
 
 Paisapeek is a self-hosted money diary for people who want to know where every penny goes, without handing their bank SMS to a cloud app.
 
-- **Tell it what you spent.** Type or dictate *"450 petrol, 200 chai with Akhand, lent 500 to Om"* and review the cards before adding them.
+- **Tell it what you spent.** Type or dictate *"450 petrol, 200 chai with Rohan, lent 500 to Priya"* and review the cards before adding them.
 - **Bank SMS turn into transactions automatically.** Duplicates are merged and you confirm each one in an inbox.
 - **People and companies.** Track who owes you and whom you owe, with each person's history.
 - **Accounts.** Savings, cards, credit lines and cash, with real balances and card statement and due-date reminders.
@@ -16,6 +16,18 @@ Paisapeek is a self-hosted money diary for people who want to know where every p
 - **Full JSON backup and restore, plus CSV import and export.**
 
 Built with Django, Django Ninja, HTMX and Tailwind, on SQLite. It's a single Docker volume.
+
+## Screenshots
+
+<sub>Phone-sized, with made-up demo data.</sub>
+
+<table>
+<tr><td align="center" valign="top"><img src="docs/screenshots/01-home.webp" width="240" alt="Home: say or type what you spent"><br><sub>Home: say or type what you spent</sub></td><td align="center" valign="top"><img src="docs/screenshots/02-ramble.webp" width="240" alt="Ramble → review cards before adding"><br><sub>Ramble → review cards before adding</sub></td><td align="center" valign="top"><img src="docs/screenshots/03-charts.webp" width="240" alt="Day by day + spent vs came in"><br><sub>Day by day + spent vs came in</sub></td></tr>
+<tr><td align="center" valign="top"><img src="docs/screenshots/04-people.webp" width="240" alt="People: who owes whom"><br><sub>People: who owes whom</sub></td><td align="center" valign="top"><img src="docs/screenshots/05-person.webp" width="240" alt="A person's ledger over time"><br><sub>A person's ledger over time</sub></td><td align="center" valign="top"><img src="docs/screenshots/06-accounts.webp" width="240" alt="Accounts, cards & balances"><br><sub>Accounts, cards & balances</sub></td></tr>
+<tr><td align="center" valign="top"><img src="docs/screenshots/07-recurring.webp" width="240" alt="Recurring income, bills & transfers"><br><sub>Recurring income, bills & transfers</sub></td><td align="center" valign="top"><img src="docs/screenshots/08-inbox.webp" width="240" alt="Bank SMS waiting for review"><br><sub>Bank SMS waiting for review</sub></td><td align="center" valign="top"><img src="docs/screenshots/09-search.webp" width="240" alt="Search everything"><br><sub>Search everything</sub></td></tr>
+<tr><td align="center" valign="top"><img src="docs/screenshots/10-more.webp" width="240" alt="More: language, charts, notifications, backup"><br><sub>More: language, charts, notifications, backup</sub></td><td align="center" valign="top"><img src="docs/screenshots/11-home-dark.webp" width="240" alt="Dark mode"><br><sub>Dark mode</sub></td><td align="center" valign="top"><img src="docs/screenshots/12-home-hindi.webp" width="240" alt="हिन्दी"><br><sub>हिन्दी</sub></td></tr>
+<tr><td align="center" valign="top"><img src="docs/screenshots/13-people-hinglish.webp" width="240" alt="Hinglish"><br><sub>Hinglish</sub></td></tr>
+</table>
 
 **→ [Deploy it on your server](DEPLOY.md)**: Docker, automatic HTTPS, phone install, backups.
 
@@ -85,7 +97,7 @@ The `scheduler` service in `docker-compose.yml` sends them (`python manage.py re
 
 ## Ramble: say several transactions at once
 
-Use the box at the top of **Home** and dictate with your keyboard's mic, or type, e.g. *"yesterday 450 petrol, 200 chai with Akhand for PRYJ and 1.2k swiggy on HDFC card. Got 5000 from Sameer last Friday."*
+Use the box at the top of **Home** and dictate with your keyboard's mic, or type, e.g. *"yesterday 450 petrol, 200 chai with Rohan for Goa trip and 1.2k swiggy on HDFC card. Got 5000 from Kabir last Friday."*
 
 You get one editable card per transaction, with date, amount, type, description, category, account and tags filled in. Then choose **Add selected** or **Add just this** on each card.
 
@@ -119,7 +131,7 @@ Four types track money between you and them:
 
 - **People** is the dashboard: total owed to you, total you owe, the net, and a balance per person. Settled people are hidden.
 - Each person's page shows their full ledger with a running balance, and has a quick form to record a new entry.
-- Ramble understands phrases like *"lent 500 to Akhand"*, *"Om paid back 2000"* and *"borrowed 1500 from Bade Papa"*.
+- Ramble understands phrases like *"lent 500 to Rohan"*, *"Priya paid back 2000"* and *"borrowed 1500 from Chacha ji"*.
 
 ## Import CSV
 
@@ -128,8 +140,8 @@ Four types track money between you and them:
 ```csv
 date,type,amount,description,party,category,account,tags,notes
 2026-01-24,expense,500,Pizzahut,,Food & Outings,,JAN 24-25 Outing,
-,lent,3000 + 1800,Lent,Saurabh,,,,
-2026-02-10,repaid_to_me,2000,Paid back via UPI,Saurabh,,HDFC xx1234,,
+,lent,3000 + 1800,Lent,Arjun,,,,
+2026-02-10,repaid_to_me,2000,Paid back via UPI,Arjun,,HDFC xx1234,,
 ```
 
 Only `amount` is required.

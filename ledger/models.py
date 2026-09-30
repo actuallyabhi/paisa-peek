@@ -75,7 +75,7 @@ class Category(models.Model):
 
 
 class Tag(models.Model):
-    """Free labels: trips, places, people, e.g. PRYJ, Chitrakoot trip."""
+    """Free labels: trips, places, people, e.g. Goa trip, Diwali."""
 
     name = models.CharField(max_length=50, unique=True)
 

@@ -54,7 +54,31 @@ In `.env`, set at least:
    ```
 5. Open `https://paisapeek.yourdomain.com` and log in.
 
-The app port stays bound to `127.0.0.1:8000`, so only Caddy can reach it.
+The app port stays bound to `127.0.0.1:8089`, so only Caddy can reach it.
+
+## A2. You already run Caddy (or nginx / Traefik)
+
+Use `docker-compose.own-proxy.yml`. It runs only the **app** and the **scheduler** (no second Caddy fighting over ports 80/443). The app listens on `127.0.0.1:8089`; change it with `PORT=` in `.env`.
+
+1. **`.env`:** set `DOMAIN=paisapeek.yourdomain.com`. That sets the allowed host, CSRF origin and secure cookies for it.
+2. **Start:**
+   ```bash
+   docker compose -f docker-compose.own-proxy.yml up -d --build
+   ```
+3. **Add a site to your existing Caddyfile, then reload Caddy** (`sudo systemctl reload caddy`, or `caddy reload`):
+   ```
+   paisapeek.yourdomain.com {
+       encode zstd gzip
+       reverse_proxy 127.0.0.1:8089
+   }
+   ```
+   Caddy obtains the certificate and passes `X-Forwarded-Proto`, which the app already trusts.
+
+**If your Caddy itself runs in Docker,** `127.0.0.1` inside the Caddy container is Caddy, not your server. Use one of these:
+- **Simplest:** give the Caddy container `extra_hosts: ["host.docker.internal:host-gateway"]` and use `reverse_proxy host.docker.internal:8089`. Bind the app with `BIND=172.17.0.1` (the Docker bridge) or `BIND=0.0.0.0` behind a firewall, because Caddy can't reach `127.0.0.1` from inside its container.
+- **Or** put both on one Docker network: add `networks: [caddy]` to the `app` service (with `networks: {caddy: {external: true}}` at the bottom) and use `reverse_proxy app:8000`.
+
+Switching between `docker-compose.yml` and this file is safe: both use the same `data` volume. Don't run both at once.
 
 ## B. Private, over Tailscale
 
@@ -68,7 +92,7 @@ The app port stays bound to `127.0.0.1:8000`, so only Caddy can reach it.
 4. **Start the app** (no Caddy), then publish it on your tailnet with HTTPS:
    ```bash
    docker compose up -d --build
-   sudo tailscale serve --bg 8000
+   sudo tailscale serve --bg 8089
    ```
 5. Open `https://<server>.<tailnet>.ts.net` on any device in your tailnet.
 
@@ -91,6 +115,7 @@ The app port stays bound to `127.0.0.1:8000`, so only Caddy can reach it.
   crontab -e
   # add this line (adjust the path):
   30 2 * * * cd /home/you/paisapeek && docker compose exec -T app python manage.py backup --keep 14
+  # setup A2: docker compose -f docker-compose.own-proxy.yml exec -T app python manage.py backup --keep 14
   ```
   Copy them off the machine now and then:
   ```bash
@@ -102,7 +127,8 @@ The app port stays bound to `127.0.0.1:8000`, so only Caddy can reach it.
 
 ```bash
 cd paisapeek && git pull
-docker compose --profile https up -d --build      # drop "--profile https" for setup B
+docker compose --profile https up -d --build      # setup A
+docker compose -f docker-compose.own-proxy.yml up -d --build   # setup A2 (your own Caddy)
 ```
 
 Database migrations run automatically on start. Take a backup first if it's a big update.

@@ -1,6 +1,7 @@
 # Paisapeek. Quick start: cp .env.example .env && edit it, then:
 #   docker compose --profile https up -d      (public server with a domain → automatic HTTPS via Caddy)
-#   docker compose up -d                       (behind your own proxy / Tailscale; app on 127.0.0.1:8000)
+#   docker compose up -d                       (behind your own proxy / Tailscale; app on 127.0.0.1:8089)
+#   Already run Caddy/nginx yourself? Use docker-compose.own-proxy.yml instead (app + scheduler only).
 services:
   app:
     build: .
