@@ -1,7 +1,8 @@
 {% extends "base.html" %}{% load money i18n %}
 {% block title %}{% translate "Accounts" %}{% endblock %}
 {% block content %}
-<div class="mb-4 flex items-center justify-between">
+<a href="{% url 'settings' %}" class="text-sm text-muted hover:underline">← {% translate "More" %}</a>
+<div class="mb-4 mt-1 flex items-center justify-between">
   <h1 class="text-xl font-semibold sm:text-2xl">{% translate "Accounts" %}</h1>
   <a href="{% url 'account_new' %}" class="btn">{% translate "+ Add" %}</a>
 </div>

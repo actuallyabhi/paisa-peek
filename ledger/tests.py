@@ -980,9 +980,14 @@ class NavTests(TestCase):
         self.client.force_login(User.objects.create_user("u", password="x"))
         header = self.client.get("/").content.decode().split("<main", 1)[0]
         self.assertIn('href="/recurring/"', header)
+        self.assertNotIn('href="/accounts/"', header)
         more = self.client.get("/settings/")
-        self.assertNotIn("/recurring/", [url for url, label, hint in more.context["links"]])
+        links = [url for url, label, hint in more.context["links"]]
+        self.assertNotIn("/recurring/", links)
+        self.assertIn("/accounts/", links)
         self.assertContains(more, 'href="https://github.com/4-bit-soft/paisa-peek"')
         self.assertContains(more, "Abhishek Maurya")
         active = [label for name, label, act, icon in self.client.get("/recurring/").context["tabs"] if "recurring" in act]
-        self.assertEqual([str(a) for a in active], ["Recurring"])  # More stays highlighted on Recurring pages
+        self.assertEqual([str(a) for a in active], ["Recurring"])
+        active = [label for name, label, act, icon in self.client.get("/accounts/").context["tabs"] if "accounts" in act]
+        self.assertEqual([str(a) for a in active], ["More"])  # More stays highlighted on Recurring pages

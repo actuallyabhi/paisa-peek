@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Paisapeek\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-01 01:59+0530\n"
+"POT-Creation-Date: 2026-10-01 02:04+0530\n"
 "PO-Revision-Date: 2026-10-01 01:35+0530\n"
 "Last-Translator: Paisapeek contributors\n"
 "Language-Team: Hinglish\n"
@@ -772,8 +772,8 @@ msgid "New account"
 msgstr "Naya account"
 
 #: templates/ledger/account_edit.html:4 templates/ledger/accounts.html:2
-#: templates/ledger/accounts.html:5 templates/ledger/search.html:65
-#: views.py:75
+#: templates/ledger/accounts.html:6 templates/ledger/search.html:65
+#: views.py:262
 msgid "Accounts"
 msgstr "Accounts"
 
@@ -799,46 +799,51 @@ msgstr "Yeh account hatayein?"
 msgid "Delete account"
 msgstr "Account hatao"
 
-#: templates/ledger/accounts.html:6
+#: templates/ledger/accounts.html:4 templates/ledger/settings.html:2
+#: templates/ledger/settings.html:4 views.py:78
+msgid "More"
+msgstr "Aur"
+
+#: templates/ledger/accounts.html:7
 msgid "+ Add"
 msgstr "+ Jodo"
 
-#: templates/ledger/accounts.html:10
+#: templates/ledger/accounts.html:11
 msgid "Money"
 msgstr "Paisa"
 
-#: templates/ledger/accounts.html:11
+#: templates/ledger/accounts.html:12
 msgid "Card/loan dues"
 msgstr "Card/loan baaki"
 
-#: templates/ledger/accounts.html:12 templates/ledger/people.html:12
+#: templates/ledger/accounts.html:13 templates/ledger/people.html:12
 msgid "Net"
 msgstr "Kul"
 
-#: templates/ledger/accounts.html:19
+#: templates/ledger/accounts.html:20
 msgid "default"
 msgstr "default"
 
-#: templates/ledger/accounts.html:22
+#: templates/ledger/accounts.html:23
 #, python-format
 msgid "statement %(day)s"
 msgstr "statement %(day)s"
 
-#: templates/ledger/accounts.html:22
+#: templates/ledger/accounts.html:23
 #, python-format
 msgid "due %(day)s"
 msgstr "payment %(day)s"
 
-#: templates/ledger/accounts.html:28
+#: templates/ledger/accounts.html:29
 #, python-format
 msgid "of %(limit)s limit"
 msgstr "%(limit)s limit mein se"
 
-#: templates/ledger/accounts.html:28
+#: templates/ledger/accounts.html:29
 msgid "outstanding"
 msgstr "baaki"
 
-#: templates/ledger/accounts.html:35
+#: templates/ledger/accounts.html:36
 msgid ""
 "No accounts yet. Add your savings account, cards and cash — and pick one as "
 "the default for new transactions."
@@ -863,7 +868,7 @@ msgid "Add an account"
 msgstr "Account jodo"
 
 #: templates/ledger/home.html:12 templates/ledger/import.html:2
-#: templates/ledger/import.html:4 views.py:264
+#: templates/ledger/import.html:4 views.py:263
 msgid "Import CSV"
 msgstr "CSV import karo"
 
@@ -1081,7 +1086,7 @@ msgstr "%(n_dup)s pehle se import lagti hain (untick hain)"
 msgid "%(n_bad)s need fixing"
 msgstr "%(n_bad)s theek karni hain"
 
-#: templates/ledger/inbox.html:2 views.py:79
+#: templates/ledger/inbox.html:2 views.py:77
 msgid "Inbox"
 msgstr "Inbox"
 
@@ -1218,7 +1223,7 @@ msgid "Hide settled"
 msgstr "Barabar wale chhupao"
 
 #: templates/ledger/recurring.html:2 templates/ledger/recurring_edit.html:4
-#: templates/ledger/search.html:51 views.py:77
+#: templates/ledger/search.html:51 views.py:75
 msgid "Recurring"
 msgstr "Har mahine wale"
 
@@ -1361,11 +1366,6 @@ msgstr[1] "%(n)s results"
 #: templates/ledger/search.html:78
 msgid "Transactions"
 msgstr "Transactions"
-
-#: templates/ledger/settings.html:2 templates/ledger/settings.html:4
-#: views.py:80
-msgid "More"
-msgstr "Aur"
 
 #: templates/ledger/settings.html:15
 msgid "Language"
@@ -1596,175 +1596,179 @@ msgstr "Andar chalo"
 msgid "🔥 %(n)d-day streak!"
 msgstr "🔥 %(n)d din ki streak!"
 
-#: views.py:127
+#: views.py:125
 msgid "Chai counts. So does the samosa."
 msgstr "Chai bhi ginti mein hai. Samosa bhi."
 
-#: views.py:128
+#: views.py:126
 msgid "Future you says thanks for writing this down."
 msgstr "Aage wale aap shukriya bol rahe hain ki aapne yeh likh liya."
 
-#: views.py:129
+#: views.py:127
 msgid "Every rupee has a story. What's today's?"
 msgstr "Har rupaye ki ek kahani hai. Aaj ki kya hai?"
 
-#: views.py:130
+#: views.py:128
 msgid "Paisa ped pe nahi ugta — but it does grow when you watch it."
 msgstr "Paisa ped pe nahi ugta — par nazar rakho toh badhta zaroor hai."
 
-#: views.py:131
+#: views.py:129
 msgid "UPI made spending effortless. We're making remembering effortless."
 msgstr "UPI ne kharcha aasaan kiya. Hum yaad rakhna aasaan kar rahe hain."
 
-#: views.py:132
+#: views.py:130
 msgid "No judgement here. Just numbers."
 msgstr "Yahan koi taana nahi. Bas hisaab."
 
-#: views.py:133
+#: views.py:131
 msgid "Small change, big picture."
 msgstr "Chhoti chillar, badi picture."
 
-#: views.py:134
+#: views.py:132
 msgid "A 10-second log a day keeps the month-end panic away."
 msgstr "Roz 10 second ka hisaab, mahine ke end ka tension door."
 
-#: views.py:135
+#: views.py:133
 msgid "Who spent all the money? Let's find out (it was Swiggy)."
 msgstr "Saara paisa kisne udaya? Chalo pata karein (Swiggy ne)."
 
-#: views.py:153
+#: views.py:151
 #, python-format
 msgid "Good morning, %(name)s"
 msgstr "Good morning, %(name)s"
 
-#: views.py:155
+#: views.py:153
 #, python-format
 msgid "Good afternoon, %(name)s"
 msgstr "Namaste, %(name)s"
 
-#: views.py:157
+#: views.py:155
 #, python-format
 msgid "Good evening, %(name)s"
 msgstr "Good evening, %(name)s"
 
-#: views.py:158
+#: views.py:156
 #, python-format
 msgid "Up late, %(name)s"
 msgstr "Der tak jaag rahe ho, %(name)s"
 
-#: views.py:167
+#: views.py:165
 msgid "Noted ✍️"
 msgstr "Likh liya ✍️"
 
-#: views.py:167
+#: views.py:165
 msgid "Logged. Every paisa accounted for."
 msgstr "Likh liya. Ek-ek paise ka hisaab."
 
-#: views.py:167
+#: views.py:165
 msgid "Got it — future you approves."
 msgstr "Ho gaya — aage wale aap khush honge."
 
-#: views.py:236
+#: views.py:234
 msgid "Set an amount before confirming."
 msgstr "Pakka karne se pehle amount daalo."
 
-#: views.py:257
+#: views.py:255
 msgid "Notification settings saved."
 msgstr "Notification settings save ho gayi."
 
-#: views.py:264
+#: views.py:262
+msgid "Balances, cards, credit lines and the default account"
+msgstr "Balance, card, credit line aur default account"
+
+#: views.py:263
 msgid "Bring in history from a spreadsheet"
 msgstr "Spreadsheet se purana hisaab lao"
 
-#: views.py:265
+#: views.py:264
 msgid "Admin"
 msgstr "Admin"
 
-#: views.py:265
+#: views.py:264
 msgid "Categories, tags, SMS templates, everything"
 msgstr "Categories, tags, SMS templates, sab kuch"
 
-#: views.py:289
+#: views.py:288
 msgid "Paisapeek says hi 👋"
 msgstr "Paisapeek ki taraf se namaste 👋"
 
-#: views.py:289
+#: views.py:288
 msgid "Notifications work. We'll nudge you, not nag you."
 msgstr ""
 "Notifications chal rahe hain. Hum yaad dilayenge, pareshaan nahi karenge."
 
-#: views.py:323
+#: views.py:322
 msgid "Choose a backup file."
 msgstr "Backup file chuno."
 
-#: views.py:325
+#: views.py:324
 msgid "Tick “replace my current data” to restore over existing data."
 msgstr ""
 "Abhi ke data pe restore karne ke liye “mera abhi ka data badal do” pe tick "
 "karo."
 
-#: views.py:332
+#: views.py:331
 #, python-format
 msgid "Restored: %(items)s."
 msgstr "Wapas aa gaya: %(items)s."
 
-#: views.py:354
+#: views.py:353
 msgid "This account has transactions, so it can't be deleted."
 msgstr "Is account mein transactions hain, isliye ise hataya nahi ja sakta."
 
-#: views.py:361
+#: views.py:360
 msgid "Account saved."
 msgstr "Account save ho gaya."
 
-#: views.py:376
+#: views.py:375
 #, python-format
 msgid "%(name)s added 🗓️ — we'll remind you on time."
 msgstr "%(name)s jud gaya 🗓️ — time pe yaad dila denge."
 
-#: views.py:413
+#: views.py:412
 #, python-format
 msgid "Logged %(name)s as received; next on %(date)s."
 msgstr "%(name)s mil gaya likh liya; agli baar %(date)s ko."
 
-#: views.py:414
+#: views.py:413
 #, python-format
 msgid "Logged %(name)s as sent; next on %(date)s."
 msgstr "%(name)s bhej diya likh liya; agli baar %(date)s ko."
 
-#: views.py:415
+#: views.py:414
 #, python-format
 msgid "Logged %(name)s as paid; next on %(date)s."
 msgstr "%(name)s chuka diya likh liya; agli baar %(date)s ko."
 
-#: views.py:465
+#: views.py:464
 msgid "Tick at least one row to add."
 msgstr "Jodne ke liye kam se kam ek row chuno."
 
-#: views.py:469
+#: views.py:468
 #, python-format
 msgid "Added %(n)d transaction — nicely done 🪙"
 msgid_plural "Added %(n)d transactions — nicely done 🪙"
 msgstr[0] "%(n)d transaction jud gaya — shabaash 🪙"
 msgstr[1] "%(n)d transactions jud gaye — shabaash 🪙"
 
-#: views.py:477
+#: views.py:476
 msgid "Fix the highlighted rows."
 msgstr "Nishaan wali rows theek karo."
 
-#: views.py:510
+#: views.py:509
 msgid "Choose a CSV file."
 msgstr "CSV file chuno."
 
-#: views.py:512
+#: views.py:511
 msgid "File is over 2 MB; split it up."
 msgstr "File 2 MB se badi hai; ise tod lo."
 
-#: views.py:600
+#: views.py:599
 #, python-format
 msgid "Noted in %(name)s's ledger ✍️"
 msgstr "%(name)s ke hisaab mein likh liya ✍️"
 
-#: views.py:607
+#: views.py:606
 msgid "Has transactions; reassign or delete those first."
 msgstr "Isme transactions hain; pehle unhe badlo ya hatao."
 
