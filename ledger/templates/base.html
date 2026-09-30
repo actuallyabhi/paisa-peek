@@ -78,7 +78,7 @@
   {% if user.is_authenticated %}
   {# Phones: thumb-reachable tab bar instead of the header links. #}
   <nav class="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden" aria-label="{% translate "Main" %}">
-    <div class="grid grid-cols-5 text-[11px]">
+    <div class="grid grid-cols-6 text-[10px]">
       {% for name, label, active, icon in tabs %}
       <a href="{% url name %}" class="flex flex-col items-center gap-0.5 py-2 {% if u in active %}font-semibold text-brand{% else %}text-muted{% endif %}" {% if u in active %}aria-current="page"{% endif %}>
         <span class="relative">

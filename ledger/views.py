@@ -1,8 +1,10 @@
 import json
+import tomllib
 from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
 from itertools import groupby
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction as db_tx
@@ -63,15 +65,19 @@ def _celebrate(request, message, txns=(), recurring=()):
     messages.success(request, message, extra_tags="celebrate")
 
 
-# (url name, label, url names that highlight it, SVG icon). Recurring, Import and Search live under "More"/the header.
+# (url name, label, url names that highlight it, SVG icon). Import and Search live under "More"/the header.
+VERSION = tomllib.loads((settings.BASE_DIR / "pyproject.toml").read_text())["project"]["version"]
+
 TABS = [
     ("home", gettext_lazy("Home"), {"home", "txn_edit"}, '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>'),
     ("people", gettext_lazy("People"), {"people", "party"},
      '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.3a5 5 0 0 1 5.5 4.7"/>'),
     ("accounts", gettext_lazy("Accounts"), {"accounts", "account_edit", "account_new"},
      '<rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M2.5 9.5h19M6 15h4"/>'),
+    ("recurring", gettext_lazy("Recurring"), {"recurring", "recurring_edit"},
+     '<rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4M9 15l2 2 4-4"/>'),
     ("inbox", gettext_lazy("Inbox"), {"inbox"}, '<path d="M3 13l2.5-8h13L21 13v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M3 13h5l1.5 2.5h5L16 13h5"/>'),
-    ("settings", gettext_lazy("More"), {"settings", "import_csv", "recurring", "recurring_edit"},
+    ("settings", gettext_lazy("More"), {"settings", "import_csv"},
      '<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>'),
 ]
 
@@ -253,8 +259,8 @@ def settings_page(request):
     return render(request, "ledger/settings.html", {
         "token": ApiToken.current(), "base": request.build_absolute_uri("/")[:-1], "notify": notify,
         "vapid_key": push.public_key(), "devices": PushSubscription.objects.count(),
+        "version": VERSION,
         "links": [
-            (reverse("recurring"), _("Recurring income & bills"), _("Salary, stipends, subscriptions: reminders + one tap")),
             (reverse("import_csv"), _("Import CSV"), _("Bring in history from a spreadsheet")),
             (reverse("admin:index"), _("Admin"), _("Categories, tags, SMS templates, everything")),
         ],

@@ -1,8 +1,7 @@
 {% extends "base.html" %}{% load money i18n %}
 {% block title %}{% translate "Recurring" %}{% endblock %}
 {% block content %}
-<a href="{% url 'settings' %}" class="text-sm text-muted hover:underline">← {% translate "More" %}</a>
-<h1 class="mb-1 mt-1 text-xl font-semibold sm:text-2xl">{% translate "Recurring income & bills" %}</h1>
+<h1 class="mb-1 text-xl font-semibold sm:text-2xl">{% translate "Recurring income & bills" %}</h1>
 <p class="mb-4 text-sm text-muted">{% translate "Salary, stipends, rent, recharges, subscriptions… You get a reminder on each date (time under More → Notifications). Tap Received / Paid to log it and move to the next date." %}</p>
 
 <div class="stats">

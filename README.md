@@ -93,7 +93,7 @@ What you can get:
 - recurring income (salary, stipend) and bills/subscriptions, on the date or N days before (**More → Recurring**, where **Received**/**Paid** logs the transaction and moves the date on)
 - credit card **statement day** and **payment due day** reminders, set on each card
 
-The `scheduler` service in `docker-compose.yml` sends them (`python manage.py reminders --loop`). Set `VAPID_SUBJECT=mailto:you@yourdomain` in `.env`; Apple's push service rejects placeholder addresses.
+The `scheduler` service in `docker-compose.yml` sends them (`python manage.py reminders --loop`). Set `VAPID_SUBJECT=mailto:you@example.com` in `.env`; Apple's push service rejects placeholder addresses.
 
 ## Ramble: say several transactions at once
 

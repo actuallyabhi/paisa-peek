@@ -976,11 +976,13 @@ class AssetVersionTests(TestCase):
 
 
 class NavTests(TestCase):
-    def test_recurring_lives_under_more(self):
+    def test_recurring_is_a_tab_and_more_has_about(self):
         self.client.force_login(User.objects.create_user("u", password="x"))
-        home = self.client.get("/").content.decode()
-        header = home.split("<main", 1)[0]
-        self.assertNotIn('href="/recurring/"', header)  # not a top-bar tab any more
-        self.assertContains(self.client.get("/settings/"), 'href="/recurring/"')  # reachable from More
-        more = [label for name, label, active, icon in self.client.get("/recurring/").context["tabs"] if "recurring" in active]
-        self.assertEqual([str(m) for m in more], ["More"])  # More stays highlighted on Recurring pages
+        header = self.client.get("/").content.decode().split("<main", 1)[0]
+        self.assertIn('href="/recurring/"', header)
+        more = self.client.get("/settings/")
+        self.assertNotIn("/recurring/", [url for url, label, hint in more.context["links"]])
+        self.assertContains(more, 'href="https://github.com/4-bit-soft/paisa-peek"')
+        self.assertContains(more, "Abhishek Maurya")
+        active = [label for name, label, act, icon in self.client.get("/recurring/").context["tabs"] if "recurring" in act]
+        self.assertEqual([str(a) for a in active], ["Recurring"])  # More stays highlighted on Recurring pages
