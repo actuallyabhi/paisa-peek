@@ -1,10 +1,10 @@
-<p align="center"><img src="ledger/static/ledger/icon.svg" width="96" alt="Damdi coin logo"></p>
+<p align="center"><img src="ledger/static/ledger/icon.svg" width="96" alt="Paisapeek logo: a gold coin with an eye"></p>
 
-# Damdi
+# Paisapeek
 
-> *Chamdi jaaye, par damdi na jaaye.*
+> *Peek at your paisa. Keep more of it.*
 
-A **damdi** was one of the smallest coins in old India. The saying above is the classic miser's line: "I'd give up my skin before a single damdi." Damdi is a self-hosted money diary for people who want to know where every damdi goes, without handing their bank SMS to a cloud app.
+Paisapeek is a self-hosted money diary for people who want to know where every penny goes, without handing their bank SMS to a cloud app.
 
 - **Tell it what you spent.** Type or dictate *"450 petrol, 200 chai with Akhand, lent 500 to Om"* and review the cards before adding them.
 - **Bank SMS turn into transactions automatically.** Duplicates are merged and you confirm each one in an inbox.
@@ -12,6 +12,7 @@ A **damdi** was one of the smallest coins in old India. The saying above is the 
 - **Accounts.** Savings, cards, credit lines and cash, with real balances and card statement and due-date reminders.
 - **Recurring income and bills,** with push reminders and one-tap Paid / Received.
 - **Installable on your phone (PWA),** with light and dark themes. It works on mobile first.
+- **English and हिन्दी.** Adding a language is one `.po` file.
 - **Full JSON backup and restore, plus CSV import and export.**
 
 Built with Django, Django Ninja, HTMX and Tailwind, on SQLite. It's a single Docker volume.
@@ -52,7 +53,7 @@ Parsed transactions land in **Inbox** as *pending*: confirm them with a category
 
 ## On your phone (PWA)
 
-Damdi is built for the phone:
+Paisapeek is built for the phone:
 - a bottom tab bar
 - the Ramble box at the top of Home
 - Home can show a week or a month, with spending grouped by day
@@ -148,6 +149,34 @@ Only `amount` is required.
 - the Jan 24–25 trip
 - the Sept 2025 card bills, as transfers
 
+## Languages
+
+Paisapeek currently ships in English and हिन्दी. Use the 🌐 switcher in the header; until you pick one, your browser's language is used.
+
+It's standard Django i18n:
+- UI text is marked with `{% translate %}` / `gettext` in the code.
+- `makemessages` extracts it into one `.po` file per language, at `ledger/locale/<code>/LC_MESSAGES/django.po`.
+- `compilemessages` builds the `.mo` that Django loads.
+
+**Add a language**, e.g. Marathi:
+
+1. Add `("mr", "मराठी")` to `LANGUAGES` in `config/settings.py`.
+2. Extract the strings:
+   ```bash
+   cd ledger && uv run ../manage.py makemessages -l mr --ignore tests.py
+   ```
+3. Translate the `msgstr` lines in `ledger/locale/mr/LC_MESSAGES/django.po`, using any `.po` editor (Poedit, Weblate, or a text editor).
+4. Compile:
+   ```bash
+   uv run manage.py compilemessages
+   ```
+   Then run the tests; `test_catalog_is_complete` fails if a string is untranslated or not compiled.
+
+A few notes:
+- Default category names are translated for display. Names you create stay as you typed them.
+- Dates and month names come from Django's locale data, with a few Hindi spelling fixes in our catalog.
+- CSV column names stay in English.
+
 ## Backup, restore & export
 
 **More → Backup & restore**, or the welcome card on a fresh install, offers three things.
@@ -160,7 +189,7 @@ Only `amount` is required.
 - categories and SMS templates
 - notification settings and the SMS token
 
-It restores on any Damdi install. The `data` inside is Django's standard serialization, so `manage.py loaddata` reads it, and the Restore button accepts plain `manage.py dumpdata ledger` output too. Login users and push-enabled devices aren't included. The file contains your SMS token, so keep it private.
+It restores on any Paisapeek install. The `data` inside is Django's standard serialization, so `manage.py loaddata` reads it, and the Restore button accepts plain `manage.py dumpdata ledger` output too. Login users and push-enabled devices aren't included. The file contains your SMS token, so keep it private.
 
 **Restore** replaces all current data in one step: if anything in the file is bad, nothing changes. Before overwriting, it saves the current data to `DATA_DIR/backups/before-restore-*.json`.
 
@@ -177,3 +206,6 @@ It restores on any Damdi install. The `data` inside is Django's standard seriali
 - [x] Week/month home, mobile UI + installable PWA, accounts with balances, recurring, push reminders
 - [ ] Budgets per category
 - [ ] CSV import/export, Caddy HTTPS example
+- [ ] Add interest rates of savings account and the interest credit duration and a cron job which run to do the calculation and increase the amount based on it. 
+- 
+

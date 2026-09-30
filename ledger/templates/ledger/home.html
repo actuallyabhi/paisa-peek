@@ -1,15 +1,15 @@
-{% extends "base.html" %}{% load money %}
+{% extends "base.html" %}{% load money i18n %}
 {% block title %}{{ p.label }}{% endblock %}
 {% block content %}
 
 {% if onboarding %}
 <section class="card mb-4 space-y-3 p-5">
-  <h1 class="text-2xl font-extrabold">Namaste! 👋</h1>
-  <p class="text-sm text-muted">Moving in from another phone or server? Restore your backup. Starting fresh? Add your main account, then just tell Damdi what you spend.</p>
+  <h1 class="text-2xl font-extrabold">{% translate "Namaste! 👋" %}</h1>
+  <p class="text-sm text-muted">{% translate "Moving in from another phone or server? Restore your backup. Starting fresh? Add your main account, then just tell Paisapeek what you spend." %}</p>
   {% include "ledger/_restore_form.html" with next="/" %}
   <div class="grid grid-cols-2 gap-2">
-    <a href="{% url 'account_new' %}" class="btn">Add an account</a>
-    <a href="{% url 'import_csv' %}" class="btn-secondary">Import CSV</a>
+    <a href="{% url 'account_new' %}" class="btn">{% translate "Add an account" %}</a>
+    <a href="{% url 'import_csv' %}" class="btn-secondary">{% translate "Import CSV" %}</a>
   </div>
 </section>
 {% else %}
@@ -20,9 +20,9 @@
   </div>
   {% with n=streak.0 logged=streak.1 %}
     {% if n >= 2 %}
-      <span class="chip shrink-0 bg-gold-soft py-1 text-sm" title="{{ n }} days in a row with something logged">🔥 {{ n }}-day streak</span>
+      <span class="chip shrink-0 bg-gold-soft py-1 text-sm" title="{% blocktranslate %}{{ n }} days in a row with something logged{% endblocktranslate %}">🔥 {% blocktranslate %}{{ n }}-day streak{% endblocktranslate %}</span>
     {% elif logged %}
-      <span class="chip shrink-0 bg-good-soft py-1 text-sm text-good">✓ logged today</span>
+      <span class="chip shrink-0 bg-good-soft py-1 text-sm text-good">✓ {% translate "logged today" %}</span>
     {% endif %}
   {% endwith %}
 </div>
@@ -32,15 +32,15 @@
 <section class="mb-5 rounded-3xl bg-ink p-4 text-paper">
   <form hx-post="{% url 'ramble_parse' %}" hx-target="#review" hx-indicator="#parsing" hx-disabled-elt="find button" class="space-y-3">
     <label for="ramble-text" class="block">
-      <span class="font-display text-lg font-extrabold">Kya kharcha hua?</span>
-      <span class="block text-xs opacity-70">Say it or type it — “450 petrol, 200 chai with Akhand, lent 500 to Om”.</span>
+      <span class="font-display text-lg font-extrabold">{% translate "Kya kharcha hua?" %}</span>
+      <span class="block text-xs opacity-70">{% translate "Say it or type it — “450 petrol, 200 chai with Akhand, lent 500 to Om”." %}</span>
     </label>
     <textarea id="ramble-text" name="text" rows="2" required {% if focus_log %}autofocus{% endif %}
-      class="border-transparent! bg-paper! text-ink!" placeholder="🎤 tap the mic on your keyboard…"></textarea>
+      class="border-transparent! bg-paper! text-ink!" placeholder="{% translate "🎤 tap the mic on your keyboard…" %}"></textarea>
     <div class="flex items-center justify-between gap-2">
-      <span id="parsing" class="htmx-indicator text-xs opacity-70">Counting coins…</span>
-      <span class="text-xs opacity-60">{% if not llm_on %}built-in parser{% endif %}</span>
-      <button class="btn shrink-0">Ramble it</button>
+      <span id="parsing" class="htmx-indicator text-xs opacity-70">{% translate "Counting coins…" %}</span>
+      <span class="text-xs opacity-60">{% if not llm_on %}{% translate "built-in parser" %}{% endif %}</span>
+      <button class="btn shrink-0">{% translate "Ramble it" %}</button>
     </div>
   </form>
   <div id="review" class="mt-3 rounded-2xl bg-paper text-ink empty:hidden"></div>
@@ -48,45 +48,45 @@
 
 {# Period: week/month toggle + prev/next #}
 <div class="mb-3 flex items-center justify-between gap-2">
-  <div class="inline-flex rounded-full border border-line bg-card p-1 text-sm" role="group" aria-label="Period">
-    <a href="{{ p.week_link }}" class="rounded-full px-3.5 py-1 {% if p.view == 'week' %}bg-ink font-semibold text-paper{% endif %}" {% if p.view == 'week' %}aria-current="true"{% endif %}>Week</a>
-    <a href="{{ p.month_link }}" class="rounded-full px-3.5 py-1 {% if p.view == 'month' %}bg-ink font-semibold text-paper{% endif %}" {% if p.view == 'month' %}aria-current="true"{% endif %}>Month</a>
+  <div class="inline-flex rounded-full border border-line bg-card p-1 text-sm" role="group" aria-label="{% translate "Period" %}">
+    <a href="{{ p.week_link }}" class="rounded-full px-3.5 py-1 {% if p.view == 'week' %}bg-ink font-semibold text-paper{% endif %}" {% if p.view == 'week' %}aria-current="true"{% endif %}>{% translate "Week" %}</a>
+    <a href="{{ p.month_link }}" class="rounded-full px-3.5 py-1 {% if p.view == 'month' %}bg-ink font-semibold text-paper{% endif %}" {% if p.view == 'month' %}aria-current="true"{% endif %}>{% translate "Month" %}</a>
   </div>
   <div class="flex items-center">
-    <a href="{{ p.prev }}" class="grid h-9 w-9 place-items-center rounded-full text-lg hover:bg-sunk" aria-label="Previous">‹</a>
+    <a href="{{ p.prev }}" class="grid h-9 w-9 place-items-center rounded-full text-lg hover:bg-sunk" aria-label="{% translate "Previous" %}">‹</a>
     <h2 class="min-w-0 text-center text-sm font-semibold sm:text-base">{{ p.label }}</h2>
-    <a href="{{ p.next }}" class="grid h-9 w-9 place-items-center rounded-full text-lg hover:bg-sunk" aria-label="Next">›</a>
+    <a href="{{ p.next }}" class="grid h-9 w-9 place-items-center rounded-full text-lg hover:bg-sunk" aria-label="{% translate "Next" %}">›</a>
   </div>
 </div>
 
 <div class="mb-4 grid grid-cols-2 gap-3">
   <div class="card p-4">
-    <div class="text-xs font-medium uppercase tracking-wide text-muted">Spent</div>
+    <div class="text-xs font-medium uppercase tracking-wide text-muted">{% translate "Spent" %}</div>
     <div class="num-big text-2xl font-extrabold tabular-nums">{{ spent|inr }}</div>
-    {% if per_day %}<div class="mt-0.5 text-xs text-muted">≈ {{ per_day|inr }} a day</div>{% endif %}
+    {% if per_day %}<div class="mt-0.5 text-xs text-muted">{% blocktranslate with amount=per_day|inr %}≈ {{ amount }} a day{% endblocktranslate %}</div>{% endif %}
   </div>
   <div class="card p-4">
-    <div class="text-xs font-medium uppercase tracking-wide text-muted">Came in</div>
+    <div class="text-xs font-medium uppercase tracking-wide text-muted">{% translate "Came in" %}</div>
     <div class="num-big text-2xl font-extrabold tabular-nums text-good">{{ income|inr }}</div>
-    {% if income and spent %}<div class="mt-0.5 text-xs text-muted">{% if income > spent %}you're ahead 🎉{% else %}spending &gt; income 👀{% endif %}</div>{% endif %}
+    {% if income and spent %}<div class="mt-0.5 text-xs text-muted">{% if income > spent %}{% translate "you're ahead 🎉" %}{% else %}{% translate "spending > income 👀" %}{% endif %}</div>{% endif %}
   </div>
   {% if pending_count %}
   <a href="{% url 'inbox' %}" class="card col-span-2 flex items-center justify-between border-gold bg-gold-soft px-4 py-3">
-    <span class="text-sm font-medium">📬 {{ pending_count }} bank SMS waiting for a quick look</span><span aria-hidden="true">›</span>
+    <span class="text-sm font-medium">📬 {% blocktranslate count n=pending_count %}{{ n }} bank SMS waiting for a quick look{% plural %}{{ n }} bank SMS waiting for a quick look{% endblocktranslate %}</span><span aria-hidden="true">›</span>
   </a>
   {% endif %}
 </div>
 
+{% if daily.has_data %}{% include "ledger/_chart_daily.html" %}{% endif %}
+
 {% if by_cat %}
 <details class="card mb-4 p-4" {% if p.view == 'month' %}open{% endif %}>
-  <summary class="cursor-pointer font-display font-semibold">Where it went</summary>
+  <summary class="cursor-pointer font-display font-semibold">{% translate "Where it went" %}</summary>
   <div class="mt-3 space-y-2.5">
-  {% for c in by_cat %}
-    <div>
-      <div class="flex justify-between text-sm"><span>{{ c.category__name|default_if_none:"Uncategorized" }}</span><span class="tabular-nums">{{ c.total|inr }}</span></div>
-      <div class="mt-1 h-2 rounded-full bg-sunk">
-        <div class="h-2 rounded-full {% cycle 'bg-brand' 'bg-gold' 'bg-good' 'bg-ink' %}" style="width: {% widthratio c.total spent 100 %}%"></div>
-      </div>
+  {% for c in cat_rows %}
+    <div tabindex="0" data-tip-value="{{ c.total|inr }}" data-tip-label="{% if c.name %}{% translate c.name %}{% else %}{% translate "Uncategorized" %}{% endif %} · {{ c.share }}%">
+      <div class="flex justify-between text-sm"><span>{% if c.name %}{% translate c.name %}{% else %}{% translate "Uncategorized" %}{% endif %}</span><span class="tabular-nums">{{ c.total|inr }} <span class="text-xs text-muted">{{ c.share }}%</span></span></div>
+      <div class="mt-1 h-2 rounded-full bg-sunk"><div class="h-2 rounded-full bg-out" style="width: {{ c.w }}%"></div></div>
     </div>
   {% endfor %}
   </div>
@@ -94,14 +94,14 @@
 {% endif %}
 
 <details class="card mb-4 p-4" {% if form.errors %}open{% endif %}>
-  <summary class="cursor-pointer font-display font-semibold">Add one manually</summary>
-  <form method="post" class="mt-3 space-y-3">{% include "ledger/_form.html" %}<button class="btn w-full sm:w-auto">Add it</button></form>
-  <p class="mt-3 text-center text-sm"><a href="{% url 'import_csv' %}" class="text-muted underline">Got a spreadsheet? Import a CSV instead</a></p>
+  <summary class="cursor-pointer font-display font-semibold">{% translate "Add one manually" %}</summary>
+  <form method="post" class="mt-3 space-y-3">{% include "ledger/_form.html" %}<button class="btn w-full sm:w-auto">{% translate "Add it" %}</button></form>
+  <p class="mt-3 text-center text-sm"><a href="{% url 'import_csv' %}" class="text-muted underline">{% translate "Got a spreadsheet? Import a CSV instead" %}</a></p>
 </details>
 
 {% for day, items, day_spent in days %}
   <h3 class="mb-1.5 mt-5 flex items-baseline justify-between px-1">
-    <span class="font-display text-sm font-semibold">{% if day == today %}Today{% elif day == yesterday %}Yesterday{% else %}{{ day|date:"l, d M" }}{% endif %}</span>
+    <span class="font-display text-sm font-semibold">{% if day == today %}{% translate "Today" %}{% elif day == yesterday %}{% translate "Yesterday" %}{% else %}{{ day|date:"l, d M" }}{% endif %}</span>
     {% if day_spent %}<span class="text-xs tabular-nums text-muted">{{ day_spent|inr }}</span>{% endif %}
   </h3>
   <ul class="card divide-y divide-line overflow-hidden">
@@ -111,8 +111,8 @@
       <div class="min-w-0 flex-1">
         <div class="truncate font-medium">{{ t.description|default:t.merchant|default:t.get_kind_display }}</div>
         <div class="truncate text-xs text-muted">
-          {% if t.status == "pending" %}<span class="chip bg-gold-soft text-ink">pending</span>{% endif %}
-          {% if t.time %}<span class="tabular-nums">{{ t.time|time:"g:i A" }}</span> · {% endif %}{% if t.kind != "expense" %}{{ t.get_kind_display }} · {% endif %}{{ t.category|default:"" }}{% if t.category and t.account %} · {% endif %}{{ t.account|default:"" }}{% if t.to_account %} → {{ t.to_account }}{% endif %}
+          {% if t.status == "pending" %}<span class="chip bg-gold-soft text-ink">{% translate "pending" %}</span>{% endif %}
+          {% if t.time %}<span class="tabular-nums">{{ t.time|time:"g:i A" }}</span> · {% endif %}{% if t.kind != "expense" %}{{ t.get_kind_display }} · {% endif %}{% if t.category %}{% translate t.category.name %}{% endif %}{% if t.category and t.account %} · {% endif %}{{ t.account|default:"" }}{% if t.to_account %} → {{ t.to_account }}{% endif %}
           {% if t.party %}<span class="text-good">@{{ t.party }}</span>{% endif %}
           {% for tag in t.tags.all %}<span class="text-brand">#{{ tag }}</span>{% endfor %}
         </div>
@@ -124,8 +124,8 @@
 {% empty %}
   <div class="card p-8 text-center">
     <div class="text-4xl" aria-hidden="true">🪙</div>
-    <p class="mt-2 font-display font-semibold">{% if p.current %}Nothing logged this {{ p.view }} yet.{% else %}Nothing in this {{ p.view }}.{% endif %}</p>
-    <p class="text-sm text-muted">{% if p.current %}Either you're a saint, or you forgot. Tell the box above 😇{% else %}Quiet times. Or the diary was on holiday.{% endif %}</p>
+    <p class="mt-2 font-display font-semibold">{% if p.current %}{% if p.view == "week" %}{% translate "Nothing logged this week yet." %}{% else %}{% translate "Nothing logged this month yet." %}{% endif %}{% else %}{% if p.view == "week" %}{% translate "Nothing in this week." %}{% else %}{% translate "Nothing in this month." %}{% endif %}{% endif %}</p>
+    <p class="text-sm text-muted">{% if p.current %}{% translate "Either you're a saint, or you forgot. Tell the box above 😇" %}{% else %}{% translate "Quiet times. Or the diary was on holiday." %}{% endif %}</p>
   </div>
 {% endfor %}
 {% endblock %}

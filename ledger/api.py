@@ -28,7 +28,7 @@ class QueryAuth(APIKeyQuery):
         return _valid(key)
 
 
-api = NinjaAPI(title="Damdi API", auth=[BearerAuth(), QueryAuth()])
+api = NinjaAPI(title="Paisapeek API", auth=[BearerAuth(), QueryAuth()])
 
 
 class SmsIn(Schema):

@@ -1,15 +1,15 @@
-{% extends "base.html" %}{% load money %}
-{% block title %}Recurring{% endblock %}
+{% extends "base.html" %}{% load money i18n %}
+{% block title %}{% translate "Recurring" %}{% endblock %}
 {% block content %}
-<a href="{% url 'settings' %}" class="text-sm text-muted hover:underline sm:hidden">← More</a>
-<h1 class="mb-1 mt-1 text-xl font-semibold sm:text-2xl">Recurring income &amp; bills</h1>
-<p class="mb-4 text-sm text-muted">Salary, stipends, rent, recharges, subscriptions… You get a reminder on each date (time under More → Notifications). Tap <b>Received</b> / <b>Paid</b> to log it and move to the next date.</p>
+<a href="{% url 'settings' %}" class="text-sm text-muted hover:underline sm:hidden">← {% translate "More" %}</a>
+<h1 class="mb-1 mt-1 text-xl font-semibold sm:text-2xl">{% translate "Recurring income & bills" %}</h1>
+<p class="mb-4 text-sm text-muted">{% translate "Salary, stipends, rent, recharges, subscriptions… You get a reminder on each date (time under More → Notifications). Tap Received / Paid to log it and move to the next date." %}</p>
 
 <div class="mb-4 grid grid-cols-3 gap-2 sm:gap-3">
-  <div class="card p-3"><div class="text-xs text-muted">In / month</div><div class="font-semibold tabular-nums text-good sm:text-lg">{{ money_in|inr }}</div></div>
-  <div class="card p-3"><div class="text-xs text-muted">Bills / month</div><div class="font-semibold tabular-nums sm:text-lg">{{ money_out|inr }}</div>
-    {% if minimum %}<div class="text-[11px] text-muted">essentials {{ minimum|inr }}</div>{% endif %}</div>
-  <div class="card p-3"><div class="text-xs text-muted">Left / month</div><div class="font-semibold tabular-nums sm:text-lg {% if net < 0 %}text-bad{% endif %}">{{ net|inr }}</div></div>
+  <div class="card p-3"><div class="text-xs text-muted">{% translate "In / month" %}</div><div class="font-semibold tabular-nums text-good sm:text-lg">{{ money_in|inr }}</div></div>
+  <div class="card p-3"><div class="text-xs text-muted">{% translate "Bills / month" %}</div><div class="font-semibold tabular-nums sm:text-lg">{{ money_out|inr }}</div>
+    {% if minimum %}<div class="text-[11px] text-muted">{% blocktranslate with amount=minimum|inr %}essentials {{ amount }}{% endblocktranslate %}</div>{% endif %}</div>
+  <div class="card p-3"><div class="text-xs text-muted">{% translate "Left / month" %}</div><div class="font-semibold tabular-nums sm:text-lg {% if net < 0 %}text-bad{% endif %}">{{ net|inr }}</div></div>
 </div>
 
 <ul class="card mb-4 divide-y divide-line">
@@ -17,28 +17,32 @@
   <li class="px-3 py-3 {% if not r.active %}opacity-50{% endif %}">
     <div class="flex items-start gap-3">
       <a href="{% url 'recurring_edit' r.pk %}" class="min-w-0 flex-1">
-        <div class="truncate font-medium">{{ r.name }}{% if r.is_income %} <span class="rounded bg-good-soft px-1.5 text-xs font-normal text-good">income</span>{% elif r.essential %} <span class="text-xs text-muted">· essential</span>{% endif %}</div>
-        <div class="text-xs text-muted"><span class="{% if r.is_income %}font-medium text-good{% endif %}">{% if r.is_income %}+{% endif %}{{ r.amount|inr }}</span> {{ r.cadence }}{% if r.unit != "month" or r.every != 1 %} · ≈{{ r.monthly_cost|inr }}/mo{% endif %}</div>
+        <div class="truncate font-medium">{{ r.name }}{% if r.is_income %} <span class="rounded bg-good-soft px-1.5 text-xs font-normal text-good">{% translate "income" %}</span>{% elif r.essential %} <span class="text-xs text-muted">· {% translate "essential" %}</span>{% endif %}</div>
+        <div class="text-xs text-muted"><span class="{% if r.is_income %}font-medium text-good{% endif %}">{% if r.is_income %}+{% endif %}{{ r.amount|inr }}</span> {{ r.cadence }}{% if r.unit != "month" or r.every != 1 %} · {% blocktranslate with amount=r.monthly_cost|inr %}≈{{ amount }}/mo{% endblocktranslate %}{% endif %}</div>
         <div class="text-xs {% if r.next_due < today %}font-medium text-bad{% elif r.next_due == today %}font-medium text-ink{% else %}text-muted{% endif %}">
-          {% if r.next_due < today %}{% if r.is_income %}Expected since{% else %}Overdue since{% endif %} {{ r.next_due|date:"d M" }}{% elif r.next_due == today %}{% if r.is_income %}Expected today{% else %}Due today{% endif %}{% else %}Next {{ r.next_due|date:"D, d M Y" }}{% endif %}
+          {% with day=r.next_due|date:"d M" %}
+          {% if r.next_due < today %}{% if r.is_income %}{% blocktranslate %}Expected since {{ day }}{% endblocktranslate %}{% else %}{% blocktranslate %}Overdue since {{ day }}{% endblocktranslate %}{% endif %}
+          {% elif r.next_due == today %}{% if r.is_income %}{% translate "Expected today" %}{% else %}{% translate "Due today" %}{% endif %}
+          {% else %}{% blocktranslate with day=r.next_due|date:"D, d M Y" %}Next {{ day }}{% endblocktranslate %}{% endif %}
+          {% endwith %}
         </div>
       </a>
       {% if r.active %}
       <form method="post" action="{% url 'recurring_done' r.pk %}" class="flex shrink-0 gap-1.5">
         {% csrf_token %}
-        <button name="action" value="skip" class="btn-secondary px-3 text-sm">Skip</button>
-        <button name="action" value="paid" class="btn px-3 text-sm {% if r.is_income %}bg-good hover:brightness-110 {% endif %}">{% if r.is_income %}Received{% else %}Paid{% endif %}</button>
+        <button name="action" value="skip" class="btn-secondary px-3 text-sm">{% translate "Skip" %}</button>
+        <button name="action" value="paid" class="btn px-3 text-sm {% if r.is_income %}bg-good hover:brightness-110 {% endif %}">{% if r.is_income %}{% translate "Received" %}{% else %}{% translate "Paid" %}{% endif %}</button>
       </form>
       {% endif %}
     </div>
   </li>
 {% empty %}
-  <li class="p-6 text-center text-sm text-muted">Nothing yet — add your salary or stipend, rent, recharge, Wi-Fi, gym, subscriptions below.</li>
+  <li class="p-6 text-center text-sm text-muted">{% translate "Nothing yet — add your salary or stipend, rent, recharge, Wi-Fi, gym, subscriptions below." %}</li>
 {% endfor %}
 </ul>
 
 <details class="card p-4" {% if form.errors or not items %}open{% endif %}>
-  <summary class="cursor-pointer font-medium">Add recurring</summary>
-  <form method="post" class="mt-3 space-y-3">{% include "ledger/_form.html" %}<button class="btn w-full sm:w-auto">Add</button></form>
+  <summary class="cursor-pointer font-medium">{% translate "Add recurring" %}</summary>
+  <form method="post" class="mt-3 space-y-3">{% include "ledger/_form.html" %}<button class="btn w-full sm:w-auto">{% translate "Add" %}</button></form>
 </details>
 {% endblock %}

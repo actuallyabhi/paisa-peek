@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "Damdi",
-  "short_name": "Damdi",
-  "description": "Your self-hosted money diary. Chamdi jaaye, par damdi na jaaye.",
+  "name": "Paisapeek",
+  "short_name": "Paisapeek",
+  "description": "Your self-hosted money diary. Peek at your paisa, keep more of it.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

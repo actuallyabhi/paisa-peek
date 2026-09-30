@@ -16,9 +16,9 @@ class Command(BaseCommand):
 
         folder = settings.DATA_DIR / "backups"
         folder.mkdir(exist_ok=True)
-        path = folder / f"damdi-{timezone.localtime():%Y%m%d-%H%M%S}.json"
+        path = folder / f"paisapeek-{timezone.localtime():%Y%m%d-%H%M%S}.json"
         path.write_text(json.dumps(backup.export(), ensure_ascii=False))
         # Rotate only our scheduled files; "before-restore-*" safety copies are left alone.
-        for old in sorted(folder.glob("damdi-*.json"))[:-keep] if keep > 0 else []:
+        for old in sorted(folder.glob("paisapeek-*.json"))[:-keep] if keep > 0 else []:
             old.unlink()
         self.stdout.write(str(path))

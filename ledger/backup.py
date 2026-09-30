@@ -21,8 +21,8 @@ from django.utils import timezone
 
 from .models import Account, ApiToken, Category, NotifySettings, Party, Recurring, SmsTemplate, Tag, Transaction
 
-FORMAT, VERSION = "damdi-backup", 1
-LEGACY_FORMATS = {"budget-backup"}  # files exported before the rename
+FORMAT, VERSION = "paisapeek-backup", 1
+LEGACY_FORMATS = {"budget-backup", "damdi-backup"}  # files exported under earlier names
 # Dependency order: everything a row points to comes before it.
 MODELS = [Category, Tag, Party, Account, SmsTemplate, Transaction, Recurring, NotifySettings, ApiToken]
 LABELS = {m._meta.label_lower: i for i, m in enumerate(MODELS)}  # "ledger.transaction" -> 5
@@ -49,15 +49,15 @@ def restore(raw: bytes) -> dict:
     try:
         doc = json.loads(raw)
     except (ValueError, UnicodeDecodeError):
-        raise RestoreError("That isn't a Damdi backup (not valid JSON).")
+        raise RestoreError("That isn't a Paisapeek backup (not valid JSON).")
     if isinstance(doc, dict) and (doc.get("format") == FORMAT or doc.get("format") in LEGACY_FORMATS):
         if doc.get("version", 1) > VERSION:
-            raise RestoreError("This backup is from a newer version of Damdi; update the app first.")
+            raise RestoreError("This backup is from a newer version of Paisapeek; update the app first.")
         rows = doc.get("data")
     else:
         rows = doc  # plain `manage.py dumpdata ledger` output
     if not isinstance(rows, list) or not all(isinstance(r, dict) for r in rows):
-        raise RestoreError("That isn't a Damdi backup.")
+        raise RestoreError("That isn't a Paisapeek backup.")
     unexpected = sorted({str(r.get("model")) for r in rows} - LABELS.keys())
     if unexpected:  # never load users, sessions or anything outside the ledger from an uploaded file
         raise RestoreError(f"Backup contains records this app doesn't restore: {', '.join(unexpected)}")

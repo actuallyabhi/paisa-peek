@@ -1,8 +1,8 @@
-{% extends "base.html" %}{% load money %}
-{% block title %}{% if a %}{{ a.name }}{% else %}New account{% endif %}{% endblock %}
+{% extends "base.html" %}{% load money i18n %}
+{% block title %}{% if a %}{{ a.name }}{% else %}{% translate "New account" %}{% endif %}{% endblock %}
 {% block content %}
-<a href="{% url 'accounts' %}" class="text-sm text-muted hover:underline">← Accounts</a>
-<h1 class="mb-4 mt-1 text-xl font-semibold sm:text-2xl">{% if a %}{{ a.name }}{% else %}New account{% endif %}</h1>
+<a href="{% url 'accounts' %}" class="text-sm text-muted hover:underline">← {% translate "Accounts" %}</a>
+<h1 class="mb-4 mt-1 text-xl font-semibold sm:text-2xl">{% if a %}{{ a.name }}{% else %}{% translate "New account" %}{% endif %}</h1>
 
 <form method="post" class="card space-y-3 p-4">
   {% csrf_token %}
@@ -18,7 +18,7 @@
       </label>
     {% endfor %}
   </div>
-  <button class="btn w-full sm:w-auto">Save</button>
+  <button class="btn w-full sm:w-auto">{% translate "Save" %}</button>
 </form>
 <script>
   // Limit, statement and due day only matter for cards, credit lines and loans.
@@ -30,22 +30,22 @@
 </script>
 
 {% if a %}
-<h2 class="mb-1 mt-6 px-1 text-xs font-medium uppercase tracking-wide text-muted">Recent</h2>
+<h2 class="mb-1 mt-6 px-1 text-xs font-medium uppercase tracking-wide text-muted">{% translate "Recent" %}</h2>
 <ul class="card divide-y divide-line">
 {% for t in recent %}
   <li><a href="{% url 'txn_edit' t.pk %}?next={% url 'account_edit' a.pk %}" class="flex items-center gap-3 px-3 py-2.5">
     <div class="min-w-0 flex-1">
       <div class="truncate">{{ t.description|default:t.merchant|default:t.get_kind_display }}</div>
-      <div class="truncate text-xs text-muted">{{ t.date|date:"d M Y" }}{% if t.time %}, {{ t.time|time:"g:i A" }}{% endif %}{% if t.category %} · {{ t.category }}{% endif %}{% if t.party %} · @{{ t.party }}{% endif %}{% if t.status == "pending" %} · pending{% endif %}</div>
+      <div class="truncate text-xs text-muted">{{ t.date|date:"d M Y" }}{% if t.time %}, {{ t.time|time:"g:i A" }}{% endif %}{% if t.category %} · {% translate t.category.name %}{% endif %}{% if t.party %} · @{{ t.party }}{% endif %}{% if t.status == "pending" %} · {% translate "pending" %}{% endif %}</div>
     </div>
     <div class="whitespace-nowrap tabular-nums">{% if t.to_account_id == a.pk %}+{% else %}{{ t.sign|default:"−" }}{% endif %}{{ t.amount|inr }}</div>
   </a></li>
 {% empty %}
-  <li class="p-4 text-center text-sm text-muted">No transactions yet.</li>
+  <li class="p-4 text-center text-sm text-muted">{% translate "No transactions yet." %}</li>
 {% endfor %}
 </ul>
-<form method="post" class="mt-4" onsubmit="return confirm('Delete this account?')">
-  {% csrf_token %}<input type="hidden" name="action" value="delete"><button class="text-sm text-bad hover:underline">Delete account</button>
+<form method="post" class="mt-4" onsubmit="return confirm('{% translate "Delete this account?" %}')">
+  {% csrf_token %}<input type="hidden" name="action" value="delete"><button class="text-sm text-bad hover:underline">{% translate "Delete account" %}</button>
 </form>
 {% endif %}
 {% endblock %}

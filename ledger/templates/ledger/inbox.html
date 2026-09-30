@@ -1,12 +1,12 @@
-{% extends "base.html" %}{% load money %}
-{% block title %}Inbox{% endblock %}
+{% extends "base.html" %}{% load money i18n %}
+{% block title %}{% translate "Inbox" %}{% endblock %}
 {% block content %}
-<h1 class="mb-4 text-2xl font-semibold">Review inbox</h1>
+<h1 class="mb-4 text-2xl font-semibold">{% translate "Review inbox" %}</h1>
 <div class="space-y-3">
 {% for t in txns %}
   <article id="t{{ t.pk }}" class="card p-4">
     <div class="flex flex-wrap items-baseline gap-x-2 text-sm text-muted">
-      <strong class="text-lg text-ink {% if t.sign == '+' %}text-good{% endif %}">{% if t.amount %}{{ t.sign }}{{ t.amount|inr }}{% else %}Couldn't read amount{% endif %}</strong>
+      <strong class="text-lg text-ink {% if t.sign == '+' %}text-good{% endif %}">{% if t.amount %}{{ t.sign }}{{ t.amount|inr }}{% else %}{% translate "Couldn't read amount" %}{% endif %}</strong>
       {% if t.merchant %}<span>{{ t.merchant }}</span>{% endif %}
       <span>{{ t.date|date:"d M Y" }}{% if t.time %}, {{ t.time|time:"g:i A" }}{% endif %}</span>
       {% if t.account %}<span>{{ t.account }}</span>{% endif %}
@@ -17,22 +17,22 @@
       {% if t.amount %}
       <form hx-post="{% url 'txn_status' t.pk %}" hx-target="#t{{ t.pk }}" hx-swap="outerHTML" class="flex gap-2">
         <input type="hidden" name="status" value="confirmed">
-        <select name="category" aria-label="Category" class="w-auto">
-          <option value="">— category —</option>
-          {% for c in categories %}<option value="{{ c.pk }}" {% if c.pk == t.category_id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+        <select name="category" aria-label="{% translate "Category" %}" class="w-auto">
+          <option value="">— {% translate "category" %} —</option>
+          {% for c in categories %}<option value="{{ c.pk }}" {% if c.pk == t.category_id %}selected{% endif %}>{% translate c.name %}</option>{% endfor %}
         </select>
-        <button class="btn">Confirm</button>
+        <button class="btn">{% translate "Confirm" %}</button>
       </form>
       {% endif %}
-      <a href="{% url 'txn_edit' t.pk %}?next={% url 'inbox' %}" class="text-sm hover:underline">Edit</a>
+      <a href="{% url 'txn_edit' t.pk %}?next={% url 'inbox' %}" class="text-sm hover:underline">{% translate "Edit" %}</a>
       <form hx-post="{% url 'txn_status' t.pk %}" hx-target="#t{{ t.pk }}" hx-swap="outerHTML">
         <input type="hidden" name="status" value="ignored">
-        <button class="text-sm text-muted hover:underline">Ignore</button>
+        <button class="text-sm text-muted hover:underline">{% translate "Ignore" %}</button>
       </form>
     </div>
   </article>
 {% empty %}
-  <p class="text-muted">All caught up.</p>
+  <div class="card p-8 text-center"><div class="text-4xl" aria-hidden="true">📭</div><p class="mt-2 font-display font-semibold">{% translate "All caught up." %}</p></div>
 {% endfor %}
 </div>
 {% endblock %}

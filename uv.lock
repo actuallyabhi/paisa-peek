@@ -392,35 +392,6 @@ wheels = [
 ]
 
 [[package]]
-name = "damdi"
-version = "0.1.0"
-source = { virtual = "." }
-dependencies = [
-    { name = "django" },
-    { name = "django-ninja" },
-    { name = "gunicorn" },
-    { name = "pywebpush" },
-    { name = "whitenoise" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pytailwindcss" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "django", specifier = ">=6.1.1" },
-    { name = "django-ninja", specifier = ">=1.7.1" },
-    { name = "gunicorn", specifier = ">=26.2.0" },
-    { name = "pywebpush", specifier = ">=2.5.0" },
-    { name = "whitenoise", specifier = ">=6.12.0" },
-]
-
-[package.metadata.requires-dev]
-dev = [{ name = "pytailwindcss", specifier = ">=0.3.1" }]
-
-[[package]]
 name = "django"
 version = "6.1.1"
 source = { registry = "https://pypi.org/simple" }
@@ -664,6 +635,35 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/fd/34/03f1d204d698c408f4754c969882609b6b7a902c0e3d16a7033f219cdeda/multidict-6.9.1-cp315-cp315t-win_arm64.whl", hash = "sha256:501ed8b02a5990c67a91c732843609d43a6be1f7576fcdfc867331239f37fbd3", size = 58742, upload-time = "2026-09-21T17:59:01.726Z" },
     { url = "https://files.pythonhosted.org/packages/be/59/e26cb779be4c591d1a910f59d29aca9fba4de70349840a833beba2652371/multidict-6.9.1-py3-none-any.whl", hash = "sha256:7bf6478188f4e47bf5686e8a33da4ae28bf43b1b2528d9ee144d28492bfac60b", size = 19176, upload-time = "2026-09-21T17:59:03.501Z" },
 ]
+
+[[package]]
+name = "paisapeek"
+version = "0.1.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "django" },
+    { name = "django-ninja" },
+    { name = "gunicorn" },
+    { name = "pywebpush" },
+    { name = "whitenoise" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytailwindcss" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "django", specifier = ">=6.1.1" },
+    { name = "django-ninja", specifier = ">=1.7.1" },
+    { name = "gunicorn", specifier = ">=26.2.0" },
+    { name = "pywebpush", specifier = ">=2.5.0" },
+    { name = "whitenoise", specifier = ">=6.12.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytailwindcss", specifier = ">=0.3.1" }]
 
 [[package]]
 name = "propcache"

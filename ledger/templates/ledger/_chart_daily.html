@@ -1,0 +1,29 @@
+{% load money i18n %}
+{# Daily spending: one series → one colour; hairline gridlines; dashed-free average reference line. #}
+<figure class="card mb-4 p-4">
+  <figcaption class="mb-3 flex items-baseline justify-between">
+    <span class="font-display font-semibold">{% translate "Day by day" %}</span>
+    {% if daily.avg %}<span class="text-xs text-muted">{% blocktranslate with amount=daily.avg|inr_short %}avg {{ amount }}/day{% endblocktranslate %}</span>{% endif %}
+  </figcaption>
+  <div class="relative h-36 pl-9">
+    {% for t in daily.ticks %}
+      <div class="absolute inset-x-0 border-t border-line" style="bottom: {{ t.h }}%"><span class="absolute -top-2 left-0 w-8 text-[10px] tabular-nums text-muted">{{ t.v|inr_short }}</span></div>
+    {% endfor %}
+    <div class="absolute inset-x-0 bottom-0 border-t border-line"></div>
+    {% if daily.avg %}<div class="pointer-events-none absolute left-9 right-0 z-10 border-t border-ink/50" style="bottom: {{ daily.avg_h }}%"></div>{% endif %}
+    <div class="relative flex h-full items-end gap-px">
+      {% for c in daily.cols %}
+        <div class="group flex h-full flex-1 items-end justify-center" tabindex="0"
+             data-tip-value="{{ c.value|inr }}" data-tip-label="{{ c.tip }}">
+          {% if c.value %}<div class="w-full max-w-6 rounded-t bg-out transition group-hover:brightness-110 {% if not c.today %}opacity-80{% endif %}" style="height: {{ c.h }}%"></div>{% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="flex gap-px pl-9 pt-1">
+    {% for c in daily.cols %}<div class="flex-1 text-center text-[10px] {% if c.today %}font-semibold text-ink{% else %}text-muted{% endif %}">{{ c.label }}</div>{% endfor %}
+  </div>
+  <details class="mt-2 text-xs"><summary class="cursor-pointer text-muted">{% translate "Show as table" %}</summary>
+    <table class="mt-1 w-full tabular-nums">{% for c in daily.cols %}{% if not c.future %}<tr class="border-t border-line"><td class="py-0.5">{{ c.tip }}</td><td class="text-right">{{ c.value|inr }}</td></tr>{% endif %}{% endfor %}</table>
+  </details>
+</figure>

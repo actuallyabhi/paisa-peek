@@ -1,7 +1,7 @@
-{% extends "base.html" %}
-{% block title %}More{% endblock %}
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% translate "More" %}{% endblock %}
 {% block content %}
-<h1 class="mb-4 text-xl font-semibold sm:text-2xl">More</h1>
+<h1 class="mb-4 text-xl font-semibold sm:text-2xl">{% translate "More" %}</h1>
 
 <ul class="card mb-6 divide-y divide-line">
   {% for url, label, hint in links %}
@@ -12,74 +12,79 @@
 </ul>
 
 <section id="notifications" class="card mb-6 space-y-4 p-4">
-  <h2 class="font-medium">Notifications</h2>
+  <h2 class="font-medium">{% translate "Notifications" %}</h2>
   <div id="push-box" class="rounded-lg bg-sunk p-3 text-sm">
-    <p id="push-status">Checking this device…</p>
+    <p id="push-status">{% translate "Checking this device…" %}</p>
     <div class="mt-2 flex flex-wrap gap-2">
-      <button type="button" id="push-enable" class="btn" hidden>Enable on this device</button>
-      <button type="button" id="push-test" class="btn-secondary" {% if not devices %}hidden{% endif %}>Send a test</button>
+      <button type="button" id="push-enable" class="btn" hidden>{% translate "Enable on this device" %}</button>
+      <button type="button" id="push-test" class="btn-secondary" {% if not devices %}hidden{% endif %}>{% translate "Send a test" %}</button>
     </div>
-    <p class="mt-2 text-xs text-muted">{{ devices }} device{{ devices|pluralize }} subscribed. On iPhone, add Damdi to your Home Screen first (Share → Add to Home Screen), then enable here.</p>
+    <p class="mt-2 text-xs text-muted">{% blocktranslate count n=devices %}{{ n }} device subscribed.{% plural %}{{ n }} devices subscribed.{% endblocktranslate %} {% translate "On iPhone, add Paisapeek to your Home Screen first (Share → Add to Home Screen), then enable here." %}</p>
   </div>
 
   <form method="post" class="space-y-3">
     {% csrf_token %}<input type="hidden" name="action" value="notify">
     <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
       <label class="flex items-center gap-2">{{ notify.daily_enabled }} {{ notify.daily_enabled.label }}</label>
-      <label class="flex items-center gap-2 text-sm text-muted">at {{ notify.daily_time }}</label>
+      <label class="flex items-center gap-2 text-sm text-muted">{{ notify.daily_time.label }} {{ notify.daily_time }}</label>
     </div>
     <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
       <label class="flex items-center gap-2">{{ notify.reminders_enabled }} {{ notify.reminders_enabled.label }}</label>
-      <label class="flex items-center gap-2 text-sm text-muted">at {{ notify.reminder_time }}</label>
+      <label class="flex items-center gap-2 text-sm text-muted">{{ notify.reminder_time.label }} {{ notify.reminder_time }}</label>
     </div>
-    <p class="text-xs text-muted">Bills use each <a class="underline" href="{% url 'recurring' %}">recurring item</a>'s due date and “remind days before”. Card reminders use the statement and due day set on each <a class="underline" href="{% url 'accounts' %}">account</a>.</p>
+    <p class="text-xs text-muted">{% url 'recurring' as recurring_url %}{% url 'accounts' as accounts_url %}{% blocktranslate %}Bills use each <a class="underline" href="{{ recurring_url }}">recurring item</a>'s due date and “remind days before”. Card reminders use the statement and due day set on each <a class="underline" href="{{ accounts_url }}">account</a>.{% endblocktranslate %}</p>
     {% for e in notify.non_field_errors %}<p class="text-xs text-bad">{{ e }}</p>{% endfor %}
-    <button class="btn-secondary">Save</button>
+    <button class="btn-secondary">{% translate "Save" %}</button>
   </form>
 </section>
 
 <section id="backup" class="card mb-6 space-y-4 p-4">
-  <h2 class="font-medium">Backup &amp; restore</h2>
+  <h2 class="font-medium">{% translate "Backup & restore" %}</h2>
   <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
-    <a href="{% url 'backup_export' %}" class="btn">Export full backup (.json)</a>
-    <a href="{% url 'backup_export_csv' %}" class="btn-secondary">Export transactions (.csv)</a>
+    <a href="{% url 'backup_export' %}" class="btn">{% translate "Export full backup (.json)" %}</a>
+    <a href="{% url 'backup_export_csv' %}" class="btn-secondary">{% translate "Export transactions (.csv)" %}</a>
   </div>
-  <p class="text-xs text-muted">The backup has everything — accounts &amp; balances, people &amp; companies with lent/borrowed history,
-    transactions, tags, recurring bills, categories, SMS templates and notification settings — and restores on any Damdi
-    install. The CSV opens in Excel/Sheets and uses the same columns as <a class="underline" href="{% url 'import_csv' %}">Import CSV</a>.</p>
+  <p class="text-xs text-muted">{% url 'import_csv' as import_url %}{% blocktranslate %}The backup has everything — accounts & balances, people & companies with lent/borrowed history, transactions, tags, recurring bills, categories, SMS templates and notification settings — and restores on any Paisapeek install. The CSV opens in Excel/Sheets and uses the same columns as <a class="underline" href="{{ import_url }}">Import CSV</a>.{% endblocktranslate %}</p>
   {% include "ledger/_restore_form.html" %}
 </section>
 
 <section class="card mb-6 space-y-3 p-4">
-  <h2 class="font-medium">SMS auto-capture</h2>
-  <p class="text-sm">Point your SMS forwarder (SMS to URL Forwarder, MacroDroid, Tasker) at this URL with JSON
+  <h2 class="font-medium">{% translate "SMS auto-capture" %}</h2>
+  <p class="text-sm">{% translate "Point your SMS forwarder (SMS to URL Forwarder, MacroDroid, Tasker) at this URL with JSON" %}
     <code class="rounded bg-sunk px-1">{"sender": "…", "text": "…", "ts": …}</code>:</p>
   <pre class="overflow-x-auto rounded bg-sunk p-2 text-xs">{{ base }}/api/ingest/sms?token={{ token }}</pre>
-  <p class="text-sm">Or header <code class="rounded bg-sunk px-1">Authorization: Bearer {{ token }}</code> · <a class="underline" href="/api/docs">API docs</a></p>
-  <form method="post" onsubmit="return confirm('The old URL will stop working. Continue?')">
-    {% csrf_token %}<input type="hidden" name="action" value="token"><button class="btn-secondary">Regenerate token</button>
+  <p class="text-sm">{% translate "Or header" %} <code class="rounded bg-sunk px-1">Authorization: Bearer {{ token }}</code> · <a class="underline" href="/api/docs">{% translate "API docs" %}</a></p>
+  <form method="post" onsubmit="return confirm('{% translate "The old URL will stop working. Continue?"|escapejs %}')">
+    {% csrf_token %}<input type="hidden" name="action" value="token"><button class="btn-secondary">{% translate "Regenerate token" %}</button>
   </form>
 </section>
 
-<form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn-secondary w-full sm:w-auto">Log out</button></form>
+<form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn-secondary w-full sm:w-auto">{% translate "Log out" %}</button></form>
 
 <script>
 (() => {
   const status = document.getElementById("push-status"), enable = document.getElementById("push-enable"),
         test = document.getElementById("push-test"), csrf = "{{ csrf_token }}";
+  const T = {
+    noPush: "{% translate "This browser can't receive push. On iPhone, open Paisapeek from the Home Screen icon."|escapejs %}",
+    needHttps: "{% translate "Notifications need HTTPS. Open Paisapeek via its https:// address."|escapejs %}",
+    blocked: "{% translate "Notifications are blocked for this site in your browser settings."|escapejs %}",
+    on: "{% translate "✓ This device gets notifications."|escapejs %}",
+    off: "{% translate "This device isn't subscribed yet."|escapejs %}",
+    sent: "{% translate "Sent ✓"|escapejs %}", none: "{% translate "No devices reached"|escapejs %}",
+  };
   const post = (url, body) => fetch(url, {method: "POST", headers: {"X-CSRFToken": csrf, "Content-Type": "application/json"}, body});
   const key = Uint8Array.from(atob("{{ vapid_key }}".replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
 
   async function refresh() {
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-      status.textContent = window.isSecureContext ? "This browser can't receive push. On iPhone, open Damdi from the Home Screen icon."
-                                                  : "Notifications need HTTPS. Open Damdi via its https:// address.";
+      status.textContent = window.isSecureContext ? T.noPush : T.needHttps;
       return;
     }
-    if (Notification.permission === "denied") { status.textContent = "Notifications are blocked for this site in your browser settings."; return; }
+    if (Notification.permission === "denied") { status.textContent = T.blocked; return; }
     const reg = await navigator.serviceWorker.ready, sub = await reg.pushManager.getSubscription();
-    if (sub) { status.textContent = "✓ This device gets notifications."; enable.hidden = true; test.hidden = false; await post("{% url 'push_subscribe' %}", JSON.stringify(sub)); }
-    else { status.textContent = "This device isn't subscribed yet."; enable.hidden = false; }
+    if (sub) { status.textContent = T.on; enable.hidden = true; test.hidden = false; await post("{% url 'push_subscribe' %}", JSON.stringify(sub)); }
+    else { status.textContent = T.off; enable.hidden = false; }
   }
   enable.onclick = async () => {
     if (await Notification.requestPermission() !== "granted") return refresh();
@@ -90,7 +95,7 @@
   };
   test.onclick = async () => {
     const r = await (await post("{% url 'push_test' %}", "{}")).json();
-    test.textContent = r.sent ? "Sent ✓" : "No devices reached";
+    test.textContent = r.sent ? T.sent : T.none;
   };
   refresh();
 })();

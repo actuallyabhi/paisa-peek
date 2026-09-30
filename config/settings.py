@@ -20,7 +20,7 @@ def _secret_key():
 
 SECRET_KEY = _secret_key()
 DEBUG = os.environ.get("DEBUG") == "1"
-# DOMAIN (e.g. "damdi.example.com") = served over HTTPS there: hosts, CSRF origin and secure cookies follow from it.
+# DOMAIN (e.g. "paisapeek.example.com") = served over HTTPS there: hosts, CSRF origin and secure cookies follow from it.
 DOMAIN = os.environ.get("DOMAIN", "").strip()
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", f"{DOMAIN},localhost,127.0.0.1" if DOMAIN else "*").split(",")
 CSRF_TRUSTED_ORIGINS = [o for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",") if o] + (
@@ -43,6 +43,7 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.locale.LocaleMiddleware",  # picks the language: switcher cookie, else the browser's
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -91,7 +92,13 @@ LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "home"
 LOGOUT_REDIRECT_URL = "login"
 
-LANGUAGE_CODE = "en-in"
+# Languages: standard Django i18n. Strings are marked with {% translate %} / gettext, extracted with
+# `manage.py makemessages -l <code>` into ledger/locale/<code>/LC_MESSAGES/django.po, compiled with compilemessages.
+# Add a language = add it here + its .po file.
+LANGUAGE_CODE = "en"
+LANGUAGES = [("en", "English"), ("hi", "हिन्दी")]
+LOCALE_PATHS = [BASE_DIR / "ledger" / "locale"]
+LANGUAGE_COOKIE_AGE = 60 * 60 * 24 * 365
 TIME_ZONE = os.environ.get("TZ", "Asia/Kolkata")
 USE_I18N = True
 USE_TZ = True

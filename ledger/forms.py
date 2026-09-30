@@ -1,8 +1,19 @@
 from django import forms
 from django.core.validators import RegexValidator
 from django.utils import timezone
+from django.utils.translation import gettext, gettext_lazy as _
 
 from .models import Account, NotifySettings, Party, Recurring, Tag, Transaction
+
+# Field labels live here (not on the models) so translating them never needs a migration.
+LABELS = {
+    "date": _("Date"), "time": _("Time"), "amount": _("Amount"), "kind": _("Type"), "description": _("Description"),
+    "category": _("Category"), "account": _("Account"), "to_account": _("To account"), "notes": _("Notes"),
+    "status": _("Status"), "name": _("Name"), "every": _("Every"), "unit": _("Unit"), "next_due": _("Next date"),
+    "remind_days_before": _("Remind days before"), "essential": _("Essential expense (part of the minimum)"),
+    "active": _("Active"), "credit_limit": _("Credit limit"), "statement_day": _("Statement day"),
+    "due_day": _("Due day"), "is_default": _("Default account for new transactions"),
+}
 
 ISO_DATE = forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"})  # <input type=date> rejects "30/09/2026"
 TIME = forms.TimeInput(format="%H:%M", attrs={"type": "time"})
@@ -20,19 +31,22 @@ def party_named(name: str, kind: str = "person") -> Party:
 
 class TxnForm(forms.ModelForm):
     party_name = forms.CharField(
-        label="Person / company", required=False, max_length=100,
-        widget=forms.TextInput(attrs={"list": "party-names", "placeholder": "e.g. Akhand", "autocomplete": "off"}),
+        label=_("Person / company"), required=False, max_length=100,
+        widget=forms.TextInput(attrs={"list": "party-names", "placeholder": _("e.g. Akhand"), "autocomplete": "off"}),
     )
-    tag_names = forms.CharField(label="Tags", required=False, widget=forms.TextInput(attrs={"placeholder": "PRYJ, Goa trip"}))
+    tag_names = forms.CharField(label=_("Tags"), required=False, widget=forms.TextInput(attrs={"placeholder": _("PRYJ, Goa trip")}))
 
     class Meta:
         model = Transaction
         fields = ["date", "time", "amount", "kind", "description", "party_name", "category", "account", "to_account",
                   "tag_names", "notes", "status"]
         widgets = {"date": ISO_DATE, "time": TIME}
+        labels = LABELS
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if "category" in self.fields:  # shipped category names show in your language
+            self.fields["category"].label_from_instance = lambda c: gettext(c.name)
         if self.instance.pk:
             self.initial["tag_names"] = ", ".join(self.instance.tags.values_list("name", flat=True))
             self.initial["party_name"] = self.instance.party.name if self.instance.party else ""
@@ -46,7 +60,7 @@ class TxnForm(forms.ModelForm):
     def clean_amount(self):
         amount = self.cleaned_data["amount"]
         if amount <= 0:
-            raise forms.ValidationError("Amount must be positive.")
+            raise forms.ValidationError(_("Amount must be positive."))
         return amount
 
     def clean_party_name(self):
@@ -62,12 +76,12 @@ class TxnForm(forms.ModelForm):
     def clean(self):
         data = super().clean()
         if data.get("kind") in Transaction.LOAN_KINDS and not data.get("party_name"):
-            self.add_error("party_name", "Who? Lent/borrowed/repaid needs a person or company.")
+            self.add_error("party_name", _("Who? Lent/borrowed/repaid needs a person or company."))
         if data.get("to_account"):
             if data.get("kind") != "transfer":
-                self.add_error("to_account", "Only for transfers.")
+                self.add_error("to_account", _("Only for transfers."))
             elif data.get("to_account") == data.get("account"):
-                self.add_error("to_account", "Pick a different account.")
+                self.add_error("to_account", _("Pick a different account."))
         return data
 
     def save(self, commit=True):
@@ -121,21 +135,25 @@ class PartyForm(forms.ModelForm):
     class Meta:
         model = Party
         fields = ["name", "kind", "notes"]
+        labels = LABELS
 
 
 class AccountForm(forms.ModelForm):
     current_balance = forms.DecimalField(
         required=False, max_digits=14, decimal_places=2,
-        help_text="What your bank/app shows right now. For cards, credit lines and loans: the amount you owe.",
+        label=_("Current balance"),
+        help_text=_("What your bank/app shows right now. For cards, credit lines and loans: the amount you owe."),
     )
-    last4 = forms.CharField(label="Last 4 digits", required=False, max_length=4, validators=[RegexValidator(r"^\d{0,4}$", "Up to 4 digits.")],
-                            help_text="Matches bank SMS to this account.")
+    last4 = forms.CharField(label=_("Last 4 digits"), required=False, max_length=4,
+                            validators=[RegexValidator(r"^\d{0,4}$", _("Up to 4 digits."))],
+                            help_text=_("Matches bank SMS to this account."))
 
     class Meta:
         model = Account
         fields = ["name", "kind", "last4", "current_balance", "credit_limit", "statement_day", "due_day", "is_default"]
-        labels = {"kind": "Type", "is_default": "Default account for new transactions"}
-        help_texts = {"statement_day": "Day of month the statement generates (cards)", "due_day": "Day of month payment is due"}
+        labels = LABELS
+        help_texts = {"statement_day": _("Day of month the statement generates (cards)"),
+                      "due_day": _("Day of month payment is due")}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -161,19 +179,18 @@ class RecurringForm(forms.ModelForm):
         fields = ["name", "amount", "kind", "category", "account", "every", "unit", "next_due", "remind_days_before",
                   "essential", "active"]
         widgets = {"next_due": ISO_DATE}
-        labels = {"kind": "Type", "remind_days_before": "Remind days before",
-                  "essential": "Essential expense (part of the minimum)"}
+        labels = LABELS
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["kind"].choices = [("expense", "Expense / bill"), ("income", "Income (salary, stipend, rent received…)")]
+        self.fields["kind"].choices = [("expense", _("Expense / bill")), ("income", _("Income (salary, stipend, rent received…)"))]
         if not self.instance.pk:
             self.initial.setdefault("account", Account.default())
             self.initial.setdefault("next_due", timezone.localdate())
 
     def clean_amount(self):
         if self.cleaned_data["amount"] <= 0:
-            raise forms.ValidationError("Amount must be positive.")
+            raise forms.ValidationError(_("Amount must be positive."))
         return self.cleaned_data["amount"]
 
 
@@ -183,4 +200,5 @@ class NotifyForm(forms.ModelForm):
         fields = ["daily_enabled", "daily_time", "reminders_enabled", "reminder_time"]
         widgets = {"daily_time": forms.TimeInput(format="%H:%M", attrs={"type": "time"}),
                    "reminder_time": forms.TimeInput(format="%H:%M", attrs={"type": "time"})}
-        labels = {"daily_time": "at", "reminder_time": "at"}
+        labels = {"daily_enabled": _("Daily “log today's spending” reminder"), "daily_time": _("at"),
+                  "reminders_enabled": _("Bill, subscription and card statement reminders"), "reminder_time": _("at")}

@@ -42,3 +42,19 @@ def emoji(t) -> str:
     if t.kind in KIND_EMOJI:
         return KIND_EMOJI[t.kind]
     return CATEGORY_EMOJI.get(t.category.name.lower(), "🧾") if t.category_id else "🧾"
+
+
+@register.filter
+def inr_short(value) -> str:
+    """Axis-label money, Indian units: ₹950, ₹12k, ₹1.3L, ₹3.4Cr (half-up; ₹99,999 → ₹1L, never ₹100k)."""
+    from decimal import ROUND_HALF_UP
+
+    v = Decimal(str(value or 0))
+    sign, v = ("\u2212" if v < 0 else ""), abs(v)
+    for size, unit in ((Decimal(10**7), "Cr"), (Decimal(10**5), "L"), (Decimal(10**3), "k")):
+        n = v / size
+        places = Decimal("0.1") if n < 10 else Decimal("1")
+        n = n.quantize(places, rounding=ROUND_HALF_UP)
+        if n >= 1:
+            return f"{sign}₹{n.normalize():f}{unit}"
+    return f"{sign}₹{v.quantize(Decimal('1'), rounding=ROUND_HALF_UP)}"

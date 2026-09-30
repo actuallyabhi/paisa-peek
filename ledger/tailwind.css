@@ -8,6 +8,10 @@
 @font-face { font-family: "Figtree"; font-weight: 400; font-display: swap; src: url("fonts/figtree-latin-400-normal.woff2") format("woff2"); }
 @font-face { font-family: "Figtree"; font-weight: 500; font-display: swap; src: url("fonts/figtree-latin-500-normal.woff2") format("woff2"); }
 @font-face { font-family: "Figtree"; font-weight: 600; font-display: swap; src: url("fonts/figtree-latin-600-normal.woff2") format("woff2"); }
+/* Hindi: Mukta covers Devanagari; unicode-range means it only downloads when a page has Hindi text. */
+@font-face { font-family: "Mukta"; font-weight: 400; font-display: swap; unicode-range: U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+25CC, U+A830-A839, U+A8E0-A8FF; src: url("fonts/mukta-devanagari-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Mukta"; font-weight: 600; font-display: swap; unicode-range: U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+25CC, U+A830-A839, U+A8E0-A8FF; src: url("fonts/mukta-devanagari-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Mukta"; font-weight: 800; font-display: swap; unicode-range: U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+25CC, U+A830-A839, U+A8E0-A8FF; src: url("fonts/mukta-devanagari-800-normal.woff2") format("woff2"); }
 @font-face { font-family: "Bricolage Grotesque"; font-weight: 600; font-display: swap; src: url("fonts/bricolage-grotesque-latin-600-normal.woff2") format("woff2"); }
 @font-face { font-family: "Bricolage Grotesque"; font-weight: 800; font-display: swap; src: url("fonts/bricolage-grotesque-latin-800-normal.woff2") format("woff2"); }
 
@@ -21,6 +25,7 @@
   --gold: #d99a1e; --gold-soft: #fcefc7;
   --good: #1d8457; --good-soft: #dcf0e4;
   --bad: #c7343f; --bad-soft: #f9dfdf;
+  --chart-out: #e4572e; --chart-in: #3570c4;  /* validated pair (CVD ΔE 22.7) */
 }
 [data-theme=dark] {
   color-scheme: dark;
@@ -30,6 +35,7 @@
   --gold: #f5b83d; --gold-soft: #3a2e12;
   --good: #4cc38a; --good-soft: #163226;
   --bad: #ff6b6b; --bad-soft: #3a1c1e;
+  --chart-out: #e8643e; --chart-in: #4a8ad6;  /* validated for the dark surface */
 }
 
 @theme inline {
@@ -39,8 +45,9 @@
   --color-gold: var(--gold); --color-gold-soft: var(--gold-soft);
   --color-good: var(--good); --color-good-soft: var(--good-soft);
   --color-bad: var(--bad); --color-bad-soft: var(--bad-soft);
-  --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Bricolage Grotesque", "Figtree", ui-sans-serif, sans-serif;
+  --color-out: var(--chart-out); --color-in: var(--chart-in);
+  --font-sans: "Figtree", "Mukta", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Bricolage Grotesque", "Mukta", "Figtree", ui-sans-serif, sans-serif;
 }
 
 @layer base {

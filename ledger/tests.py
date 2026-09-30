@@ -334,7 +334,7 @@ class HomeViewTests(TestCase):
         Transaction.objects.create(date=date(2026, 9, 29), amount=100, description="Tue chai")
         Transaction.objects.create(date=date(2026, 9, 21), amount=900, description="Last week")
         r = self.client.get("/?view=week&start=2026-10-01")  # any day snaps to its Monday
-        self.assertContains(r, "28 Sep – 04 Oct 2026")
+        self.assertContains(r, "28 Sep – 4 Oct 2026")
         self.assertContains(r, "Tue chai")
         self.assertNotContains(r, "Last week")
         self.assertEqual(r.context["spent"], Decimal("100"))
@@ -622,7 +622,7 @@ class BackupTests(TestCase):
         r = self.client.get("/backup/export/")
         self.assertIn("attachment", r["Content-Disposition"])
         doc = r.json()
-        self.assertEqual((doc["format"], doc["version"], doc["counts"]["ledger.transaction"]), ("damdi-backup", 1, 3))
+        self.assertEqual((doc["format"], doc["version"], doc["counts"]["ledger.transaction"]), ("paisapeek-backup", 1, 3))
 
         # Wreck the data, then restore the file.
         Transaction.objects.all().delete()
@@ -654,6 +654,13 @@ class BackupTests(TestCase):
             backup.restore(json.dumps(broken).encode())
         self.assertEqual(Transaction.objects.count(), 3)  # untouched after the failed restore
         self.assertFalse(User.objects.filter(username="evil").exists())
+
+    def test_backups_from_earlier_app_names_restore(self):
+        from . import backup
+        self.seed()
+        for legacy in ("budget-backup", "damdi-backup"):
+            doc = {**backup.export(), "format": legacy}
+            self.assertEqual(backup.restore(json.dumps(doc).encode())["transaction"], 3)
 
     def test_plain_dumpdata_is_accepted(self):
         from io import StringIO
@@ -714,3 +721,54 @@ class RecurringIncomeTests(TestCase):
         reminders = {k: (title, body) for k, title, body, _ in due(datetime(2026, 11, 5, 10))}
         self.assertEqual(reminders[f"recurring:{stipend.pk}:2026-11-05"],
                          ("Stipend expected today", "₹25,000.00 · tap to mark it received."))
+
+
+class LanguageTests(TestCase):
+    """Standard Django i18n: switcher posts to set_language, which stores a cookie LocaleMiddleware reads."""
+
+    def setUp(self):
+        self.client.force_login(User.objects.create_user("abhishek", password="x"))
+        Transaction.objects.create(date=date(2026, 9, 29), amount=450, description="Petrol",
+                                   category=Category.objects.get(name="Fuel & Transport"))
+
+    def test_switch_to_hindi_and_back(self):
+        r = self.client.get("/?view=month&month=2026-09")
+        self.assertContains(r, '<html lang="en">')
+        self.assertContains(r, 'action="/i18n/setlang/"')
+        self.assertContains(r, "Where it went")
+
+        r = self.client.post("/i18n/setlang/", {"language": "hi", "next": "/?view=month&month=2026-09"})
+        self.assertEqual(r.status_code, 302)
+        r = self.client.get("/?view=month&month=2026-09")
+        self.assertContains(r, '<html lang="hi">')
+        self.assertContains(r, "पैसा कहाँ गया")            # template string
+        self.assertContains(r, "पेट्रोल और आना-जाना")       # shipped category name, stored in English
+        self.assertContains(r, "सितंबर 2026")               # month name: Django's Hindi dates, spelling fixed by our catalog
+        self.assertContains(self.client.get("/people/"), "लोग और कंपनियाँ")
+        form = self.client.get("/").context["form"]
+        self.assertEqual(str(form.fields["kind"].label), "प्रकार")
+
+        self.client.post("/i18n/setlang/", {"language": "en", "next": "/"})
+        self.assertContains(self.client.get("/people/"), "People & companies")
+
+    def test_browser_language_is_the_default(self):
+        self.assertContains(self.client.get("/", HTTP_ACCEPT_LANGUAGE="hi-IN,hi;q=0.9"), '<html lang="hi">')
+
+    def test_catalog_is_complete(self):
+        """Every string in the .po is translated AND compiled into the .mo (catches forgetting compilemessages)."""
+        import gettext
+        import re
+        from pathlib import Path
+        folder = Path(__file__).parent / "locale/hi/LC_MESSAGES"
+        po = (folder / "django.po").read_text()
+        self.assertNotIn("#, fuzzy", po)
+        msgids = set()
+        for block in po.split("\n\n")[1:]:  # skip the header
+            lines = [l for l in block.splitlines() if not l.startswith("#")]
+            body = "\n".join(lines)
+            m = re.search(r'^msgid ((?:".*"\n?)+)', body, re.M)
+            if m:
+                msgids.add("".join(re.findall(r'"(.*)"', m.group(1))).encode().decode("unicode_escape").encode("latin-1").decode())
+        with open(folder / "django.mo", "rb") as f:
+            compiled = {k[0] if isinstance(k, tuple) else k for k, v in gettext.GNUTranslations(f)._catalog.items() if v}
+        self.assertEqual(sorted(msgids - compiled), [])

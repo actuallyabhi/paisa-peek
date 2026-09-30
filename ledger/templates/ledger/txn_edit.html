@@ -1,19 +1,19 @@
-{% extends "base.html" %}
-{% block title %}Edit transaction{% endblock %}
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% translate "Edit transaction" %}{% endblock %}
 {% block content %}
-<h1 class="mb-4 text-2xl font-semibold">Edit transaction</h1>
+<h1 class="mb-4 text-2xl font-semibold">{% translate "Edit transaction" %}</h1>
 <form method="post" class="space-y-3 card p-4">
   {% include "ledger/_form.html" %}
   <input type="hidden" name="next" value="{{ next }}">
-  <button class="btn">Save</button>
+  <button class="btn">{% translate "Save" %}</button>
 </form>
 {% if t.raw_text %}
 <details open class="mt-4 card p-4">
-  <summary class="cursor-pointer text-sm text-muted">Captured from {{ t.source }}{% if t.merchant %} · {{ t.merchant }}{% endif %}{% if t.ref %} · ref {{ t.ref }}{% endif %}</summary>
+  <summary class="cursor-pointer text-sm text-muted">{% blocktranslate with source=t.source %}Captured from {{ source }}{% endblocktranslate %}{% if t.merchant %} · {{ t.merchant }}{% endif %}{% if t.ref %} · ref {{ t.ref }}{% endif %}</summary>
   <pre class="mt-2 whitespace-pre-wrap text-sm">{{ t.raw_text }}</pre>
 </details>
 {% endif %}
-<form method="post" action="{% url 'txn_delete' t.pk %}" class="mt-4" onsubmit="return confirm('Delete this transaction?')">
-  {% csrf_token %}<button class="text-sm text-bad hover:underline">Delete</button>
+<form method="post" action="{% url 'txn_delete' t.pk %}" class="mt-4" onsubmit="return confirm('{% translate "Delete this transaction?" %}')">
+  {% csrf_token %}<button class="text-sm text-bad hover:underline">{% translate "Delete" %}</button>
 </form>
 {% endblock %}

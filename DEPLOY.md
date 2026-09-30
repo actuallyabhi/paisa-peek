@@ -1,6 +1,6 @@
-# Deploying Damdi on your server
+# Deploying Paisapeek on your server
 
-Damdi runs as three small containers: the **app**, a **scheduler** (push reminders) and **Caddy** (automatic HTTPS). Everything lives in one Docker volume (`data`), which holds the SQLite database, generated keys and backups.
+Paisapeek runs as three small containers: the **app**, a **scheduler** (push reminders) and **Caddy** (automatic HTTPS). Everything lives in one Docker volume (`data`), which holds the SQLite database, generated keys and backups.
 
 HTTPS is **required**. Phones only install the app and allow notifications over `https://`.
 
@@ -26,7 +26,7 @@ sudo usermod -aG docker $USER && newgrp docker
 Get the code onto the server:
 
 ```bash
-git clone <your-repo-url> damdi && cd damdi
+git clone <your-repo-url> paisapeek && cd paisapeek
 cp .env.example .env
 nano .env
 ```
@@ -41,18 +41,18 @@ In `.env`, set at least:
 
 ## A. Public domain with automatic HTTPS (Caddy)
 
-1. **DNS:** add an `A` record (and `AAAA` for IPv6), e.g. `damdi.yourdomain.com` → your server's public IP.
+1. **DNS:** add an `A` record (and `AAAA` for IPv6), e.g. `paisapeek.yourdomain.com` → your server's public IP.
 2. **Firewall:** allow inbound TCP **80** and **443** (Caddy needs 80 to get the certificate).
    ```bash
    sudo ufw allow 80,443/tcp
    ```
-3. **`.env`:** set `DOMAIN=damdi.yourdomain.com`. This alone configures allowed hosts, CSRF and secure cookies.
+3. **`.env`:** set `DOMAIN=paisapeek.yourdomain.com`. This alone configures allowed hosts, CSRF and secure cookies.
 4. **Start:**
    ```bash
    docker compose --profile https up -d --build
    docker compose logs -f caddy      # wait for "certificate obtained successfully", then Ctrl+C
    ```
-5. Open `https://damdi.yourdomain.com` and log in.
+5. Open `https://paisapeek.yourdomain.com` and log in.
 
 The app port stays bound to `127.0.0.1:8000`, so only Caddy can reach it.
 
@@ -90,7 +90,7 @@ The app port stays bound to `127.0.0.1:8000`, so only Caddy can reach it.
   ```bash
   crontab -e
   # add this line (adjust the path):
-  30 2 * * * cd /home/you/damdi && docker compose exec -T app python manage.py backup --keep 14
+  30 2 * * * cd /home/you/paisapeek && docker compose exec -T app python manage.py backup --keep 14
   ```
   Copy them off the machine now and then:
   ```bash
@@ -101,7 +101,7 @@ The app port stays bound to `127.0.0.1:8000`, so only Caddy can reach it.
 ## 3. Updating
 
 ```bash
-cd damdi && git pull
+cd paisapeek && git pull
 docker compose --profile https up -d --build      # drop "--profile https" for setup B
 ```
 

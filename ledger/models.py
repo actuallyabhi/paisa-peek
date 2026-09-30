@@ -6,12 +6,13 @@ from decimal import Decimal
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Case, F, Sum, Value, When
+from django.utils.translation import gettext_lazy as _
 
 
 class Account(models.Model):
     KINDS = [
-        ("savings", "Savings account"), ("current", "Current account"), ("credit_card", "Credit card"),
-        ("credit_line", "Credit line"), ("loan", "Loan"), ("cash", "Cash"), ("wallet", "Wallet"),
+        ("savings", _("Savings account")), ("current", _("Current account")), ("credit_card", _("Credit card")),
+        ("credit_line", _("Credit line")), ("loan", _("Loan")), ("cash", _("Cash")), ("wallet", _("Wallet")),
     ]
     CREDIT_KINDS = {"credit_card", "credit_line", "loan"}  # balance is what you owe (shown as outstanding)
 
@@ -88,7 +89,7 @@ class Tag(models.Model):
 class Party(models.Model):
     """A person or company you lend to / borrow from / transact with."""
 
-    KINDS = [("person", "Person"), ("company", "Company")]
+    KINDS = [("person", _("Person")), ("company", _("Company"))]
     name = models.CharField(max_length=100, unique=True)
     kind = models.CharField(max_length=10, choices=KINDS, default="person")
     notes = models.CharField(max_length=500, blank=True)
@@ -103,11 +104,11 @@ class Party(models.Model):
 
 class Transaction(models.Model):
     KINDS = [
-        ("expense", "Expense"), ("income", "Income"), ("transfer", "Transfer"),
-        ("lend", "Lent (they owe me)"), ("borrow", "Borrowed (I owe them)"),
-        ("repay_in", "Repaid to me"), ("repay_out", "Repaid by me"),
+        ("expense", _("Expense")), ("income", _("Income")), ("transfer", _("Transfer")),
+        ("lend", _("Lent (they owe me)")), ("borrow", _("Borrowed (I owe them)")),
+        ("repay_in", _("Repaid to me")), ("repay_out", _("Repaid by me")),
     ]
-    STATUSES = [(s, s) for s in ("pending", "confirmed", "ignored")]
+    STATUSES = [("pending", _("pending")), ("confirmed", _("confirmed")), ("ignored", _("ignored"))]
     OUTFLOW = {"expense", "lend", "repay_out"}
     # Effect on what a party owes me: lending or repaying my debt raises it; borrowing or being repaid lowers it.
     OWED_UP, OWED_DOWN = ("lend", "repay_out"), ("borrow", "repay_in")
@@ -187,7 +188,7 @@ def clamp_day(year: int, month: int, day: int) -> date:
 class Recurring(models.Model):
     """A bill or subscription that repeats: rent, recharge, Wi-Fi every 12 months…"""
 
-    UNITS = [("day", "day(s)"), ("week", "week(s)"), ("month", "month(s)"), ("year", "year(s)")]
+    UNITS = [("day", _("day(s)")), ("week", _("week(s)")), ("month", _("month(s)")), ("year", _("year(s)"))]
     PER_MONTH = {"day": Decimal("30.4375"), "week": Decimal("4.348125"), "month": Decimal(1), "year": Decimal(1) / 12}
 
     name = models.CharField(max_length=100)
@@ -221,7 +222,11 @@ class Recurring(models.Model):
     @property
     def cadence(self) -> str:
         """"every month", "every 12 months"."""
-        return f"every {self.unit}" if self.every == 1 else f"every {self.every} {self.unit}s"
+        one, many = {
+            "day": (_("every day"), _("every %(n)d days")), "week": (_("every week"), _("every %(n)d weeks")),
+            "month": (_("every month"), _("every %(n)d months")), "year": (_("every year"), _("every %(n)d years")),
+        }[self.unit]
+        return str(one) if self.every == 1 else str(many) % {"n": self.every}
 
     @property
     def monthly_cost(self) -> Decimal:

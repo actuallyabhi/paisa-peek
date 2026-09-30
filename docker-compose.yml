@@ -1,10 +1,10 @@
-# Damdi. Quick start: cp .env.example .env && edit it, then:
+# Paisapeek. Quick start: cp .env.example .env && edit it, then:
 #   docker compose --profile https up -d      (public server with a domain → automatic HTTPS via Caddy)
 #   docker compose up -d                       (behind your own proxy / Tailscale; app on 127.0.0.1:8000)
 services:
   app:
     build: .
-    image: damdi:latest
+    image: paisapeek:latest
     restart: unless-stopped
     env_file: .env
     ports:
@@ -15,7 +15,7 @@ services:
   # Sends push reminders (daily log, bills, card statements, income) — checks once a minute.
   scheduler:
     build: .
-    image: damdi:latest
+    image: paisapeek:latest
     restart: unless-stopped
     command: python manage.py reminders --loop
     env_file: .env
