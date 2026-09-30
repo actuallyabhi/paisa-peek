@@ -69,10 +69,46 @@
   .btn-secondary { @apply inline-flex min-h-11 items-center justify-center rounded-full border border-line bg-card px-5 font-medium transition hover:bg-sunk active:translate-y-px; }
   .card { @apply rounded-2xl border border-line bg-card; }
   .chip { @apply rounded-full px-2 py-px text-xs font-medium; }
+  /* Summary tiles: 2 across on phones (an odd last tile takes the full row), 3 on wider screens.
+     min-w-0 + overflow-wrap keep big numbers like ₹2,55,892.00 inside their card. */
+  .stats { @apply mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3; }
+  .stats > .stat:last-child:nth-child(odd) { @apply col-span-2 sm:col-span-1; }
+  .stat { @apply min-w-0 rounded-2xl border border-line bg-card p-3; }
+  .stat-value { @apply font-semibold tabular-nums sm:text-lg; overflow-wrap: anywhere; }
 }
 
 @keyframes wiggle { 0%, 100% { transform: rotate(0) } 25% { transform: rotate(-12deg) } 75% { transform: rotate(10deg) } }
 @keyframes pop { 0% { transform: scale(.9); opacity: 0 } 60% { transform: scale(1.03) } 100% { transform: scale(1); opacity: 1 } }
+@keyframes flash { 0%, 35% { background-color: var(--gold-soft) } 100% { background-color: transparent } }
+@keyframes rise { from { transform: translateY(6px); opacity: 0 } to { transform: none; opacity: 1 } }
+@keyframes toast-out { to { transform: translateY(-8px) scale(.97); opacity: 0 } }
+@keyframes coin { 0% { transform: translate(0, 0) rotate(0) scale(.6); opacity: 0 } 15% { opacity: 1 }
+                  100% { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(1); opacity: 0 } }
+@keyframes spin { to { transform: rotate(360deg) } }
+@keyframes tick { 0% { transform: scale(1) } 40% { transform: scale(1.25) } 100% { transform: scale(1) } }
 @utility animate-wiggle { animation: wiggle .6s ease-in-out 1; }
 @utility animate-pop { animation: pop .35s ease-out 1; }
-@media (prefers-reduced-motion: reduce) { .animate-wiggle, .animate-pop { animation: none; } }
+@utility animate-flash { animation: flash 2.4s ease-out 1; }
+@utility animate-rise { animation: rise .25s ease-out 1 both; }
+
+/* Toasts bounce in (animate-pop) and leave on their own; coins burst from a celebrating toast. */
+.toast-leaving { animation: toast-out .3s ease-in forwards; }
+.coin { position: fixed; z-index: 60; pointer-events: none; font-size: 20px; animation: coin 1s cubic-bezier(.2, .7, .3, 1) forwards; }
+/* Ticking a checkbox gives a tiny bounce. */
+input[type=checkbox]:checked { animation: tick .25s ease-out 1; }
+/* While HTMX is working, the button shows a spinner instead of feeling frozen. */
+.btn.htmx-request, .htmx-request .btn[type=submit], form.htmx-request .btn { position: relative; color: transparent; }
+.btn.htmx-request::after, .htmx-request .btn[type=submit]::after, form.htmx-request .btn::after {
+  content: ""; position: absolute; inset: 0; margin: auto; width: 1.1rem; height: 1.1rem; border-radius: 9999px;
+  border: 2px solid var(--on-brand); border-right-color: transparent; animation: spin .7s linear infinite; }
+/* The theme toggle icon gives a little turn. */
+button[onclick="toggleTheme()"] svg { transition: transform .4s ease; }
+button[onclick="toggleTheme()"]:active svg { transform: rotate(-35deg) scale(.9); }
+
+/* More → Display → "Show charts" off hides every chart figure. */
+[data-charts=off] [data-chart] { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-wiggle, .animate-pop, .animate-flash, .animate-rise, .toast-leaving, input[type=checkbox]:checked { animation: none; }
+  .coin { display: none; }
+}

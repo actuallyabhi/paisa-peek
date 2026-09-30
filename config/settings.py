@@ -1,5 +1,7 @@
 import os
 import secrets
+
+from django.conf.locale import LANG_INFO
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -96,7 +98,10 @@ LOGOUT_REDIRECT_URL = "login"
 # `manage.py makemessages -l <code>` into ledger/locale/<code>/LC_MESSAGES/django.po, compiled with compilemessages.
 # Add a language = add it here + its .po file.
 LANGUAGE_CODE = "en"
-LANGUAGES = [("en", "English"), ("hi", "हिन्दी")]
+# "hi-latn" = Hinglish (Hindi written in Latin script, BCP 47). Django has no built-in data for it, so it's
+# registered below; its dates fall back to English month names, which is how Hinglish is written anyway.
+LANGUAGES = [("en", "English"), ("hi", "हिन्दी"), ("hi-latn", "Hinglish")]
+LANG_INFO.setdefault("hi-latn", {"bidi": False, "code": "hi-latn", "name": "Hinglish", "name_local": "Hinglish"})
 LOCALE_PATHS = [BASE_DIR / "ledger" / "locale"]
 LANGUAGE_COOKIE_AGE = 60 * 60 * 24 * 365
 TIME_ZONE = os.environ.get("TZ", "Asia/Kolkata")

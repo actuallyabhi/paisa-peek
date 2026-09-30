@@ -1,0 +1,18 @@
+{% load money i18n %}
+{# Running "they owe" balance as a step line: 2px line, 10% wash, zero baseline, end dot with surface ring. #}
+<figure class="card mb-4 p-4" data-chart>
+  <figcaption class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+    <span class="font-display font-semibold">{% translate "Balance over time" %}</span>
+    <span class="text-xs text-muted">{{ steps.first|date:"d M Y" }} – {{ steps.last|date:"d M Y" }}</span>
+  </figcaption>
+  <div class="relative h-32 text-brand">
+    <svg class="absolute inset-0 h-full w-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+      <line x1="0" x2="100" y1="{{ steps.zero }}" y2="{{ steps.zero }}" stroke="var(--line)" stroke-width="1" vector-effect="non-scaling-stroke"/>
+      <path d="{{ steps.area }}" fill="currentColor" fill-opacity=".1"/>
+      <path d="{{ steps.line }}" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+    </svg>
+    <span class="absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand ring-2 ring-card" style="left: {{ steps.end.x }}%; top: {{ steps.end.y }}%"></span>
+    {% for h in steps.hits %}<span class="absolute inset-y-0 hover:bg-ink/5" style="left: {{ h.x }}%; width: {{ h.w }}%" tabindex="0" data-tip-value="{{ h.value|inr }}" data-tip-label="{{ h.date|date:'d M Y' }}"></span>{% endfor %}
+  </div>
+  <p class="mt-2 text-right text-sm font-medium tabular-nums text-ink">{% translate "Now" %}: {{ steps.end.value|inr }}</p>
+</figure>

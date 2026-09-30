@@ -6,11 +6,13 @@
   <a href="{% url 'import_csv' %}" class="text-sm hover:underline">{% translate "Import CSV →" %}</a>
 </div>
 
-<div class="mb-4 grid grid-cols-3 gap-2 sm:gap-3">
-  <div class="card p-3"><div class="text-xs text-muted">{% translate "Owed to me" %}</div><div class="font-semibold tabular-nums text-good sm:text-lg">{{ owed_to_me|inr }}</div></div>
-  <div class="card p-3"><div class="text-xs text-muted">{% translate "I owe" %}</div><div class="font-semibold tabular-nums text-bad sm:text-lg">{{ i_owe|inr }}</div></div>
-  <div class="card p-3"><div class="text-xs text-muted">{% translate "Net" %}</div><div class="font-semibold tabular-nums sm:text-lg">{{ owed_to_me|sub:i_owe|inr }}</div></div>
+<div class="stats">
+  <div class="stat"><div class="text-xs text-muted">{% translate "Owed to me" %}</div><div class="stat-value text-good">{{ owed_to_me|inr }}</div></div>
+  <div class="stat"><div class="text-xs text-muted">{% translate "I owe" %}</div><div class="stat-value text-bad">{{ i_owe|inr }}</div></div>
+  <div class="stat"><div class="text-xs text-muted">{% translate "Net" %}</div><div class="stat-value">{{ owed_to_me|sub:i_owe|inr }}</div></div>
 </div>
+
+{% include "ledger/_chart_owed.html" %}
 
 <div class="card overflow-x-auto">
 <table class="w-full text-sm">
@@ -34,6 +36,7 @@
   </tbody>
 </table>
 </div>
+{% include "ledger/_pagination.html" %}
 {% if settled and not show_all %}<p class="mt-2 text-sm"><a class="hover:underline" href="?all=1">{% blocktranslate count n=settled %}Show {{ n }} settled{% plural %}Show {{ n }} settled{% endblocktranslate %}</a></p>
 {% elif show_all %}<p class="mt-2 text-sm"><a class="hover:underline" href="?">{% translate "Hide settled" %}</a></p>{% endif %}
 

@@ -1,0 +1,25 @@
+{% load i18n %}{% comment %}
+  One pager for every list: {% include "ledger/_pagination.html" with page=page %}
+  {% querystring %} keeps the other query params (week/month, filters) while changing ?page=.
+  Phones: big Prev / "Page 2 of 5" / Next. Wider screens: numbered pages with ellipses.
+{% endcomment %}{% if page.has_other_pages %}
+<nav class="mt-4 flex items-center justify-between gap-2" aria-label="{% translate "Pages" %}">
+  {% if page.has_previous %}
+    <a href="{% querystring page=page.previous_page_number %}" rel="prev" class="btn-secondary px-4 text-sm">‹ {% translate "Previous" %}</a>
+  {% else %}<span class="btn-secondary pointer-events-none px-4 text-sm opacity-40" aria-hidden="true">‹ {% translate "Previous" %}</span>{% endif %}
+
+  <span class="text-sm text-muted sm:hidden">{% blocktranslate with n=page.number total=page.paginator.num_pages %}Page {{ n }} of {{ total }}{% endblocktranslate %}</span>
+  <span class="hidden items-center gap-1 sm:flex">
+    {% for n in page.elided %}
+      {% if n == page.paginator.ELLIPSIS %}<span class="px-1 text-muted">…</span>
+      {% elif n == page.number %}<span aria-current="page" class="grid h-9 min-w-9 place-items-center rounded-full bg-ink px-2 text-sm font-semibold text-paper">{{ n }}</span>
+      {% else %}<a href="{% querystring page=n %}" class="grid h-9 min-w-9 place-items-center rounded-full px-2 text-sm transition hover:bg-sunk active:scale-95">{{ n }}</a>{% endif %}
+    {% endfor %}
+  </span>
+
+  {% if page.has_next %}
+    <a href="{% querystring page=page.next_page_number %}" rel="next" class="btn-secondary px-4 text-sm">{% translate "Next" %} ›</a>
+  {% else %}<span class="btn-secondary pointer-events-none px-4 text-sm opacity-40" aria-hidden="true">{% translate "Next" %} ›</span>{% endif %}
+</nav>
+<p class="mt-1 text-center text-xs text-muted">{% blocktranslate with a=page.start_index b=page.end_index total=page.paginator.count %}{{ a }}–{{ b }} of {{ total }}{% endblocktranslate %}</p>
+{% endif %}

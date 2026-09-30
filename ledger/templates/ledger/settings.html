@@ -11,6 +11,22 @@
   {% endfor %}
 </ul>
 
+<section id="language" class="card mb-6 space-y-2 p-4">
+  <h2 class="font-medium">{% translate "Language" %}</h2>
+  <p class="text-xs text-muted">{% translate "Pick how Paisapeek talks to you. Your choice is remembered on this device." %}</p>
+  {% include "ledger/_language_form.html" with form_class="space-y-1" %}
+</section>
+
+<section id="display" class="card mb-6 space-y-2 p-4">
+  <h2 class="font-medium">{% translate "Display" %}</h2>
+  <label class="flex items-center justify-between gap-3 py-1">
+    <span><span class="block">{% translate "Show charts" %}</span>
+      <span class="block text-xs text-muted">{% translate "Spending, income and lending charts on Home, People and each person's page." %}</span></span>
+    <input type="checkbox" id="charts-toggle" role="switch" onchange="setCharts(this.checked)">
+  </label>
+  <script>document.getElementById("charts-toggle").checked = document.documentElement.dataset.charts !== "off";</script>
+</section>
+
 <section id="notifications" class="card mb-6 space-y-4 p-4">
   <h2 class="font-medium">{% translate "Notifications" %}</h2>
   <div id="push-box" class="rounded-lg bg-sunk p-3 text-sm">

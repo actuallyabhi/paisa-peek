@@ -1,5 +1,7 @@
 // Paisapeek service worker: makes the app installable, caches static files, and shows push reminders.
-const CACHE = "paisapeek-static-v3";
+// Bump to drop every cached file on existing installs. CSS/JS URLs carry ?v=<fingerprint>, so new builds
+// are new URLs and cache-first stays correct.
+const CACHE = "paisapeek-static-v4";
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) => e.waitUntil(

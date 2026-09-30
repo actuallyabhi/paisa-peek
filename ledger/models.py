@@ -220,6 +220,11 @@ class Recurring(models.Model):
         return self.kind in ("income", "repay_in", "borrow")
 
     @property
+    def is_transfer(self) -> bool:
+        """Money that leaves your account but isn't spending, e.g. sending your father money every month."""
+        return self.kind == "transfer"
+
+    @property
     def cadence(self) -> str:
         """"every month", "every 12 months"."""
         one, many = {

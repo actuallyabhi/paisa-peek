@@ -1,0 +1,42 @@
+{% load money i18n %}
+{# Spent vs came in, last 6 months. Two series on ONE ₹ axis: persimmon = out, blue = in (validated pair). #}
+<figure class="card mb-4 p-4" data-chart>
+  <figcaption class="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+    <span class="font-display font-semibold">{% translate "Spent vs came in" %}</span>
+    <span class="flex items-center gap-3 text-xs text-muted">
+      <span class="flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-sm bg-out" aria-hidden="true"></span>{% translate "Spent" %}</span>
+      <span class="flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-sm bg-in" aria-hidden="true"></span>{% translate "Came in" %}</span>
+    </span>
+  </figcaption>
+  <div class="relative h-40 pl-9">
+    {% for t in months.ticks %}
+      <div class="absolute inset-x-0 border-t border-line" style="bottom: {{ t.h }}%"><span class="absolute -top-2 left-0 w-8 text-[10px] tabular-nums text-muted">{{ t.v|inr_short }}</span></div>
+    {% endfor %}
+    <div class="absolute inset-x-0 bottom-0 border-t border-line"></div>
+    <div class="relative flex h-full items-end">
+      {% for m in months.months %}
+        <div class="flex h-full flex-1 items-end justify-center gap-0.5">
+          <div class="flex h-full w-1/2 max-w-5 items-end" tabindex="0" data-tip-value="{{ m.spent|inr }}" data-tip-label="{% translate "Spent" %} · {{ m.full }}">
+            <div class="w-full rounded-t bg-out transition hover:brightness-110" style="height: {{ m.spent_h }}%"></div>
+          </div>
+          <div class="flex h-full w-1/2 max-w-5 items-end" tabindex="0" data-tip-value="{{ m.income|inr }}" data-tip-label="{% translate "Came in" %} · {{ m.full }}">
+            <div class="w-full rounded-t bg-in transition hover:brightness-110" style="height: {{ m.income_h }}%"></div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="flex pl-9 pt-1">
+    {% for m in months.months %}<div class="flex-1 text-center text-[10px] {% if m.current %}font-semibold text-ink{% else %}text-muted{% endif %}">{{ m.label }}</div>{% endfor %}
+  </div>
+  <p class="mt-2 text-sm">
+    {% if months.kept > 0 %}{% blocktranslate with amount=months.kept|inr %}This month you kept {{ amount }} 🎉{% endblocktranslate %}
+    {% elif months.kept < 0 %}{% blocktranslate with amount=months.kept|neg|inr %}This month you spent {{ amount }} more than came in 👀{% endblocktranslate %}{% endif %}
+  </p>
+  <details class="mt-2 text-xs"><summary class="cursor-pointer text-muted">{% translate "Show as table" %}</summary>
+    <table class="mt-1 w-full tabular-nums">
+      <tr class="text-muted"><th class="text-left font-normal"></th><th class="text-right font-normal">{% translate "Spent" %}</th><th class="text-right font-normal">{% translate "Came in" %}</th></tr>
+      {% for m in months.months %}<tr class="border-t border-line"><td class="py-0.5">{{ m.full }}</td><td class="text-right">{{ m.spent|inr }}</td><td class="text-right">{{ m.income|inr }}</td></tr>{% endfor %}
+    </table>
+  </details>
+</figure>

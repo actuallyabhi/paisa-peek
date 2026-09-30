@@ -12,7 +12,7 @@ Paisapeek is a self-hosted money diary for people who want to know where every p
 - **Accounts.** Savings, cards, credit lines and cash, with real balances and card statement and due-date reminders.
 - **Recurring income and bills,** with push reminders and one-tap Paid / Received.
 - **Installable on your phone (PWA),** with light and dark themes. It works on mobile first.
-- **English and हिन्दी.** Adding a language is one `.po` file.
+- **English, हिन्दी and Hinglish.** Adding a language is one `.po` file.
 - **Full JSON backup and restore, plus CSV import and export.**
 
 Built with Django, Django Ninja, HTMX and Tailwind, on SQLite. It's a single Docker volume.
@@ -151,7 +151,7 @@ Only `amount` is required.
 
 ## Languages
 
-Paisapeek currently ships in English and हिन्दी. Use the 🌐 switcher in the header; until you pick one, your browser's language is used.
+Paisapeek ships in English, हिन्दी and **Hinglish** (`hi-latn`, Hindi in Latin letters). Switch with the 🌐 menu in the header or under **More → Language**; until you pick one, your browser's language is used.
 
 It's standard Django i18n:
 - UI text is marked with `{% translate %}` / `gettext` in the code.
@@ -174,7 +174,7 @@ It's standard Django i18n:
 
 A few notes:
 - Default category names are translated for display. Names you create stay as you typed them.
-- Dates and month names come from Django's locale data, with a few Hindi spelling fixes in our catalog.
+- Dates, AM/PM and common form errors are also in our catalogs (`ledger/i18n_data.py`). That fixes Django's Hindi spellings, and stops Devanagari leaking into Hinglish, because gettext falls back from `hi_Latn` to `hi`.
 - CSV column names stay in English.
 
 ## Backup, restore & export

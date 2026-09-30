@@ -1,0 +1,50 @@
+{% load money i18n %}
+{% if lending.lent %}
+{# How much you've lent: one bar, part-to-whole — repaid (blue) + still out (persimmon), 2px gap between. #}
+<figure class="card mb-4 p-4" data-chart>
+  <figcaption class="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+    <span class="font-display font-semibold">{% translate "Money you've lent" %}</span>
+    <span class="text-sm tabular-nums">{{ lending.lent|inr }}</span>
+  </figcaption>
+  <div class="flex h-3 gap-0.5 overflow-hidden rounded-full bg-sunk">
+    {% if lending.repaid %}<div class="h-full rounded-l-full bg-in {% if not lending.out %}rounded-r-full{% endif %}" style="width: {{ lending.repaid_w }}%" tabindex="0" data-tip-value="{{ lending.repaid|inr }}" data-tip-label="{% translate "repaid to you" %}"></div>{% endif %}
+    {% if lending.out %}<div class="h-full rounded-r-full bg-out {% if not lending.repaid %}rounded-l-full{% endif %}" style="width: {{ lending.out_w }}%" tabindex="0" data-tip-value="{{ lending.out|inr }}" data-tip-label="{% translate "still out" %}"></div>{% endif %}
+  </div>
+  <div class="mt-2 flex flex-wrap justify-between gap-x-4 gap-y-1 text-xs">
+    <span class="flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-sm bg-in" aria-hidden="true"></span>{% translate "repaid to you" %} <strong class="tabular-nums">{{ lending.repaid|inr }}</strong></span>
+    <span class="flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-sm bg-out" aria-hidden="true"></span>{% translate "still out" %} <strong class="tabular-nums">{{ lending.out|inr }}</strong></span>
+  </div>
+</figure>
+{% endif %}
+
+{% if owed_chart.rows %}
+{# Who owes the most: diverging bars around zero — right (blue) they owe you, left (persimmon) you owe them. #}
+<figure class="card mb-4 p-4" data-chart>
+  <figcaption class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+    <span class="font-display font-semibold">{% translate "Who owes the most" %}</span>
+    <span class="flex items-center gap-3 text-xs text-muted">
+      <span class="flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-sm bg-out" aria-hidden="true"></span>{% translate "I owe" %}</span>
+      <span class="flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-sm bg-in" aria-hidden="true"></span>{% translate "Owed to me" %}</span>
+    </span>
+  </figcaption>
+  <ul class="space-y-2.5">
+    {% for r in owed_chart.rows %}
+      <li class="grid grid-cols-[minmax(0,7.5rem)_1fr] items-center gap-3 text-sm" tabindex="0"
+          data-tip-value="{{ r.balance|inr }}" data-tip-label="{{ r.name }} · {% if r.balance > 0 %}{% translate "owes you" %}{% else %}{% translate "you owe" %}{% endif %}">
+        <div class="min-w-0">
+          {% if r.pk %}<a href="{% url 'party' r.pk %}" class="block truncate hover:underline">{{ r.name }}</a>{% else %}<span class="block truncate text-muted">{{ r.name }}</span>{% endif %}
+          <span class="block text-xs tabular-nums text-muted">{% if r.balance < 0 %}{{ r.balance|neg|inr_short }}{% else %}{{ r.balance|inr_short }}{% endif %}</span>
+        </div>
+        {# Left column = the "I owe" side, only as wide as its biggest value needs (same ₹ scale as the right). #}
+        <div class="grid" style="grid-template-columns: {{ owed_chart.left }}% 1fr">
+          <div class="flex justify-end border-r border-ink/30 pr-px">{% if r.balance < 0 %}<div class="h-3 rounded-l bg-out" style="width: {{ r.w }}%"></div>{% endif %}</div>
+          <div class="flex pl-px">{% if r.balance > 0 %}<div class="h-3 rounded-r bg-in" style="width: {{ r.w }}%"></div>{% endif %}</div>
+        </div>
+      </li>
+    {% endfor %}
+  </ul>
+  <details class="mt-3 text-xs"><summary class="cursor-pointer text-muted">{% translate "Show as table" %}</summary>
+    <table class="mt-1 w-full tabular-nums">{% for r in owed_chart.rows %}<tr class="border-t border-line"><td class="py-0.5">{{ r.name }}</td><td class="text-right">{% if r.balance > 0 %}{% blocktranslate with amount=r.balance|inr %}owes you {{ amount }}{% endblocktranslate %}{% else %}{% blocktranslate with amount=r.balance|neg|inr %}you owe {{ amount }}{% endblocktranslate %}{% endif %}</td></tr>{% endfor %}</table>
+  </details>
+</figure>
+{% endif %}

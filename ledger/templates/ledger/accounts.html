@@ -6,10 +6,10 @@
   <a href="{% url 'account_new' %}" class="btn">{% translate "+ Add" %}</a>
 </div>
 
-<div class="mb-4 grid grid-cols-3 gap-2 sm:gap-3">
-  <div class="card p-3"><div class="text-xs text-muted">{% translate "Money" %}</div><div class="font-semibold tabular-nums sm:text-lg">{{ assets|inr }}</div></div>
-  <div class="card p-3"><div class="text-xs text-muted">{% translate "Card/loan dues" %}</div><div class="font-semibold tabular-nums text-bad sm:text-lg">{{ dues|inr }}</div></div>
-  <div class="card p-3"><div class="text-xs text-muted">{% translate "Net" %}</div><div class="font-semibold tabular-nums sm:text-lg">{{ net|inr }}</div></div>
+<div class="stats">
+  <div class="stat"><div class="text-xs text-muted">{% translate "Money" %}</div><div class="stat-value">{{ assets|inr }}</div></div>
+  <div class="stat"><div class="text-xs text-muted">{% translate "Card/loan dues" %}</div><div class="stat-value text-bad">{{ dues|inr }}</div></div>
+  <div class="stat"><div class="text-xs text-muted">{% translate "Net" %}</div><div class="stat-value">{{ net|inr }}</div></div>
 </div>
 
 <ul class="card divide-y divide-line">

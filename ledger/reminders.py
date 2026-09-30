@@ -31,7 +31,8 @@ def due(now: datetime) -> list[tuple[str, str, str, str]]:
     for r in Recurring.objects.filter(active=True, next_due__lte=today + timedelta(days=30)):
         if r.next_due - timedelta(days=r.remind_days_before) <= today <= r.next_due:
             when = "today" if r.next_due == today else f"on {r.next_due:%d %b}"
-            title, done = (f"{r.name} expected {when}", "received") if r.is_income else (f"{r.name} due {when}", "paid")
+            title, done = ((f"{r.name} expected {when}", "received") if r.is_income
+                           else (f"{r.name} to send {when}", "sent") if r.is_transfer else (f"{r.name} due {when}", "paid"))
             out.append((f"recurring:{r.pk}:{r.next_due}", title, f"{inr(r.amount)} · tap to mark it {done}.",
                         reverse("recurring")))
     return out

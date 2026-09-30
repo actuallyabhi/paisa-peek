@@ -183,7 +183,8 @@ class RecurringForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["kind"].choices = [("expense", _("Expense / bill")), ("income", _("Income (salary, stipend, rent received…)"))]
+        self.fields["kind"].choices = [("expense", _("Expense / bill")), ("income", _("Income (salary, stipend, rent received…)")),
+                                       ("transfer", _("Transfer / sending money (not spending)"))]
         if not self.instance.pk:
             self.initial.setdefault("account", Account.default())
             self.initial.setdefault("next_due", timezone.localdate())

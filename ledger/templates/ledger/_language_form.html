@@ -1,0 +1,11 @@
+{% load i18n %}{% get_current_language as LANG %}{% get_available_languages as LANGS %}
+<form action="{% url 'set_language' %}" method="post" class="{{ form_class }}">
+  {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+  {% for code, name in LANGS %}
+    <button name="language" value="{{ code }}" lang="{{ code }}" {% if code == LANG %}aria-current="true"{% endif %}
+      class="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-sunk active:scale-[.98] {% if code == LANG %}bg-sunk font-semibold{% endif %}">
+      <span>{{ name }}{% if code == "hi-latn" %} <span class="text-xs font-normal text-muted">{% translate "(Hindi in English letters)" %}</span>{% endif %}</span>
+      {% if code == LANG %}<span aria-hidden="true" class="text-brand">✓</span>{% endif %}
+    </button>
+  {% endfor %}
+</form>

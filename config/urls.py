@@ -10,10 +10,12 @@ urlpatterns = [
     path("", views.home, name="home"),
     path("txns/", RedirectView.as_view(pattern_name="home", query_string=True)),
     path("sw.js", views.service_worker),
+    path("favicon.ico", RedirectView.as_view(url="/static/ledger/favicon-32.png", permanent=True)),  # browsers ask for it
     path("txns/<int:pk>/", views.txn_edit, name="txn_edit"),
     path("txns/<int:pk>/delete/", views.txn_delete, name="txn_delete"),
     path("txns/<int:pk>/status/", views.txn_status, name="txn_status"),
     path("inbox/", views.inbox, name="inbox"),
+    path("search/", views.search, name="search"),
     path("ramble/", RedirectView.as_view(pattern_name="home")),
     path("ramble/parse/", views.ramble_parse, name="ramble_parse"),
     path("ramble/save/", views.ramble_save, name="ramble_save"),

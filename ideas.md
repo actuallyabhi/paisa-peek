@@ -1,2 +1,2 @@
-- Option to add interest rates of savings account and the interest credit duration and a crown to automatically does the calculation and increase the amount based on it. 
+- Option to add interest rates of savings account and the interest credit duration and a cron job which run to do the calculation and increase the amount based on it. 
 - 

@@ -1,14 +1,17 @@
 {% load i18n %}{% if forms %}
-<form hx-post="{% url 'ramble_save' %}" hx-target="#review" hx-disabled-elt="find button[type=submit]" class="space-y-3">
+<form hx-post="{% url 'ramble_save' %}" hx-target="#review" hx-disabled-elt="find button[type=submit]" class="card animate-rise space-y-3 p-3 sm:p-4">
   <input type="hidden" name="source" value="{{ source|default:'ramble' }}">
   <div class="flex flex-wrap items-center justify-between gap-2">
-    <h2 class="font-medium">{% blocktranslate count n=forms|length %}{{ n }} found{% plural %}{{ n }} found{% endblocktranslate %}{% if parser %} <span class="text-xs font-normal text-muted">· {{ parser }}</span>{% endif %}</h2>
-    <button type="submit" class="btn">{% translate "Add selected" %}</button>
+    <h2 class="font-display font-semibold">
+      {% blocktranslate count n=forms|length %}{{ n }} found{% plural %}{{ n }} found{% endblocktranslate %}
+      {% if parser %}<span class="ml-1 rounded-full bg-sunk px-2 py-0.5 align-middle text-xs font-normal text-muted">{% if parser == "llm" %}✨ AI{% elif parser|slice:":9" == "heuristic" %}{% translate "built-in parser" %}{% else %}{{ parser }}{% endif %}</span>{% endif %}
+    </h2>
+    <button type="submit" class="btn min-h-10 px-4 text-sm">{% translate "Add selected" %}</button>
   </div>
-  {% if error %}<p class="text-sm text-bad">{{ error }}</p>{% endif %}
+  {% if error %}<p class="rounded-xl bg-bad-soft p-2 text-sm text-bad">{{ error }}</p>{% endif %}
   {% for f in forms %}{% include "ledger/_ramble_row.html" with i=forloop.counter0 %}{% endfor %}
-  <button type="submit" class="btn w-full sm:w-auto">{% translate "Add selected" %}</button>
+  <div class="flex justify-end"><button type="submit" class="btn w-full sm:w-auto">{% translate "Add selected" %}</button></div>
 </form>
 {% elif text or parser %}
-<p class="p-3 text-muted">{% translate "Couldn't find any amounts in that. Try something like “450 petrol yesterday”." %}</p>
+<p class="card animate-rise p-4 text-sm text-muted">{% translate "Couldn't find any amounts in that. Try something like “450 petrol yesterday”." %}</p>
 {% endif %}

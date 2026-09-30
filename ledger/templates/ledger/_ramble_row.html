@@ -1,5 +1,5 @@
 {% load money i18n %}
-<div class="ramble-row rounded-lg border border-line p-3 {% if f.errors %}ring-2 ring-bad{% endif %}">
+<div class="ramble-row rounded-2xl border border-line bg-paper/60 p-3 {% if f.errors %}ring-2 ring-bad{% endif %}">
   <input type="hidden" name="row" value="{{ i }}">
   {{ f.quote }}
   <div class="mb-3 flex flex-wrap items-center gap-2">

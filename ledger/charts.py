@@ -11,7 +11,7 @@ from decimal import Decimal
 from django.db.models import Sum
 from django.db.models.functions import TruncMonth
 from django.utils.formats import date_format
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext as _, ngettext
 
 from .models import Transaction
 
@@ -70,7 +70,9 @@ def months_in_out(month_start: date, n=6) -> dict:
         spent, came = got.get((m, "expense"), Decimal(0)), got.get((m, "income"), Decimal(0))
         out.append({"month": m, "label": date_format(m, "M"), "full": date_format(m, "F Y"), "spent": spent,
                     "income": came, "spent_h": pct(spent, top), "income_h": pct(came, top), "current": m == month_start})
-    return {"months": out, "ticks": [{"v": t, "h": pct(t, top)} for t in ticks], "has_data": bool(got)}
+    cur = out[-1]
+    return {"months": out, "ticks": [{"v": t, "h": pct(t, top)} for t in ticks], "has_data": bool(got),
+            "kept": cur["income"] - cur["spent"]}
 
 
 def category_shares(by_cat, spent) -> list[dict]:
@@ -82,19 +84,26 @@ def category_shares(by_cat, spent) -> list[dict]:
 
 
 def owed_diverging(parties, limit=8) -> dict:
-    """People balances around zero: right = they owe me, left = I owe. Tail folds into 'Others'."""
+    """People balances around zero: right = they owe me, left = I owe.
+
+    One ₹ scale for both sides, but each side only gets the width its biggest value needs, so when nearly
+    everyone owes you the bars use almost the full width instead of half of it. A tail of 2+ folds into "others".
+    """
     live = sorted([p for p in parties if p.balance], key=lambda p: -abs(p.balance))
     head, tail = live[:limit], live[limit:]
     rows = [{"name": p.name, "pk": p.pk, "balance": p.balance} for p in head]
-    if tail:
-        for sign, bucket in ((1, [p for p in tail if p.balance > 0]), (-1, [p for p in tail if p.balance < 0])):
-            if bucket:
-                rows.append({"name": _("%(n)d others") % {"n": len(bucket)}, "pk": None,
-                             "balance": sum(p.balance for p in bucket)})
-    top = max([abs(r["balance"]) for r in rows] + [0])
+    for bucket in ([p for p in tail if p.balance > 0], [p for p in tail if p.balance < 0]):
+        if len(bucket) == 1:
+            rows.append({"name": bucket[0].name, "pk": bucket[0].pk, "balance": bucket[0].balance})
+        elif bucket:
+            rows.append({"name": ngettext("%(n)d other", "%(n)d others", len(bucket)) % {"n": len(bucket)}, "pk": None,
+                         "balance": sum(p.balance for p in bucket)})
+    pos = max([r["balance"] for r in rows if r["balance"] > 0] + [0])
+    neg = max([-r["balance"] for r in rows if r["balance"] < 0] + [0])
     for r in rows:
-        r["w"] = pct(abs(r["balance"]), top)
-    return {"rows": rows}
+        side_max = pos if r["balance"] > 0 else neg
+        r["w"] = pct(abs(r["balance"]), side_max)
+    return {"rows": rows, "left": pct(neg, pos + neg)}
 
 
 def balance_steps(rows) -> dict | None:
@@ -111,7 +120,8 @@ def balance_steps(rows) -> dict | None:
         line += f" H{xs[i]} V{y(pts[i][1])}"
     area = line + f" H100 V{y(0)} Z"
     line += " H100"
-    hits = [{"x": xs[i], "w": (xs[i + 1] - xs[i]) if i + 1 < len(xs) else 100 - xs[i] or 2, "date": d, "value": v}
-            for i, (d, v) in enumerate(pts)]
+    # Hover targets: equal slices across the width (bigger than the 2px line), one per entry.
+    w = round(100 / len(pts), 3)
+    hits = [{"x": round(i * w, 3), "w": w, "date": d, "value": v} for i, (d, v) in enumerate(pts)]
     return {"line": line, "area": area, "zero": y(0), "end": {"x": 100, "y": y(pts[-1][1]), "value": pts[-1][1]},
             "hits": hits, "first": pts[0][0], "last": pts[-1][0]}

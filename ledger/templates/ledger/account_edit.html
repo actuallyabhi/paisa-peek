@@ -44,6 +44,7 @@
   <li class="p-4 text-center text-sm text-muted">{% translate "No transactions yet." %}</li>
 {% endfor %}
 </ul>
+{% include "ledger/_pagination.html" %}
 <form method="post" class="mt-4" onsubmit="return confirm('{% translate "Delete this account?" %}')">
   {% csrf_token %}<input type="hidden" name="action" value="delete"><button class="text-sm text-bad hover:underline">{% translate "Delete account" %}</button>
 </form>

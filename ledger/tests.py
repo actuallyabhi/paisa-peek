@@ -703,7 +703,7 @@ class RecurringIncomeTests(TestCase):
         from .reminders import due
         self.client.force_login(User.objects.create_user("u", password="x"))
         form = self.client.get("/recurring/").context["form"]
-        self.assertEqual([k for k, _ in form.fields["kind"].choices], ["expense", "income"])
+        self.assertEqual([k for k, _ in form.fields["kind"].choices], ["expense", "income", "transfer"])
         self.client.post("/recurring/", {"name": "Stipend", "amount": "25000", "kind": "income", "every": "1",
                                          "unit": "month", "next_due": "2026-10-05", "remind_days_before": "0", "active": "on"})
         stipend = Recurring.objects.get(name="Stipend")
@@ -734,7 +734,8 @@ class LanguageTests(TestCase):
     def test_switch_to_hindi_and_back(self):
         r = self.client.get("/?view=month&month=2026-09")
         self.assertContains(r, '<html lang="en">')
-        self.assertContains(r, 'action="/i18n/setlang/"')
+        self.assertNotContains(r, 'action="/i18n/setlang/"')  # not in the nav any more...
+        self.assertContains(self.client.get("/settings/"), 'action="/i18n/setlang/"')  # ...it lives in More
         self.assertContains(r, "Where it went")
 
         r = self.client.post("/i18n/setlang/", {"language": "hi", "next": "/?view=month&month=2026-09"})
@@ -745,6 +746,10 @@ class LanguageTests(TestCase):
         self.assertContains(r, "पेट्रोल और आना-जाना")       # shipped category name, stored in English
         self.assertContains(r, "सितंबर 2026")               # month name: Django's Hindi dates, spelling fixed by our catalog
         self.assertContains(self.client.get("/people/"), "लोग और कंपनियाँ")
+        # Direction matters: "owes you" = you RECEIVE (मिलना), not pay (देना).
+        from .models import Party
+        Transaction.objects.create(date=date(2026, 9, 1), amount=500, kind="lend", party=Party.objects.create(name="Om"))
+        self.assertContains(self.client.get("/people/"), "आपको ₹500.00 मिलने हैं")
         form = self.client.get("/").context["form"]
         self.assertEqual(str(form.fields["kind"].label), "प्रकार")
 
@@ -759,7 +764,13 @@ class LanguageTests(TestCase):
         import gettext
         import re
         from pathlib import Path
-        folder = Path(__file__).parent / "locale/hi/LC_MESSAGES"
+        for folder in sorted((Path(__file__).parent / "locale").glob("*/LC_MESSAGES")):
+            with self.subTest(language=folder.parent.name):
+                self._check_catalog(folder)
+
+    def _check_catalog(self, folder):
+        import gettext
+        import re
         po = (folder / "django.po").read_text()
         self.assertNotIn("#, fuzzy", po)
         msgids = set()
@@ -772,3 +783,204 @@ class LanguageTests(TestCase):
         with open(folder / "django.mo", "rb") as f:
             compiled = {k[0] if isinstance(k, tuple) else k for k, v in gettext.GNUTranslations(f)._catalog.items() if v}
         self.assertEqual(sorted(msgids - compiled), [])
+
+
+class HinglishAndSettingsTests(TestCase):
+    def setUp(self):
+        self.client.force_login(User.objects.create_user("u", password="x"))
+
+    def test_hinglish(self):
+        self.client.post("/i18n/setlang/", {"language": "hi-latn", "next": "/"})
+        r = self.client.get("/")
+        self.assertContains(r, '<html lang="hi-latn">')
+        self.assertContains(r, "Aaj kya kharcha hua?")
+        self.assertContains(self.client.get("/people/"), "Log aur companies")
+
+    def test_hinglish_never_leaks_devanagari_dates_or_errors(self):
+        # gettext falls back hi_Latn -> hi; our catalog must cover Django's date names and form errors.
+        Transaction.objects.create(date=date(2026, 9, 9), amount=10, description="Chai")
+        self.client.post("/i18n/setlang/", {"language": "hi-latn", "next": "/"})
+        r = self.client.get("/?view=month&month=2026-09")
+        self.assertContains(r, "Wednesday, 09 Sep")
+        self.assertNotContains(r, "सित")
+        r = self.client.post("/", {"date": "", "amount": "", "kind": "expense", "status": "confirmed"})
+        self.assertContains(r, "Yeh bharna zaroori hai.")
+
+    def test_language_section_in_settings(self):
+        r = self.client.get("/settings/")
+        self.assertContains(r, 'id="language"')
+        for code in ("en", "hi", "hi-latn"):
+            self.assertContains(r, f'name="language" value="{code}"')
+
+
+class PaginationTests(TestCase):
+    def setUp(self):
+        self.client.force_login(User.objects.create_user("u", password="x"))
+
+    def test_home_pages_keep_period_and_day_totals(self):
+        for i in range(35):  # 30 per page
+            Transaction.objects.create(date=date(2026, 9, 10), amount=10, description=f"t{i}")
+        r = self.client.get("/?view=month&month=2026-09")
+        self.assertEqual(sum(len(items) for _d, items, _s in r.context["days"]), 30)
+        self.assertContains(r, "?view=month&amp;month=2026-09&amp;page=2")  # querystring keeps the period
+        r2 = self.client.get("/?view=month&month=2026-09&page=2")
+        day, items, total = r2.context["days"][0]
+        self.assertEqual((len(items), total), (5, Decimal("350")))  # total is the whole day, not just this page
+        self.assertEqual(self.client.get("/?view=month&month=2026-09&page=99").context["page"].number, 2)  # clamps
+        self.assertEqual(self.client.get("/?view=month&month=2026-09&page=abc").context["page"].number, 1)
+
+    def test_every_list_uses_the_pager(self):
+        from .models import Party, Recurring
+        om = Party.objects.create(name="Om")
+        acct = Account.objects.create(name="Cash", kind="cash")
+        for i in range(30):
+            Transaction.objects.create(date=date(2026, 9, 1), amount=1, kind="lend", party=om, account=acct, status="pending")
+            Party.objects.create(name=f"p{i}")
+            Recurring.objects.create(name=f"r{i}", amount=1, next_due=date(2026, 10, 1))
+        for url in ("/inbox/", f"/people/{om.pk}/", "/people/?all=1", "/recurring/", f"/accounts/{acct.pk}/"):
+            with self.subTest(url=url):
+                self.assertContains(self.client.get(url), 'rel="next"')
+
+
+class CelebrationTests(TestCase):
+    def setUp(self):
+        self.client.force_login(User.objects.create_user("u", password="x"))
+
+    def test_new_row_flashes_once_and_toast_celebrates(self):
+        from django.utils import timezone
+        today = timezone.localdate()
+        r = self.client.post("/", {"date": today.isoformat(), "amount": "50", "kind": "expense", "status": "confirmed",
+                                   "description": "Chai"}, follow=True)
+        t = Transaction.objects.get()
+        self.assertContains(r, "data-celebrate")
+        self.assertContains(r, "animate-flash")
+        self.assertIn(t.pk, r.context["flash_t"])
+        self.assertNotContains(self.client.get("/"), "animate-flash")  # only once
+
+    def test_first_log_of_the_day_mentions_the_streak(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        today = timezone.localdate()
+        for d in (1, 2):
+            Transaction.objects.create(date=today - timedelta(days=d), amount=5)
+        r = self.client.post("/", {"date": today.isoformat(), "amount": "50", "kind": "expense", "status": "confirmed"}, follow=True)
+        self.assertContains(r, "3-day streak!")
+        r = self.client.post("/", {"date": today.isoformat(), "amount": "20", "kind": "expense", "status": "confirmed"}, follow=True)
+        self.assertNotContains(r, "day streak!")  # only the day's first log gets the shout-out
+
+    def test_add_just_this_triggers_coin_burst(self):
+        row = {"r0-date": "2026-09-01", "r0-amount": "10", "r0-kind": "expense", "r0-description": "x", "r0-quote": "q"}
+        self.assertEqual(self.client.post("/ramble/add/0/", row)["HX-Trigger"], "celebrate")
+
+
+class TransferAndChartTests(TestCase):
+    def setUp(self):
+        self.client.force_login(User.objects.create_user("u", password="x"))
+
+    def test_monthly_transfer_to_father_is_not_spending(self):
+        from .models import Recurring
+        sav = Account.objects.create(name="HDFC", kind="savings", opening_balance=50000, is_default=True)
+        self.client.post("/recurring/", {"name": "Papa", "amount": "10000", "kind": "transfer", "every": "1", "unit": "month",
+                                         "next_due": "2026-10-01", "remind_days_before": "0", "active": "on"})
+        papa = Recurring.objects.get(name="Papa")
+        Recurring.objects.create(name="Rent", amount=9000, next_due=date(2026, 10, 5))
+        r = self.client.get("/recurring/")
+        self.assertEqual((r.context["money_out"], r.context["transfers"]), (Decimal("9000"), Decimal("10000")))
+        self.assertContains(r, ">Sent<")
+        self.client.post(f"/recurring/{papa.pk}/done/", {"action": "paid"})
+        t = Transaction.objects.get(description="Papa")
+        self.assertEqual((t.kind, t.account), ("transfer", sav))
+        self.assertEqual(sav.balance, Decimal("40000"))  # money left the account...
+        month = f"{t.date:%Y-%m}"
+        self.assertEqual(self.client.get(f"/?view=month&month={month}").context["spent"], 0)  # ...but isn't spending
+
+    def test_charts_render_and_can_be_hidden(self):
+        from .models import Party
+        om = Party.objects.create(name="Om")
+        Transaction.objects.create(date=date(2026, 9, 3), amount=1000, kind="lend", party=om)
+        Transaction.objects.create(date=date(2026, 9, 9), amount=400, kind="repay_in", party=om)
+        Transaction.objects.create(date=date(2026, 9, 5), amount=250, description="Chai")
+        Transaction.objects.create(date=date(2026, 9, 6), amount=3000, kind="income", description="Stipend")
+        home = self.client.get("/?view=month&month=2026-09")
+        self.assertContains(home, "Spent vs came in")
+        self.assertContains(home, "This month you kept ₹2,750.00")
+        people = self.client.get("/people/")
+        self.assertContains(people, "Money you've lent")
+        self.assertEqual((people.context["lending"]["repaid"], people.context["lending"]["out"]), (Decimal("400"), Decimal("600")))
+        self.assertContains(people, "Who owes the most")
+        self.assertContains(self.client.get(f"/people/{om.pk}/"), "Balance over time")
+        for r in (home, people):
+            self.assertContains(r, "data-chart")
+        self.assertContains(self.client.get("/settings/"), 'id="charts-toggle"')
+
+    def test_stat_tiles_cannot_overflow(self):
+        for url in ("/people/", "/accounts/", "/recurring/"):
+            with self.subTest(url=url):
+                self.assertContains(self.client.get(url), 'class="stats"')
+
+
+class SearchTests(TestCase):
+    def setUp(self):
+        from .models import Party, Recurring, Tag
+        self.client.force_login(User.objects.create_user("u", password="x"))
+        self.hdfc = Account.objects.create(name="HDFC Savings", kind="savings", last4="1234")
+        self.akhand = Party.objects.create(name="Akhand")
+        t = Transaction.objects.create(date=date(2026, 9, 29), amount=450, description="Petrol pump", account=self.hdfc,
+                                       category=Category.objects.get(name="Fuel & Transport"))
+        t.tags.add(Tag.objects.create(name="PRYJ"))
+        Transaction.objects.create(date=date(2026, 9, 28), amount=200, description="Chai", party=self.akhand, kind="lend")
+        Transaction.objects.create(date=date(2026, 9, 27), amount=99, description="Hidden", status="ignored")
+        Recurring.objects.create(name="Akhand gym share", amount=500, next_due=date(2026, 10, 5))
+
+    def results(self, q):
+        r = self.client.get("/search/", {"q": q})
+        self.assertEqual(r.status_code, 200)
+        return r, [t.description for t in (r.context.get("txns") or [])]
+
+    def test_finds_every_kind_of_thing(self):
+        r, txns = self.results("akhand")
+        self.assertEqual(txns, ["Chai"])  # via the person
+        self.assertEqual([p.name for p in r.context["parties"]], ["Akhand"])
+        self.assertEqual([x.name for x in r.context["recurring"]], ["Akhand gym share"])
+        self.assertEqual(r.context["total"], 3)
+        self.assertEqual(self.results("pryj")[1], ["Petrol pump"])       # tag
+        self.assertEqual(self.results("fuel")[1], ["Petrol pump"])       # category
+        self.assertEqual(self.results("₹450")[1], ["Petrol pump"])       # exact amount
+        self.assertEqual([a.name for a in self.results("1234")[0].context["accounts"]], ["HDFC Savings"])  # last 4
+        self.assertEqual(self.results("hidden")[1], [])                  # ignored stays hidden
+
+    def test_highlight_escapes_user_text(self):
+        from .templatetags.ui import highlight
+        self.assertEqual(highlight("<b>Chai</b> & samosa", "chai"),
+                         '&lt;b&gt;<mark class="rounded bg-gold-soft px-0.5 text-ink">Chai</mark>&lt;/b&gt; &amp; samosa')
+        self.assertContains(self.client.get("/search/", {"q": "petrol"}), "<mark")
+
+    def test_empty_and_no_match_states_and_live_typing(self):
+        self.assertContains(self.client.get("/search/"), "Find anything")
+        self.assertContains(self.client.get("/search/", {"q": "zzz"}), "Nothing matches")
+        r = self.client.get("/search/", {"q": "chai"}, headers={"HX-Request": "true"})
+        self.assertContains(r, 'id="results"')
+        self.assertContains(self.client.get("/"), 'id="search-link"')
+
+
+class AssetVersionTests(TestCase):
+    """Stale-CSS guard: CSS/JS URLs carry a fingerprint so the service worker's cache can't serve an old build."""
+
+    def test_css_and_js_are_fingerprinted_on_every_page(self):
+        import re
+        login = self.client.get("/login/").content.decode()
+        v = re.search(r'app\.css\?v=([0-9a-f]{10})"', login).group(1)
+        self.assertIn(f"htmx.min.js?v={v}", login)
+        self.client.force_login(User.objects.create_user("u", password="x"))
+        self.assertContains(self.client.get("/"), f"app.css?v={v}")
+
+
+class NavTests(TestCase):
+    def test_recurring_lives_under_more(self):
+        self.client.force_login(User.objects.create_user("u", password="x"))
+        home = self.client.get("/").content.decode()
+        header = home.split("<main", 1)[0]
+        self.assertNotIn('href="/recurring/"', header)  # not a top-bar tab any more
+        self.assertContains(self.client.get("/settings/"), 'href="/recurring/"')  # reachable from More
+        more = [label for name, label, active, icon in self.client.get("/recurring/").context["tabs"] if "recurring" in active]
+        self.assertEqual([str(m) for m in more], ["More"])  # More stays highlighted on Recurring pages

@@ -12,7 +12,14 @@
       if (t !== "light" && t !== "dark") t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
       document.documentElement.dataset.theme = t;
       document.querySelector("meta[name=theme-color]").content = t === "dark" ? "#1f1c17" : "#fffcf6";
+      // Charts on/off (More → Display), per device, applied before paint so they never flash.
+      let c; try { c = localStorage.getItem("charts"); } catch (e) {}
+      document.documentElement.dataset.charts = c === "off" ? "off" : "on";
     })();
+    function setCharts(on) {
+      document.documentElement.dataset.charts = on ? "on" : "off";
+      try { localStorage.setItem("charts", on ? "on" : "off"); } catch (e) {}
+    }
     function toggleTheme() {
       const t = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
       document.documentElement.dataset.theme = t;
@@ -31,8 +38,8 @@
   <link rel="apple-touch-icon" href="{% static 'ledger/apple-touch-icon.png' %}">
   <link rel="preload" href="{% static 'ledger/fonts/figtree-latin-400-normal.woff2' %}" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="{% static 'ledger/fonts/bricolage-grotesque-latin-800-normal.woff2' %}" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="{% static 'ledger/app.css' %}">
-  <script src="{% static 'ledger/htmx.min.js' %}" defer></script>
+  <link rel="stylesheet" href="{% static 'ledger/app.css' %}?v={{ asset_v }}">
+  <script src="{% static 'ledger/htmx.min.js' %}?v={{ asset_v }}" defer></script>
 </head>
 {% with u=request.resolver_match.url_name %}
 <body class="min-h-dvh antialiased {% if user.is_authenticated %}pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:pb-0{% endif %}"
@@ -50,29 +57,21 @@
           {% endfor %}
         </div>
       {% endif %}
-      {# Language switcher: Django's set_language view stores the choice in a cookie. #}
-      <details class="relative ml-auto">
-        <summary class="grid h-10 cursor-pointer list-none place-items-center rounded-full px-2.5 text-sm font-medium hover:bg-sunk [&::-webkit-details-marker]:hidden" aria-label="{% translate "Language" %}" title="{% translate "Language" %}">
-          <span class="flex items-center gap-1"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>{{ LANG|upper }}</span>
-        </summary>
-        <form action="{% url 'set_language' %}" method="post" class="card absolute right-0 top-11 z-30 min-w-36 overflow-hidden p-1 shadow-lg">
-          {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
-          {% for code, name in LANGS %}
-            <button name="language" value="{{ code }}" class="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left hover:bg-sunk {% if code == LANG %}font-semibold{% endif %}" lang="{{ code }}">
-              {{ name }}{% if code == LANG %}<span aria-hidden="true">✓</span>{% endif %}
-            </button>
-          {% endfor %}
-        </form>
-      </details>
-      <button type="button" onclick="toggleTheme()" class="grid h-10 w-10 place-items-center rounded-full hover:bg-sunk" aria-label="{% translate "Switch light/dark mode" %}" title="{% translate "Light / dark" %}">
+      {% if user.is_authenticated %}
+      <a href="{% url 'search' %}" id="search-link" class="ml-auto grid h-10 w-10 place-items-center rounded-full hover:bg-sunk {% if u == 'search' %}bg-sunk text-brand{% endif %}"
+         aria-label="{% translate "Search" %}" title="{% translate "Search" %} ( / )">
+        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      </a>
+      {% endif %}
+      <button type="button" onclick="toggleTheme()" class="{% if not user.is_authenticated %}ml-auto {% endif %}grid h-10 w-10 place-items-center rounded-full hover:bg-sunk" aria-label="{% translate "Switch light/dark mode" %}" title="{% translate "Light / dark" %}">
         <svg class="h-5 w-5 dark:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>
         <svg class="hidden h-5 w-5 dark:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
       </button>
     </nav>
   </header>
 
-  <main class="mx-auto max-w-4xl px-4 py-4 sm:py-6">
-    {% for m in messages %}<p class="animate-pop mb-4 rounded-2xl p-3 text-sm font-medium {% if m.level_tag == 'error' %}bg-bad-soft text-bad{% else %}bg-good-soft text-good{% endif %}">{{ m }}</p>{% endfor %}
+  <main class="animate-rise mx-auto max-w-4xl px-4 py-4 sm:py-6">
+    {% for m in messages %}<p role="status" data-toast {% if "celebrate" in m.tags %}data-celebrate{% endif %} class="animate-pop mb-4 flex items-start gap-2 rounded-2xl p-3 text-sm font-medium {% if m.level_tag == 'error' %}bg-bad-soft text-bad{% else %}bg-good-soft text-good{% endif %}">{% if m.level_tag != 'error' %}<span aria-hidden="true" class="animate-wiggle">✨</span>{% endif %}<span>{{ m }}</span></p>{% endfor %}
     {% block content %}{% endblock %}
   </main>
 
@@ -80,7 +79,7 @@
   {# Phones: thumb-reachable tab bar instead of the header links. #}
   <nav class="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden" aria-label="{% translate "Main" %}">
     <div class="grid grid-cols-5 text-[11px]">
-      {% for name, label, active, icon in tabs %}{% if name != "recurring" %}
+      {% for name, label, active, icon in tabs %}
       <a href="{% url name %}" class="flex flex-col items-center gap-0.5 py-2 {% if u in active %}font-semibold text-brand{% else %}text-muted{% endif %}" {% if u in active %}aria-current="page"{% endif %}>
         <span class="relative">
           <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="{% if u in active %}2.2{% else %}1.8{% endif %}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{ icon|safe }}</svg>
@@ -88,7 +87,7 @@
         </span>
         {{ label }}
       </a>
-      {% endif %}{% endfor %}
+      {% endfor %}
     </div>
   </nav>
   <datalist id="party-names">{% for n in party_names %}<option value="{{ n }}">{% endfor %}</datalist>
@@ -110,6 +109,47 @@
       document.addEventListener("focusout", () => tip.hidden = true);
       addEventListener("scroll", () => tip.hidden = true, {passive: true});
     })();
+    // Micro-interactions: coin burst for celebrations, toasts that leave on their own, count-up totals.
+    (() => {
+      const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      window.coinBurst = (from) => {
+        if (calm) return;
+        const r = from ? from.getBoundingClientRect() : {left: innerWidth / 2, top: innerHeight / 3, width: 0, height: 0};
+        for (let i = 0; i < 9; i++) {
+          const c = document.createElement("span");
+          c.className = "coin"; c.textContent = i % 3 ? "🪙" : "✨";
+          c.style.left = r.left + r.width / 2 + "px"; c.style.top = r.top + r.height / 2 + "px";
+          c.style.setProperty("--dx", (Math.random() * 180 - 90) + "px");
+          c.style.setProperty("--dy", -(Math.random() * 120 + 40) + "px");
+          c.style.setProperty("--rot", (Math.random() * 540 - 270) + "deg");
+          c.style.animationDelay = i * 30 + "ms";
+          document.body.append(c); setTimeout(() => c.remove(), 1400);
+        }
+      };
+      document.querySelectorAll("[data-celebrate]").forEach(t => setTimeout(() => coinBurst(t), 150));
+      document.querySelectorAll("[data-toast]").forEach(t => setTimeout(() => {
+        // With reduced motion there's no exit animation (so no animationend): just remove it.
+        if (calm) return t.remove();
+        t.classList.add("toast-leaving"); t.addEventListener("animationend", () => t.remove(), {once: true});
+      }, 4500));
+      document.body.addEventListener("celebrate", e => coinBurst(e.target));  // HX-Trigger from "Add just this"
+      // Totals count up from zero once, like a till ringing up.
+      const fmt = new Intl.NumberFormat("en-IN", {style: "currency", currency: "INR"});
+      document.querySelectorAll("[data-countup]").forEach(el => {
+        const end = parseFloat(el.dataset.countup); if (calm || !(end > 0)) return;
+        const t0 = performance.now(), dur = 600;
+        const step = now => { const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+          el.textContent = fmt.format(end * e); if (k < 1) requestAnimationFrame(step); };
+        requestAnimationFrame(step);
+      });
+    })();
+    // "/" jumps to search from anywhere (unless you're typing in a field).
+    document.addEventListener("keydown", e => {
+      if (e.key !== "/" || e.metaKey || e.ctrlKey || /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) return;
+      const box = document.getElementById("search-box");
+      e.preventDefault();
+      box ? box.focus() : document.getElementById("search-link")?.click();
+    });
     if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");
   </script>
 </body>

@@ -1,0 +1,100 @@
+{% extends "base.html" %}{% load money ui i18n %}
+{% block title %}{% if q %}{{ q }} · {% endif %}{% translate "Search" %}{% endblock %}
+{% block content %}
+{# Live search: typing re-fetches this page and swaps only #results (hx-select); the URL follows, so results are linkable. #}
+<form method="get" action="{% url 'search' %}" class="mb-4" role="search">
+  <label for="search-box" class="sr-only">{% translate "Search" %}</label>
+  <div class="relative">
+    <svg class="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input id="search-box" type="search" name="q" value="{{ q }}" autofocus autocomplete="off" enterkeyhint="search"
+      placeholder="{% translate "Search transactions, people, bills, accounts…" %}" class="mt-0! rounded-full! py-3! pl-10!"
+      hx-get="{% url 'search' %}" hx-trigger="input changed delay:250ms, search" hx-target="#results" hx-select="#results"
+      hx-swap="outerHTML" hx-push-url="true" hx-indicator="#search-busy">
+    <span id="search-busy" class="htmx-indicator absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted">…</span>
+  </div>
+</form>
+
+<div id="results">
+{% if not q %}
+  <div class="card p-8 text-center">
+    <div class="text-4xl" aria-hidden="true">🔎</div>
+    <p class="mt-2 font-display font-semibold">{% translate "Find anything" %}</p>
+    <p class="text-sm text-muted">{% translate "Try a name (Akhand), a shop (Swiggy), a tag (PRYJ), a category, an account or an amount (450)." %}</p>
+  </div>
+{% elif not total %}
+  <div class="card animate-rise p-8 text-center">
+    <div class="text-4xl" aria-hidden="true">🤷</div>
+    <p class="mt-2 font-display font-semibold">{% blocktranslate %}Nothing matches “{{ q }}”{% endblocktranslate %}</p>
+    <p class="text-sm text-muted">{% translate "Check the spelling, or try fewer words." %}</p>
+  </div>
+{% else %}
+  <p class="mb-3 text-sm text-muted">{% blocktranslate count n=total %}{{ n }} result{% plural %}{{ n }} results{% endblocktranslate %}</p>
+
+  {% if parties %}
+  <h2 class="mb-1.5 px-1 font-display text-sm font-semibold">{% translate "People & companies" %}</h2>
+  <ul class="card mb-4 divide-y divide-line overflow-hidden">
+    {% for p in parties %}
+      <li><a href="{% url 'party' p.pk %}" class="flex items-center gap-3 px-3 py-2.5 active:bg-sunk">
+        <span class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-sunk" aria-hidden="true">{% if p.kind == "company" %}🏢{% else %}🙂{% endif %}</span>
+        <span class="min-w-0 flex-1 truncate font-medium">{{ p.name|highlight:q }}</span>
+        <span class="whitespace-nowrap text-sm tabular-nums">
+          {% if p.balance > 0 %}<span class="text-good">{% blocktranslate with amount=p.balance|inr %}owes you {{ amount }}{% endblocktranslate %}</span>
+          {% elif p.balance < 0 %}<span class="text-bad">{% blocktranslate with amount=p.balance|neg|inr %}you owe {{ amount }}{% endblocktranslate %}</span>
+          {% else %}<span class="text-muted">{% translate "settled" %}</span>{% endif %}
+        </span>
+      </a></li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
+  {% if recurring %}
+  <h2 class="mb-1.5 px-1 font-display text-sm font-semibold">{% translate "Recurring" %}</h2>
+  <ul class="card mb-4 divide-y divide-line overflow-hidden">
+    {% for r in recurring %}
+      <li><a href="{% url 'recurring_edit' r.pk %}" class="flex items-center gap-3 px-3 py-2.5 active:bg-sunk">
+        <span class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-sunk" aria-hidden="true">{% if r.is_income %}💰{% elif r.is_transfer %}🔁{% else %}🗓️{% endif %}</span>
+        <span class="min-w-0 flex-1"><span class="block truncate font-medium">{{ r.name|highlight:q }}</span>
+          <span class="block text-xs text-muted">{{ r.cadence }} · {% blocktranslate with day=r.next_due|date:"d M" %}Next {{ day }}{% endblocktranslate %}</span></span>
+        <span class="whitespace-nowrap text-sm tabular-nums {% if r.is_income %}text-good{% endif %}">{{ r.amount|inr }}</span>
+      </a></li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
+  {% if accounts %}
+  <h2 class="mb-1.5 px-1 font-display text-sm font-semibold">{% translate "Accounts" %}</h2>
+  <ul class="card mb-4 divide-y divide-line overflow-hidden">
+    {% for a in accounts %}
+      <li><a href="{% url 'account_edit' a.pk %}" class="flex items-center gap-3 px-3 py-2.5 active:bg-sunk">
+        <span class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-sunk" aria-hidden="true">{% if a.is_credit %}💳{% elif a.kind == "cash" %}💵{% else %}🏦{% endif %}</span>
+        <span class="min-w-0 flex-1"><span class="block truncate font-medium">{{ a.name|highlight:q }}</span>
+          <span class="block text-xs text-muted">{{ a.get_kind_display }}{% if a.last4 %} · xx{{ a.last4|highlight:q }}{% endif %}</span></span>
+      </a></li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
+  {% if txns %}
+  <h2 class="mb-1.5 px-1 font-display text-sm font-semibold">{% translate "Transactions" %} <span class="font-normal text-muted">· {{ page.paginator.count }}</span></h2>
+  <ul class="card divide-y divide-line overflow-hidden">
+    {% for t in txns %}
+      <li><a href="{% url 'txn_edit' t.pk %}?next={{ request.get_full_path|urlencode }}" class="flex items-center gap-3 px-3 py-2.5 active:bg-sunk">
+        <span class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-sunk text-lg" aria-hidden="true">{{ t|emoji }}</span>
+        <div class="min-w-0 flex-1">
+          <div class="truncate font-medium">{{ t.description|default:t.merchant|default:t.get_kind_display|highlight:q }}</div>
+          <div class="truncate text-xs text-muted">
+            {{ t.date|date:"d M Y" }}{% if t.category %} · {% translate t.category.name as cat %}{{ cat|highlight:q }}{% endif %}{% if t.account %} · {{ t.account.name|highlight:q }}{% endif %}
+            {% if t.party %}<span class="text-good">@{{ t.party.name|highlight:q }}</span>{% endif %}
+            {% for tag in t.tags.all %}<span class="text-brand">#{{ tag.name|highlight:q }}</span>{% endfor %}
+            {% if t.notes %}· {{ t.notes|truncatechars:40|highlight:q }}{% endif %}
+          </div>
+        </div>
+        <div class="whitespace-nowrap font-display font-semibold tabular-nums {% if t.sign == '+' %}text-good{% endif %}">{{ t.sign }}{{ t.amount|inr }}</div>
+      </a></li>
+    {% endfor %}
+  </ul>
+  {% include "ledger/_pagination.html" %}
+  {% endif %}
+{% endif %}
+</div>
+{% endblock %}

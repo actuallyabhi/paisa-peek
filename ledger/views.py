@@ -1,6 +1,6 @@
 import json
 from datetime import date, timedelta
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from itertools import groupby
 
 from django.contrib import messages
@@ -19,28 +19,57 @@ from django.utils.translation import gettext as _, gettext_lazy, ngettext
 from django.views.decorators.http import require_POST
 
 from . import backup, charts, csv_import, llm, push, ramble as ramble_parser
+from .paging import paginate
 from .forms import now_hm, AccountForm, NotifyForm, PartyForm, PartyTxnForm, RambleForm, RecurringForm, TxnForm
 from .models import Account, ApiToken, Category, NotifySettings, Party, PushSubscription, Recurring, Transaction
 
 
+def asset_version() -> str:
+    """Fingerprint of the CSS/JS files, appended as ?v= so a rebuilt stylesheet gets a new URL.
+    The service worker caches /static/ cache-first; without this, phones keep a stale app.css forever."""
+    import hashlib
+    import os
+
+    from django.contrib.staticfiles import finders
+
+    stamp = "|".join(f"{os.stat(p).st_mtime_ns}-{os.stat(p).st_size}"
+                     for p in filter(None, (finders.find(n) for n in ("ledger/app.css", "ledger/htmx.min.js"))))
+    return hashlib.sha1(stamp.encode()).hexdigest()[:10]
+
+
 def pending_count(request):
     if not request.user.is_authenticated:
-        return {}
+        return {"asset_v": asset_version()}
     return {
         "pending_count": Transaction.objects.filter(status="pending").count(),
         "party_names": Party.objects.values_list("name", flat=True),  # <datalist> for the person/company field
         "tabs": TABS,
+        "asset_v": asset_version(),
+        # Rows added on the previous request flash once so your eye finds them (see _celebrate).
+        "flash_t": request.session.pop("flash_t", []), "flash_r": request.session.pop("flash_r", []),
     }
 
 
-# (url name, label, url names that highlight it, SVG icon). Recurring lives under "More" on phones.
+def _celebrate(request, message, txns=(), recurring=()):
+    """Success toast with a coin burst; new rows flash on the next page; a streak shout-out on the day's first log."""
+    request.session["flash_t"] = [t.pk for t in txns]
+    request.session["flash_r"] = [r.pk for r in recurring]
+    today = timezone.localdate()
+    if any(t.date == today for t in txns):
+        earlier = Transaction.objects.filter(date=today).exclude(pk__in=[t.pk for t in txns]).exclude(status="ignored")
+        n, _logged = _streak(today)
+        if not earlier.exists() and n >= 2:
+            message = f"{message} " + _("🔥 %(n)d-day streak!") % {"n": n}
+    messages.success(request, message, extra_tags="celebrate")
+
+
+# (url name, label, url names that highlight it, SVG icon). Recurring, Import and Search live under "More"/the header.
 TABS = [
     ("home", gettext_lazy("Home"), {"home", "txn_edit"}, '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>'),
     ("people", gettext_lazy("People"), {"people", "party"},
      '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.3a5 5 0 0 1 5.5 4.7"/>'),
     ("accounts", gettext_lazy("Accounts"), {"accounts", "account_edit", "account_new"},
      '<rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M2.5 9.5h19M6 15h4"/>'),
-    ("recurring", gettext_lazy("Recurring"), {"recurring", "recurring_edit"}, ""),
     ("inbox", gettext_lazy("Inbox"), {"inbox"}, '<path d="M3 13l2.5-8h13L21 13v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M3 13h5l1.5 2.5h5L16 13h5"/>'),
     ("settings", gettext_lazy("More"), {"settings", "import_csv", "recurring", "recurring_edit"},
      '<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>'),
@@ -89,7 +118,6 @@ def _home_for(request, d: date) -> str:
 
 # A different line each day. Human, a little cheeky, never preachy.
 QUIPS = [
-    gettext_lazy("Chamdi jaaye, par damdi na jaaye."),
     gettext_lazy("Chai counts. So does the samosa."),
     gettext_lazy("Future you says thanks for writing this down."),
     gettext_lazy("Every rupee has a story. What's today's?"),
@@ -130,7 +158,7 @@ def home(request):
     form = TxnForm(request.POST or None, initial={"kind": "expense", "status": "confirmed"})
     if request.method == "POST" and form.is_valid():
         t = form.save()
-        messages.success(request, [_("Noted ✍️"), _("Logged. Every paisa accounted for."), _("Got it — future you approves.")][t.pk % 3])
+        _celebrate(request, [_("Noted ✍️"), _("Logged. Every paisa accounted for."), _("Got it — future you approves.")][t.pk % 3], [t])
         return redirect(_home_for(request, t.date))
 
     qs = (Transaction.objects.filter(date__range=(period["start"], period["end"])).exclude(status="ignored")
@@ -139,17 +167,19 @@ def home(request):
     by_cat = confirmed.filter(kind="expense").values("category__name").annotate(total=Sum("amount")).order_by("-total")
     today = timezone.localdate()
     elapsed = ((min(today, period["end"]) - period["start"]).days + 1) if period["start"] <= today else 0
-    days = []  # [(date, [txns], spent that day)] newest first, like a bank app
-    for day, items in groupby(qs, key=lambda t: t.date):
-        items = list(items)
-        days.append((day, items, sum(t.amount for t in items if t.kind == "expense" and t.status == "confirmed")))
+    # Paginated, then grouped by day; day totals come from the whole day even if it spans two pages.
+    page = paginate(request, qs, per_page=30)
+    day_totals = dict(confirmed.filter(kind="expense").order_by().values("date").annotate(s=Sum("amount"))
+                      .values_list("date", "s"))
+    days = [(day, list(items), day_totals.get(day, 0)) for day, items in groupby(page, key=lambda t: t.date)]
     return render(request, "ledger/home.html", {
-        "p": period, "form": form, "days": days, "by_cat": by_cat, "llm_on": llm.enabled(),
+        "p": period, "form": form, "days": days, "page": page, "by_cat": by_cat, "llm_on": llm.enabled(),
         "spent": (spent := confirmed.filter(kind="expense").aggregate(s=Sum("amount"))["s"] or 0),
         "income": confirmed.filter(kind="income").aggregate(s=Sum("amount"))["s"] or 0,
         "per_day": spent / elapsed if elapsed else 0,
         "focus_log": request.GET.get("log") == "1",
         "daily": charts.daily_spend(qs, period["start"], period["end"], today, period["view"]),
+        "months": charts.months_in_out(period["start"].replace(day=1)) if period["view"] == "month" else None,
         "cat_rows": charts.category_shares(by_cat, spent),
         # Brand-new install: offer restore / first account instead of an empty list.
         "onboarding": not Transaction.objects.exists() and not Account.objects.exists(),
@@ -182,7 +212,8 @@ def txn_delete(request, pk):
 @login_required
 def inbox(request):
     return render(request, "ledger/inbox.html", {
-        "txns": Transaction.objects.filter(status="pending").select_related("account", "category"),
+        "txns": (page := paginate(request, Transaction.objects.filter(status="pending").select_related("account", "category"))),
+        "page": page,
         "categories": Category.objects.all(),
     })
 
@@ -321,11 +352,11 @@ def account_edit(request, pk=None):
     form = AccountForm(request.POST or None, instance=a)
     if request.method == "POST" and form.is_valid():
         form.save()
-        messages.success(request, _("Account saved."))
+        _celebrate(request, _("Account saved."))
         return redirect("accounts")
-    recent = (Transaction.objects.filter(Q(account=a) | Q(to_account=a)).exclude(status="ignored")
-              .select_related("category", "party")[:30] if a else [])
-    return render(request, "ledger/account_edit.html", {"a": a, "form": form, "recent": recent,
+    recent = paginate(request, Transaction.objects.filter(Q(account=a) | Q(to_account=a)).exclude(status="ignored")
+                      .select_related("category", "party"), per_page=20) if a else []
+    return render(request, "ledger/account_edit.html", {"a": a, "form": form, "recent": recent, "page": recent,
                                                         "credit_kinds": json.dumps(sorted(Account.CREDIT_KINDS))})
 
 
@@ -335,16 +366,19 @@ def account_edit(request, pk=None):
 def recurring(request):
     form = RecurringForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
-        form.save()
+        r = form.save()
+        _celebrate(request, _("%(name)s added 🗓️ — we'll remind you on time.") % {"name": r.name}, recurring=[r])
         return redirect("recurring")
     items = list(Recurring.objects.select_related("category", "account"))
     active = [r for r in items if r.active]
     money_in = sum(r.monthly_cost for r in active if r.is_income)
-    money_out = sum(r.monthly_cost for r in active if not r.is_income)
+    money_out = sum(r.monthly_cost for r in active if not r.is_income and not r.is_transfer)
+    transfers = sum(r.monthly_cost for r in active if r.is_transfer)
     return render(request, "ledger/recurring.html", {
-        "items": items, "form": form, "today": timezone.localdate(),
-        "money_in": money_in, "money_out": money_out, "net": money_in - money_out,
-        "minimum": sum(r.monthly_cost for r in active if not r.is_income and r.essential),
+        "items": (page := paginate(request, items)), "page": page, "has_items": bool(items), "form": form,
+        "today": timezone.localdate(),
+        "money_in": money_in, "money_out": money_out, "transfers": transfers, "net": money_in - money_out - transfers,
+        "minimum": sum(r.monthly_cost for r in active if not r.is_income and not r.is_transfer and r.essential),
     })
 
 
@@ -367,12 +401,13 @@ def recurring_done(request, pk):
     """Paid/received: log the transaction and move to the next due date. Skip: just move on."""
     r = get_object_or_404(Recurring, pk=pk)
     if request.POST.get("action") == "paid":
-        Transaction.objects.create(
+        t = Transaction.objects.create(
             date=timezone.localdate(), time=now_hm(), amount=r.amount, kind=r.kind, description=r.name, category=r.category,
             account=r.account or Account.default(), source="recurring", status="confirmed")
         msg = (_("Logged %(name)s as received; next on %(date)s.") if r.is_income
+               else _("Logged %(name)s as sent; next on %(date)s.") if r.is_transfer
                else _("Logged %(name)s as paid; next on %(date)s."))
-        messages.success(request, msg % {"name": r.name, "date": date_format(r.following_due(), "j M")})
+        _celebrate(request, msg % {"name": r.name, "date": date_format(r.following_due(), "j M")}, [t], [r])
     r.next_due = r.following_due()
     r.save(update_fields=["next_due"])
     return redirect("recurring")
@@ -425,8 +460,8 @@ def ramble_save(request):
     if all([f.is_valid() for f in chosen]):  # list, not generator: validate every row so all errors show
         with db_tx.atomic():
             saved = [f.save() for f in chosen]
-        messages.success(request, ngettext("Added %(n)d transaction — nicely done 🪙", "Added %(n)d transactions — nicely done 🪙",
-                                           len(saved)) % {"n": len(saved)})
+        _celebrate(request, ngettext("Added %(n)d transaction — nicely done 🪙", "Added %(n)d transactions — nicely done 🪙",
+                                     len(saved)) % {"n": len(saved)}, saved)
         resp = HttpResponse()
         if any(t.kind in Transaction.LOAN_KINDS for t in saved):
             resp["HX-Redirect"] = reverse("people")
@@ -447,7 +482,9 @@ def ramble_add_one(request, i):
     f = RambleForm(request.POST, prefix=f"r{i}")
     f.source = "import" if request.POST.get("source") == "import" else "ramble"
     if f.is_valid():
-        return render(request, "ledger/_ramble_added.html", {"t": f.save()})
+        resp = render(request, "ledger/_ramble_added.html", {"t": f.save()})
+        resp["HX-Trigger"] = "celebrate"  # coin burst on the page, no reload
+        return resp
     f.dup = _dup(f)
     return render(request, "ledger/_ramble_row.html", {"f": f, "i": i})
 
@@ -478,6 +515,33 @@ def import_csv(request):
     return render(request, "ledger/import.html", ctx)
 
 
+# ---------- global search ----------
+
+@login_required
+def search(request):
+    """One box for everything: transactions, people & companies, recurring items, accounts."""
+    q = " ".join(request.GET.get("q", "").split())[:100]
+    ctx = {"q": q}
+    if q:
+        match = (Q(description__icontains=q) | Q(merchant__icontains=q) | Q(notes__icontains=q) | Q(party__name__icontains=q)
+                 | Q(tags__name__icontains=q) | Q(category__name__icontains=q) | Q(account__name__icontains=q))
+        try:  # "450", "₹1,200", "1200.50" also match the exact amount
+            amount = Decimal(q.replace("₹", "").replace(",", "").strip())
+            match |= Q(amount=amount)
+        except (InvalidOperation, ValueError):
+            pass
+        txns = (Transaction.objects.exclude(status="ignored").filter(match).distinct()
+                .select_related("category", "account", "party").prefetch_related("tags"))
+        ctx.update(
+            txns=(page := paginate(request, txns, per_page=20)), page=page,
+            parties=list(_parties().filter(name__icontains=q)[:10]),
+            recurring=list(Recurring.objects.filter(name__icontains=q)[:10]),
+            accounts=list(Account.objects.filter(Q(name__icontains=q) | Q(last4=q))[:10]),
+        )
+        ctx["total"] = page.paginator.count + len(ctx["parties"]) + len(ctx["recurring"]) + len(ctx["accounts"])
+    return render(request, "ledger/search.html", ctx)
+
+
 # ---------- people & companies: who owes whom ----------
 
 def _parties():
@@ -502,9 +566,16 @@ def people(request):
         return redirect("party", pk=form.save().pk)
     parties = sorted(_parties(), key=lambda p: (-abs(p.balance), p.name.lower()))
     show_all = request.GET.get("all") == "1"
+    shown = parties if show_all else [p for p in parties if p.balance or not p.entries]
+    sums = dict(Transaction.objects.filter(status="confirmed", kind__in=("lend", "repay_in")).order_by()
+                .values("kind").annotate(s=Sum("amount")).values_list("kind", "s"))
+    lent, repaid = sums.get("lend", Decimal(0)), sums.get("repay_in", Decimal(0))
+    still_out = max(lent - repaid, Decimal(0))
     return render(request, "ledger/people.html", {
-        "form": form, "show_all": show_all,
-        "parties": parties if show_all else [p for p in parties if p.balance or not p.entries],
+        "owed_chart": charts.owed_diverging(parties),
+        "lending": {"lent": lent, "repaid": min(repaid, lent), "out": still_out,
+                    "repaid_w": charts.pct(min(repaid, lent), lent), "out_w": charts.pct(still_out, lent)},
+        "form": form, "show_all": show_all, "parties": (page := paginate(request, shown)), "page": page,
         "settled": sum(1 for p in parties if not p.balance and p.entries),
         "owed_to_me": sum(p.balance for p in parties if p.balance > 0),
         "i_owe": -sum(p.balance for p in parties if p.balance < 0),
@@ -519,7 +590,8 @@ def party(request, pk):
                          initial={"kind": "lend", "status": "confirmed"})
     edit = PartyForm(request.POST if action == "edit" else None, instance=p)
     if action == "entry" and entry.is_valid():
-        entry.save()
+        t = entry.save()
+        _celebrate(request, _("Noted in %(name)s's ledger ✍️") % {"name": p.name}, [t])
         return redirect("party", pk=pk)
     if action == "edit" and edit.is_valid():
         edit.save()
@@ -538,4 +610,7 @@ def party(request, pk):
             running += t.owed_delta
         rows.append((t, running))
     totals = {k: sum(t.amount for t, _ in rows if t.kind == k and t.status == "confirmed") for k in Transaction.LOAN_KINDS}
-    return render(request, "ledger/party.html", {"p": p, "rows": rows, "totals": totals, "entry": entry, "edit": edit})
+    page = paginate(request, rows[::-1], per_page=25)  # newest first; running balance already computed over all
+    return render(request, "ledger/party.html", {"p": p, "rows": rows, "page": page, "totals": totals,
+                                                 "steps": charts.balance_steps(rows),
+                                                 "entry": entry, "edit": edit})

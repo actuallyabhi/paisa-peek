@@ -29,10 +29,11 @@
 {% endif %}
 
 {# Ramble: the main action. Say or type several transactions; they appear below as cards to review. #}
-<section class="mb-5 rounded-3xl bg-ink p-4 text-paper">
+{# Light: a dark ink card. Dark: a warm persimmon-tinted card (inverting to cream would glare). #}
+<section class="mb-3 rounded-3xl bg-ink p-4 text-paper dark:bg-brand-soft dark:text-ink dark:ring-1 dark:ring-brand/25">
   <form hx-post="{% url 'ramble_parse' %}" hx-target="#review" hx-indicator="#parsing" hx-disabled-elt="find button" class="space-y-3">
     <label for="ramble-text" class="block">
-      <span class="font-display text-lg font-extrabold">{% translate "Kya kharcha hua?" %}</span>
+      <span class="font-display text-lg font-extrabold">{% translate "What have you spent today?" %}</span>
       <span class="block text-xs opacity-70">{% translate "Say it or type it — “450 petrol, 200 chai with Akhand, lent 500 to Om”." %}</span>
     </label>
     <textarea id="ramble-text" name="text" rows="2" required {% if focus_log %}autofocus{% endif %}
@@ -43,8 +44,9 @@
       <button class="btn shrink-0">{% translate "Ramble it" %}</button>
     </div>
   </form>
-  <div id="review" class="mt-3 rounded-2xl bg-paper text-ink empty:hidden"></div>
 </section>
+{# Parsed cards land here, outside the hero card, as their own panel. #}
+<div id="review" class="mb-5 empty:hidden"></div>
 
 {# Period: week/month toggle + prev/next #}
 <div class="mb-3 flex items-center justify-between gap-2">
@@ -62,12 +64,12 @@
 <div class="mb-4 grid grid-cols-2 gap-3">
   <div class="card p-4">
     <div class="text-xs font-medium uppercase tracking-wide text-muted">{% translate "Spent" %}</div>
-    <div class="num-big text-2xl font-extrabold tabular-nums">{{ spent|inr }}</div>
+    <div class="num-big text-2xl font-extrabold tabular-nums" data-countup="{{ spent|stringformat:'s' }}">{{ spent|inr }}</div>
     {% if per_day %}<div class="mt-0.5 text-xs text-muted">{% blocktranslate with amount=per_day|inr %}≈ {{ amount }} a day{% endblocktranslate %}</div>{% endif %}
   </div>
   <div class="card p-4">
     <div class="text-xs font-medium uppercase tracking-wide text-muted">{% translate "Came in" %}</div>
-    <div class="num-big text-2xl font-extrabold tabular-nums text-good">{{ income|inr }}</div>
+    <div class="num-big text-2xl font-extrabold tabular-nums text-good" data-countup="{{ income|stringformat:'s' }}">{{ income|inr }}</div>
     {% if income and spent %}<div class="mt-0.5 text-xs text-muted">{% if income > spent %}{% translate "you're ahead 🎉" %}{% else %}{% translate "spending > income 👀" %}{% endif %}</div>{% endif %}
   </div>
   {% if pending_count %}
@@ -78,6 +80,7 @@
 </div>
 
 {% if daily.has_data %}{% include "ledger/_chart_daily.html" %}{% endif %}
+{% if months.has_data %}{% include "ledger/_chart_months.html" %}{% endif %}
 
 {% if by_cat %}
 <details class="card mb-4 p-4" {% if p.view == 'month' %}open{% endif %}>
@@ -106,7 +109,7 @@
   </h3>
   <ul class="card divide-y divide-line overflow-hidden">
   {% for t in items %}
-    <li><a href="{% url 'txn_edit' t.pk %}" class="flex items-center gap-3 px-3 py-2.5 transition active:bg-sunk">
+    <li><a href="{% url 'txn_edit' t.pk %}" class="flex items-center gap-3 px-3 py-2.5 transition active:bg-sunk {% if t.pk in flash_t %}animate-flash{% endif %}">
       <span class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-sunk text-lg" aria-hidden="true">{{ t|emoji }}</span>
       <div class="min-w-0 flex-1">
         <div class="truncate font-medium">{{ t.description|default:t.merchant|default:t.get_kind_display }}</div>
@@ -128,4 +131,5 @@
     <p class="text-sm text-muted">{% if p.current %}{% translate "Either you're a saint, or you forgot. Tell the box above 😇" %}{% else %}{% translate "Quiet times. Or the diary was on holiday." %}{% endif %}</p>
   </div>
 {% endfor %}
+{% include "ledger/_pagination.html" %}
 {% endblock %}
