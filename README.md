@@ -1,4 +1,4 @@
-<p align="center"><img src="ledger/static/ledger/icon.svg" width="96" alt="Paisapeek logo: a gold coin with an eye"></p>
+<p align="center"><img src="ledger/static/ledger/icon.svg" width="96" alt="Paisapeek logo: a gold rupee coin"></p>
 
 # Paisapeek
 
