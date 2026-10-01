@@ -16,6 +16,12 @@
   <div class="mt-1 text-sm text-muted">
     {% blocktranslate with lent=totals.lend|inr back=totals.repay_in|inr borrowed=totals.borrow|inr paid=totals.repay_out|inr %}Lent {{ lent }} · repaid to you {{ back }} · borrowed {{ borrowed }} · repaid by you {{ paid }}{% endblocktranslate %}
   </div>
+  {% if p.balance %}
+  <form method="post" class="mt-3" onsubmit="return confirm('{% blocktranslate with name=p.name|escapejs %}Mark {{ name }} as settled? No money is recorded as moving; their balance just goes to zero.{% endblocktranslate %}')">
+    {% csrf_token %}<input type="hidden" name="action" value="settle">
+    <button class="btn-secondary px-3 text-sm">🤝 {% translate "Mark as settled" %}</button>
+  </form>
+  {% endif %}
 </div>
 
 {% if steps %}{% include "ledger/_chart_balance.html" %}{% endif %}

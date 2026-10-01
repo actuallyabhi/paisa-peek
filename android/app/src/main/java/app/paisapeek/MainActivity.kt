@@ -2,18 +2,24 @@ package app.paisapeek
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.DownloadManager
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.view.View
 import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
+import android.webkit.URLUtil
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.addCallback
 import androidx.core.view.ViewCompat
@@ -50,6 +56,17 @@ class MainActivity : ComponentActivity() {
                 Prefs.saveTheme(this@MainActivity, t) // the native Inbox/setup screens use it too
                 runOnUiThread { applyTheme(t == "dark") }
             }
+
+            // More → Notifications → Send a test. WebView has no web push, so the app shows it natively.
+            // False (and asks for the permission) when notifications are off.
+            @JavascriptInterface fun notify(title: String, body: String): Boolean {
+                if (!canNotify(this@MainActivity)) {
+                    runOnUiThread { requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 2) }
+                    return false
+                }
+                Notify.test(this@MainActivity, title, body)
+                return true
+            }
         }, "PaisapeekApp")
         // Back walks the page history first; with nothing left it falls through to the system (predictive back home).
         val back = onBackPressedDispatcher.addCallback(this, enabled = false) { web.goBack() }
@@ -78,6 +95,21 @@ class MainActivity : ComponentActivity() {
                 startActivity(Intent(Intent.ACTION_VIEW, request.url))
                 return true
             }
+        }
+        // Backup / CSV export / sample CSV: WebView ignores downloads, so hand them to the system with our login cookie.
+        web.setDownloadListener { url, userAgent, disposition, mime, _ ->
+            if (Build.VERSION.SDK_INT < 29 && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), 3) // tap Download again after allowing
+                return@setDownloadListener
+            }
+            val name = URLUtil.guessFileName(url, disposition, mime)
+            getSystemService(DownloadManager::class.java).enqueue(DownloadManager.Request(Uri.parse(url))
+                .addRequestHeader("Cookie", CookieManager.getInstance().getCookie(url))
+                .addRequestHeader("User-Agent", userAgent)
+                .setMimeType(mime)
+                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, name))
+            Toast.makeText(this, getString(R.string.downloading, name), Toast.LENGTH_SHORT).show()
         }
         web.webChromeClient = object : WebChromeClient() {
             // <input type="file"> for CSV import and backup restore.

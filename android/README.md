@@ -23,7 +23,7 @@ It isn't on the Play Store, because Google only allows SMS permissions for defau
    - On Android 13+, if SMS access is greyed out, go to Settings → Apps → Paisapeek → ⋮ → **Allow restricted settings** first.
 4. To change the server later, long-press the app icon and choose **SMS setup**.
 
-Push reminders from the website don't work inside the app, because Android's in-app browser doesn't support web push. Keep the PWA installed from Chrome if you use reminders.
+Push reminders from the website don't work inside the app, because Android's in-app browser doesn't support web push. Keep the PWA installed from Chrome if you use reminders. **More → Notifications → Send a test** still works in the app: it shows a notification from the app itself, to check notifications are allowed.
 
 ## Build
 

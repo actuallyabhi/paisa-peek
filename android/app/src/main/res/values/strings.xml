@@ -67,4 +67,5 @@
     <string name="done">Done</string>
     <string name="allowed">Allowed</string>
     <string name="allow">Allow</string>
+    <string name="downloading">Downloading %1$s…</string>
 </resources>

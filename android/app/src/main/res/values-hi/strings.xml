@@ -66,4 +66,5 @@
     <string name="done">हो गया</string>
     <string name="allowed">इजाज़त मिल गई</string>
     <string name="allow">इजाज़त दें</string>
+    <string name="downloading">%1$s डाउनलोड हो रहा है…</string>
 </resources>

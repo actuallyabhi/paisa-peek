@@ -98,7 +98,16 @@
     on: "{% translate "✓ This device gets notifications."|escapejs %}",
     off: "{% translate "This device isn't subscribed yet."|escapejs %}",
     sent: "{% translate "Sent ✓"|escapejs %}", none: "{% translate "No devices reached"|escapejs %}",
+    app: "{% translate "✓ The app notifies you about each bank SMS. Bill and daily reminders need Paisapeek installed from Chrome."|escapejs %}",
+    appOff: "{% translate "Allow notifications for Paisapeek, then try again."|escapejs %}",
+    hi: "{% translate "Paisapeek says hi 👋"|escapejs %}", hiBody: "{% translate "Notifications work. We'll nudge you, not nag you."|escapejs %}",
   };
+  // Android app: WebView has no web push, so the app shows the test notification itself.
+  if (window.PaisapeekApp?.notify) {
+    status.textContent = T.app; test.hidden = false;
+    test.onclick = () => { test.textContent = PaisapeekApp.notify(T.hi, T.hiBody) ? T.sent : T.appOff; };
+    return;
+  }
   const post = (url, body) => fetch(url, {method: "POST", headers: {"X-CSRFToken": csrf, "Content-Type": "application/json"}, body});
   const key = Uint8Array.from(atob("{{ vapid_key }}".replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
 

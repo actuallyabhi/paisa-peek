@@ -259,6 +259,21 @@ class PartyTests(TestCase):
         self.assertEqual(people.context["owed_to_me"], Decimal("4900"))
         self.assertContains(people, "owes you ₹4,900.00")
 
+    def test_settle_without_money(self):
+        acct = Account.objects.create(name="Cash", kind="cash")
+        Transaction.objects.create(date=date(2026, 9, 1), amount=1200, kind="borrow", party=self.om, account=acct)
+        url = f"/people/{self.om.pk}/"
+        self.assertContains(self.client.get(url), "Mark as settled")
+        self.client.post(url, {"action": "settle"})
+        t = self.om.transactions.get(source="settle")
+        self.assertEqual((t.kind, t.amount, t.account), ("repay_out", Decimal("1200"), None))
+        r = self.client.get(url)
+        self.assertContains(r, "All settled")
+        self.assertNotContains(r, "Mark as settled")
+        self.assertEqual(acct.balance, Decimal("1200"))  # the borrowed cash is still there; settling moved nothing
+        self.client.post(url, {"action": "settle"})  # already settled: no-op
+        self.assertEqual(self.om.transactions.count(), 2)
+
     def test_loan_needs_party_and_creates_it(self):
         base = {"date": "2026-09-01", "amount": "500", "kind": "lend", "description": "", "status": "confirmed",
                 "category": "", "account": "", "tag_names": "", "notes": ""}

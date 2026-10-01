@@ -66,4 +66,5 @@
     <string name="done">Ho gaya</string>
     <string name="allowed">Allowed</string>
     <string name="allow">Allow karo</string>
+    <string name="downloading">%1$s download ho raha hai…</string>
 </resources>

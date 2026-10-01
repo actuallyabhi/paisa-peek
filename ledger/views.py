@@ -604,6 +604,13 @@ def party(request, pk):
     if action == "edit" and edit.is_valid():
         edit.save()
         return redirect("party", pk=pk)
+    if action == "settle" and (owed := p.balance):
+        # Forgiven or squared up off the books: a repayment with no account, so no account balance moves.
+        t = Transaction.objects.create(
+            date=timezone.localdate(), time=now_hm(), amount=abs(owed), kind="repay_in" if owed > 0 else "repay_out",
+            party=p, description=_("Settled, no money changed hands"), source="settle", status="confirmed")
+        _celebrate(request, _("%(name)s is all settled 🤝") % {"name": p.name}, [t])
+        return redirect("party", pk=pk)
     if action == "delete":
         if p.entries or p.transactions.exists():
             messages.error(request, _("Has transactions; reassign or delete those first."))

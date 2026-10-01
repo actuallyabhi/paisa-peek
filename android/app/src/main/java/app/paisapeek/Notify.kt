@@ -52,6 +52,9 @@ object Notify {
             .setContentText(c.getString(R.string.tap_to_review, message)).build())
     }
 
+    fun test(c: Context, title: String, body: String) =
+        manager(c).notify(0, builder(c).setContentTitle(title).setContentText(body).build()) // txn ids start at 1
+
     fun cancel(c: Context, id: Int) = manager(c).cancel(id)
 
     private fun action(c: Context, id: Int, status: String, label: String): Notification.Action {
