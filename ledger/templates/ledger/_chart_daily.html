@@ -1,6 +1,6 @@
 {% load money i18n %}
 {# Daily spending: one series → one colour; hairline gridlines; dashed-free average reference line. #}
-<figure class="card mb-4 p-4" data-chart>
+<figure class="card mb-6 p-4" data-chart>
   <figcaption class="mb-3 flex items-baseline justify-between">
     <span class="font-display font-semibold">{% translate "Day by day" %}</span>
     {% if daily.avg %}<span class="text-xs text-muted">{% blocktranslate with amount=daily.avg|inr_short %}avg {{ amount }}/day{% endblocktranslate %}</span>{% endif %}

@@ -74,7 +74,7 @@ Adding a bank's SMS format or a new language? See [SMS_TEMPLATES.md](docs/SMS_TE
 
 **Next**
 - [ ] Rules engine + merchant memory ("always categorize X as Y"). SMS ingest should also guess categories, so most SMS notifications can be confirmed in one tap.
-- [ ] Screenshot share target (PWA) + OCR + optional LLM fallback
+- [ ] Screenshot share target (PWA + App) + OCR + optional LLM fallback
 - [ ] Budgets per category
 - [ ] Bank/credit card statement upload with matching against existing entries
 - [ ] Interest on savings accounts: rate and credit frequency per account, with a scheduled job that adds the interest

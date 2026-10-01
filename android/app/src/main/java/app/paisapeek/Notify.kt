@@ -23,7 +23,7 @@ object Notify {
     }
 
     private fun builder(c: Context) = Notification.Builder(c, CHANNEL)
-        .setSmallIcon(android.R.drawable.stat_notify_chat)
+        .setSmallIcon(R.drawable.ic_stat_rupee)
         .setAutoCancel(true)
         .setContentIntent(inboxIntent(c))
 
