@@ -2,22 +2,26 @@ package app.paisapeek
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
-import android.view.WindowInsets
+import android.webkit.CookieManager
+import android.webkit.JavascriptInterface
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
+import androidx.activity.ComponentActivity
+import androidx.activity.addCallback
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 
 /** The existing PWA is the UI; this activity only hosts it. */
-class MainActivity : Activity() {
+class MainActivity : ComponentActivity() {
     private lateinit var web: WebView
     private var pendingFiles: ValueCallback<Array<Uri>>? = null
     private var reloadOnReturn = false
@@ -29,12 +33,38 @@ class MainActivity : Activity() {
             startActivity(Intent(this, SetupActivity::class.java)); finish()
         }
         // People who set up before notifications existed were never asked.
-        if (Prefs.token(this) != null && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
+        if (Prefs.token(this) != null && !canNotify(this))
             requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 2)
         web = WebView(this)
         web.settings.javaScriptEnabled = true
         web.settings.domStorageEnabled = true
+        // Android's overscroll stretches the whole WebView, fixed header and bottom nav included, so the app
+        // wobbles. Chrome only stretches the page content, which is why the PWA felt solid.
+        web.overScrollMode = View.OVER_SCROLL_NEVER
+        web.isVerticalScrollBarEnabled = false // an installed PWA shows none either
+        web.isHorizontalScrollBarEnabled = false
+        applyTheme(isDark(this)) // last choice the site reported, else the phone's; the page corrects it on load
+        // The site calls PaisapeekApp.theme("dark"|"light") when it applies or toggles its theme (base.html).
+        web.addJavascriptInterface(object {
+            @JavascriptInterface fun theme(t: String) {
+                Prefs.saveTheme(this@MainActivity, t) // the native Inbox/setup screens use it too
+                runOnUiThread { applyTheme(t == "dark") }
+            }
+        }, "PaisapeekApp")
+        // Back walks the page history first; with nothing left it falls through to the system (predictive back home).
+        val back = onBackPressedDispatcher.addCallback(this, enabled = false) { web.goBack() }
         web.webViewClient = object : WebViewClient() {
+            override fun doUpdateVisitedHistory(view: WebView, url: String?, isReload: Boolean) {
+                back.isEnabled = view.canGoBack()
+            }
+
+            // The language picked on the site lives in its django_language cookie; native screens follow it.
+            override fun onPageFinished(view: WebView, url: String?) {
+                val lang = CookieManager.getInstance().getCookie(base)?.split(";")
+                    ?.map { it.trim() }?.firstOrNull { it.startsWith("django_language=") }?.substringAfter("=")
+                if (lang != Prefs.lang(this@MainActivity)) Prefs.saveLang(this@MainActivity, lang)
+            }
+
             // Stay in-app on our server; open everything else (GitHub link etc.) in the browser.
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 if (request.url.toString().startsWith(base) && request.url.path?.trimEnd('/') == "/inbox") {
@@ -60,8 +90,22 @@ class MainActivity : Activity() {
         }
         // The site pads its header/nav with env(safe-area-inset-*), so only make room for the keyboard.
         // WebView ignores its own padding, so inset a container instead.
-        setContentView(FrameLayout(this).apply { addView(web) }.padForSystemBars(WindowInsets.Type.ime()))
+        setContentView(FrameLayout(this).apply { addView(web) }.padForSystemBars(WindowInsetsCompat.Type.ime()))
         if (savedInstanceState == null) web.loadUrl(base + intent.getStringExtra("path").orEmpty()) else web.restoreState(savedInstanceState)
+    }
+
+    /**
+     * Like Chrome's theme-color for an installed PWA: paint behind the page in the site's background colour
+     * (no white flash between pages) and keep the status/nav bar icons readable on it.
+     */
+    private fun applyTheme(dark: Boolean) {
+        val paper = if (dark) 0xFF15130F.toInt() else 0xFFF4EFE6.toInt() // --paper in ledger/tailwind.css
+        web.setBackgroundColor(paper)
+        window.decorView.setBackgroundColor(paper)
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            isAppearanceLightStatusBars = !dark
+            isAppearanceLightNavigationBars = !dark
+        }
     }
 
     /** InboxActivity's Edit opens a web page here. */
@@ -88,19 +132,15 @@ class MainActivity : Activity() {
         if (::web.isInitialized) web.saveState(outState)
     }
 
-    @Deprecated("Fine for minSdk 26; predictive back can come later")
-    override fun onBackPressed() {
-        if (::web.isInitialized && web.canGoBack()) web.goBack() else super.onBackPressed()
-    }
 
     private companion object { const val FILE_REQUEST = 1 }
 }
 
-/** Android 15+ draws apps edge-to-edge; keep content clear of the status/nav bars and keyboard. */
+/** Android 15+ draws apps edge-to-edge; keep content clear of the status/nav bars and keyboard. (Compat: minSdk 26.) */
 fun <T : View> T.padForSystemBars(
-    types: Int = WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout() or WindowInsets.Type.ime(),
+    types: Int = WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout() or WindowInsetsCompat.Type.ime(),
 ): T = apply {
-    setOnApplyWindowInsetsListener { v, insets ->
+    ViewCompat.setOnApplyWindowInsetsListener(this) { v, insets ->
         val i = insets.getInsets(types)
         v.setPadding(i.left, i.top, i.right, i.bottom)
         insets

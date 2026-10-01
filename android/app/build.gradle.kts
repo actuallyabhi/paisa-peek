@@ -15,6 +15,7 @@ android {
         // CI passes these from the git tag (v1.2.3 -> 1.2.3 / 10203); local builds stay 0.1-dev.
         versionCode = (findProperty("versionCode") as String?)?.toInt() ?: 1
         versionName = (findProperty("versionName") as String?) ?: "0.1-dev"
+        manifestPlaceholders["appLabel"] = "Paisapeek"
     }
 
     signingConfigs {
@@ -32,6 +33,11 @@ android {
 
     buildTypes {
         release { signingConfig = signingConfigs.findByName("release") }
+        // Separate app id so a debug build installs next to the released app instead of clashing with it.
+        debug {
+            applicationIdSuffix = ".debug"
+            manifestPlaceholders["appLabel"] = "Paisapeek (debug)"
+        }
     }
 
     buildFeatures { compose = true }

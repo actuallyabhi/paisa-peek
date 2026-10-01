@@ -34,6 +34,8 @@ You need the Android SDK (platform 36) and JDK 17+.
 ./gradlew assembleDebug     # just build: app/build/outputs/apk/debug/app-debug.apk
 ```
 
+Debug builds install as a separate app, **Paisapeek (debug)** (`app.paisapeek.debug`), next to the released one, so you can test without losing your real setup. If both apps are set up with a token, both upload each bank SMS. The server merges the duplicate, but you'll get two notifications.
+
 Material 3 Expressive comes from the `1.5.0` alphas. `alpha18` is the newest that builds with AGP 8.13 and compileSdk 36; later alphas need AGP 9.1 and compileSdk 37.
 
 ## Test against a local server
@@ -51,7 +53,7 @@ Debug builds allow `http://localhost`, and include a hook that lets adb send a f
 3. In the app's **SMS setup**, enter `http://localhost:8001/api/ingest/sms?token=<token>`. Get the token from that server's **More** page, or with `DATA_DIR=/tmp/paisapeek-test uv run manage.py shell -c "from ledger.models import ApiToken; print(ApiToken.current())"`.
 4. Send a fake bank SMS. It goes through the same sender filter, upload and notification as a real one:
    ```bash
-   adb shell am broadcast -n app.paisapeek/.FakeSmsReceiver --es sender VM-HDFCBK --es text "'Spent Rs.450.00 On HDFC Bank Card 5678 At SWIGGY On 2026-10-01'"
+   adb shell am broadcast -n app.paisapeek.debug/app.paisapeek.FakeSmsReceiver --es sender VM-HDFCBK --es text "'Spent Rs.450.00 On HDFC Bank Card 5678 At SWIGGY On 2026-10-01'"
    ```
 
 ## Releasing

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut android:shortcutId="setup" android:shortcutShortLabel="@string/setup">
+        <intent android:action="android.intent.action.VIEW"
+            android:targetPackage="app.paisapeek.debug"
+            android:targetClass="app.paisapeek.SetupActivity" />
+    </shortcut>
+</shortcuts>

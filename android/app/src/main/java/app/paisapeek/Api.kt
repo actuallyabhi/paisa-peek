@@ -8,6 +8,10 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 
+/** Notifications need asking only on Android 13+; before that they're allowed by default. */
+fun canNotify(c: Context) = android.os.Build.VERSION.SDK_INT < 33 ||
+    c.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
 /** Server URL + API token, pasted once from More → SMS auto-capture. */
 object Prefs {
     private fun prefs(c: Context) = c.getSharedPreferences("paisapeek", Context.MODE_PRIVATE)
@@ -15,22 +19,47 @@ object Prefs {
     fun token(c: Context) = prefs(c).getString("token", null)
     fun save(c: Context, base: String, token: String?) =
         prefs(c).edit().putString("base", base).putString("token", token).apply()
+
+    // The site's own choices, reported by MainActivity, so native screens match them (null = follow the phone).
+    fun theme(c: Context) = prefs(c).getString("theme", null) // "dark" / "light"
+    fun lang(c: Context) = prefs(c).getString("lang", null)   // django_language cookie: "en" / "hi" / "hi-latn"
+    fun saveTheme(c: Context, theme: String) = prefs(c).edit().putString("theme", theme).apply()
+    fun saveLang(c: Context, lang: String?) = prefs(c).edit().putString("lang", lang).apply()
+}
+
+fun isDark(c: Context) = Prefs.theme(c)?.let { it == "dark" }
+    ?: (c.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES)
+
+/** [c] in the language picked on the site (values-hi / values-b+hi+Latn), or unchanged to follow the phone. */
+fun localized(c: Context): Context {
+    val tag = when (Prefs.lang(c)) { "en" -> "en"; "hi" -> "hi"; "hi-latn" -> "hi-Latn"; else -> return c }
+    val config = android.content.res.Configuration(c.resources.configuration)
+    config.setLocale(java.util.Locale.forLanguageTag(tag))
+    return c.createConfigurationContext(config)
 }
 
 class ApiResult(val code: Int, val json: JSONObject) {
     val ok get() = code in 200..299
-    /** Ninja puts error messages in "detail". */
-    val error get() = json.optString("detail").ifEmpty { "Server said $code" }
+    /** Ninja puts error messages in "detail" (already in the site's language). */
+    fun error(c: Context): String = json.optString("detail").ifEmpty {
+        if (code == 404) c.getString(R.string.server_outdated) else c.getString(R.string.server_error, code)
+    }
 }
 
-/** Calls /api/<path> with the token. Throws IOException when the server can't be reached. */
-suspend fun api(context: Context, path: String, body: JSONObject? = null): ApiResult = withContext(Dispatchers.IO) {
-    val base = Prefs.base(context) ?: throw java.io.IOException("Not set up")
+/**
+ * Calls /api/<path> with the token. Throws IOException when the server can't be reached.
+ * [base]/[token] default to the saved ones; setup passes a link that isn't saved yet to test it.
+ */
+suspend fun api(
+    context: Context, path: String, body: JSONObject? = null,
+    base: String? = Prefs.base(context), token: String? = Prefs.token(context),
+): ApiResult = withContext(Dispatchers.IO) {
+    if (base == null) throw java.io.IOException("Not set up")
     val conn = URL("$base/api/$path").openConnection() as HttpURLConnection
     try {
         conn.connectTimeout = 15_000
         conn.readTimeout = 15_000
-        conn.setRequestProperty("Authorization", "Bearer ${Prefs.token(context)}")
+        if (token != null) conn.setRequestProperty("Authorization", "Bearer $token")
         // The WebView's cookies carry the language picked on the site, so labels match it.
         runCatching { CookieManager.getInstance().getCookie(base) }.getOrNull()?.let { conn.setRequestProperty("Cookie", it) }
         if (body != null) {

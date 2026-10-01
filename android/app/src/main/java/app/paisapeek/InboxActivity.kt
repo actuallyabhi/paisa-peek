@@ -1,9 +1,11 @@
 package app.paisapeek
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.animateContentSize
 import androidx.compose.material3.ToggleButton
@@ -13,7 +15,6 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -77,6 +78,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -89,9 +91,11 @@ import org.json.JSONObject
 
 /** Native review screen for bank SMS: replaces the web Inbox tab. */
 class InboxActivity : ComponentActivity() {
+    override fun attachBaseContext(newBase: Context) = super.attachBaseContext(localized(newBase))
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        edgeToEdge()
         setContent {
             PaisapeekTheme {
                 InboxScreen(onBack = ::finish, onEdit = { id ->
@@ -124,12 +128,20 @@ private val Dark = darkColorScheme(
     surfaceContainerHighest = Color(0xFF2A2620), onSurfaceVariant = Color(0xFFA69D8E),
     outline = Color(0xFF37322A), outlineVariant = Color(0xFF37322A), error = Color(0xFFFF6B6B),
 )
-@Composable private fun goodColor() = if (isSystemInDarkTheme()) Color(0xFF4CC38A) else Color(0xFF1D8457)
+@Composable fun goodColor() = if (isDark(LocalContext.current)) Color(0xFF4CC38A) else Color(0xFF1D8457)
 
+/** Native screens follow the site's light/dark toggle (not just the phone's), like the web pages around them. */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun PaisapeekTheme(content: @Composable () -> Unit) =
-    MaterialExpressiveTheme(colorScheme = if (isSystemInDarkTheme()) Dark else Light, motionScheme = MotionScheme.expressive(), content = content)
+    MaterialExpressiveTheme(colorScheme = if (isDark(LocalContext.current)) Dark else Light, motionScheme = MotionScheme.expressive(), content = content)
+
+/** Edge-to-edge with status/nav bar icons readable on the site's theme (the default follows the phone's). */
+fun ComponentActivity.edgeToEdge() {
+    val style = if (isDark(this)) SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+                else SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT)
+    enableEdgeToEdge(style, style)
+}
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -145,11 +157,17 @@ private fun InboxScreen(onBack: () -> Unit, onEdit: (Int) -> Unit) {
     var loaded by remember { mutableStateOf(false) }
     var refreshing by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    // Read in composition so they follow the screen's language (lint: no LocalContext resource lookups).
+    val cantReach = stringResource(R.string.cant_reach_your_server)
+    val undo = stringResource(R.string.undo)
+    val noConnection = stringResource(R.string.no_connection_retry)
+    val confirmedMsg = stringResource(R.string.confirmed)
+    val ignoredMsg = stringResource(R.string.ignored)
 
     suspend fun load() {
         try {
             val r = api(context, "inbox")
-            if (!r.ok) { error = r.error; return }
+            if (!r.ok) { error = r.error(context); return }
             val j = r.json
             txns.clear()
             (0 until j.getJSONArray("txns").length()).forEach { txns += Txn(j.getJSONArray("txns").getJSONObject(it)) }
@@ -159,7 +177,7 @@ private fun InboxScreen(onBack: () -> Unit, onEdit: (Int) -> Unit) {
             error = null
             loaded = true
         } catch (e: java.io.IOException) {
-            error = "Can't reach your Paisapeek server."
+            error = cantReach
         }
     }
 
@@ -168,17 +186,17 @@ private fun InboxScreen(onBack: () -> Unit, onEdit: (Int) -> Unit) {
         busy += t.id
         try {
             val r = api(context, "txns/${t.id}/status", body)
-            if (!r.ok) { snackbar.showSnackbar(r.error); return@launch }
+            if (!r.ok) { snackbar.showSnackbar(r.error(context)); return@launch }
             body.optString("party_name").trim().takeIf { it.isNotEmpty() && parties.none { p -> p.equals(it, true) } }
                 ?.let { parties = parties + it }
             val index = txns.indexOf(t)
             txns.remove(t)
             Notify.cancel(context, t.id)
-            if (snackbar.showSnackbar(done, "Undo", duration = SnackbarDuration.Short) == SnackbarResult.ActionPerformed &&
+            if (snackbar.showSnackbar(done, undo, duration = SnackbarDuration.Short) == SnackbarResult.ActionPerformed &&
                 api(context, "txns/${t.id}/status", JSONObject().put("status", "pending")).ok
             ) txns.add(index.coerceAtMost(txns.size), t)
         } catch (e: java.io.IOException) {
-            snackbar.showSnackbar("No connection. Try again.")
+            snackbar.showSnackbar(noConnection)
         } finally {
             busy -= t.id
         }
@@ -191,9 +209,11 @@ private fun InboxScreen(onBack: () -> Unit, onEdit: (Int) -> Unit) {
         modifier = Modifier.nestedScroll(scroll.nestedScrollConnection),
         topBar = {
             LargeFlexibleTopAppBar(
-                title = { Text("Review inbox") },
-                subtitle = { if (loaded) Text(if (txns.isEmpty()) "Nothing waiting" else "${txns.size} waiting") },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+                title = { Text(stringResource(R.string.review_inbox)) },
+                subtitle = {
+                    if (loaded) Text(if (txns.isEmpty()) stringResource(R.string.nothing_waiting) else stringResource(R.string.n_waiting, txns.size))
+                },
+                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back)) } },
                 scrollBehavior = scroll,
             )
         },
@@ -209,16 +229,16 @@ private fun InboxScreen(onBack: () -> Unit, onEdit: (Int) -> Unit) {
         ) {
             when {
                 !loaded && error == null -> LoadingIndicator(Modifier.align(Alignment.Center).size(64.dp))
-                !loaded -> Message("⚠️", error!!, "Make sure the server is running and the URL in SMS setup is right.") {
-                    Button(onClick = { error = null; scope.launch { load() } }) { Text("Try again") }
+                !loaded -> Message("⚠️", error!!, stringResource(R.string.check_server_hint)) {
+                    Button(onClick = { error = null; scope.launch { load() } }) { Text(stringResource(R.string.try_again)) }
                 }
-                txns.isEmpty() -> Message("📭", "All caught up.", "New bank SMS show up here and as notifications.")
+                txns.isEmpty() -> Message("📭", stringResource(R.string.all_caught_up), stringResource(R.string.inbox_empty_hint))
                 else -> LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     items(txns, key = { it.id }) { t ->
                         TxnCard(
                             t, categories, kinds, parties, busy = t.id in busy,
-                            onConfirm = { body -> review(t, body.put("status", "confirmed"), "Confirmed") },
-                            onIgnore = { review(t, JSONObject().put("status", "ignored"), "Ignored") },
+                            onConfirm = { body -> review(t, body.put("status", "confirmed"), confirmedMsg) },
+                            onIgnore = { review(t, JSONObject().put("status", "ignored"), ignoredMsg) },
                             onEdit = { onEdit(t.id) },
                             modifier = Modifier.animateItem(),
                         )
@@ -262,7 +282,7 @@ private fun TxnCard(
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.Top) {
                 Column(Modifier.weight(1f)) {
-                    Text(t.amount.ifEmpty { "Couldn't read amount" }, style = MaterialTheme.typography.headlineMedium,
+                    Text(t.amount.ifEmpty { stringResource(R.string.amount_unreadable) }, style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold, color = if (t.moneyIn) goodColor() else colors.onSurface)
                     if (t.merchant.isNotEmpty()) Text(t.merchant, style = MaterialTheme.typography.titleMedium)
                     Text(listOf(t.whenText, t.account).filter { it.isNotEmpty() }.joinToString(" · "),
@@ -300,11 +320,11 @@ private fun TxnCard(
                 ) {
                     Icon(Icons.Filled.Check, null, Modifier.size(ButtonDefaults.IconSize))
                     Spacer(Modifier.width(ButtonDefaults.IconSpacing))
-                    Text("Confirm")
+                    Text(stringResource(R.string.confirm))
                 }
                 Spacer(Modifier.weight(1f))
-                TextButton(onClick = onEdit, enabled = !busy) { Text("Edit") }
-                TextButton(onClick = onIgnore, enabled = !busy) { Text("Ignore", color = colors.onSurfaceVariant) }
+                TextButton(onClick = onEdit, enabled = !busy) { Text(stringResource(R.string.edit)) }
+                TextButton(onClick = onIgnore, enabled = !busy) { Text(stringResource(R.string.ignore), color = colors.onSurfaceVariant) }
             }
         }
     }
@@ -317,7 +337,7 @@ private fun CategoryPicker(categories: List<Pair<Int, String>>, selected: Int?, 
     ExposedDropdownMenuBox(open, { open = it }) {
         OutlinedTextField(
             value = categories.firstOrNull { it.first == selected }?.second ?: "", onValueChange = {}, readOnly = true,
-            label = { Text("Category") }, trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(open) },
+            label = { Text(stringResource(R.string.category)) }, trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(open) },
             modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
         )
         ExposedDropdownMenu(open, { open = false }) {
@@ -328,9 +348,9 @@ private fun CategoryPicker(categories: List<Pair<Int, String>>, selected: Int?, 
 
 /** Icon + one-line meaning for each money-in kind; the names themselves come (translated) from the server. */
 private val KIND_HELP = mapOf(
-    "income" to ("💰" to "Salary, refund, cashback. Nobody owes anyone."),
-    "repay_in" to ("↩️" to "Someone paid back money you lent them."),
-    "borrow" to ("🤝" to "You borrowed this, so now you owe them."),
+    "income" to ("💰" to R.string.help_income),
+    "repay_in" to ("↩️" to R.string.help_repay_in),
+    "borrow" to ("🤝" to R.string.help_borrow),
 )
 
 /** Compact toggle buttons that wrap instead of truncating; only the picked one's meaning is spelled out below. */
@@ -351,8 +371,8 @@ private fun KindPicker(kinds: List<Pair<String, String>>, selected: String, onPi
                 ) { Text("${KIND_HELP[id]?.first ?: "💸"}  $label") }
             }
         }
-        AnimatedContent(KIND_HELP[selected]?.second.orEmpty(), label = "kind help") {
-            Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        AnimatedContent(KIND_HELP[selected]?.second, label = "kind help") {
+            if (it != null) Text(stringResource(it), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -369,13 +389,13 @@ private fun PersonField(value: String, onChange: (String) -> Unit, parties: List
         OutlinedTextField(
             value, { onChange(it); open = true },
             Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable).fillMaxWidth(),
-            label = { Text(if (required) "From whom?" else "From whom? (optional)") },
+            label = { Text(stringResource(if (required) R.string.from_whom else R.string.from_whom_optional)) },
             leadingIcon = { Icon(Icons.Filled.Person, null) },
             placeholder = if (hint.isNotEmpty()) {{ Text(hint) }} else null,
             isError = isError, singleLine = true,
             supportingText = when {
-                isError -> {{ Text("Needed for borrowed or repaid money") }}
-                isNew -> {{ Text("New person, added when you confirm") }}
+                isError -> {{ Text(stringResource(R.string.needs_person)) }}
+                isNew -> {{ Text(stringResource(R.string.new_person_hint)) }}
                 else -> null
             },
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
@@ -386,7 +406,7 @@ private fun PersonField(value: String, onChange: (String) -> Unit, parties: List
                     onClick = { onChange(name); open = false })
             }
             if (isNew) DropdownMenuItem(
-                text = { Text("Add “$typed” as a new person", fontWeight = FontWeight.SemiBold) },
+                text = { Text(stringResource(R.string.add_new_person, typed), fontWeight = FontWeight.SemiBold) },
                 leadingIcon = { Icon(Icons.Filled.Add, null) },
                 onClick = { onChange(typed); open = false },
             )

@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- SMS capture needs a phone radio, but the app (the site + inbox) still works on tablets without one. -->
+    <uses-feature android:name="android.hardware.telephony" android:required="false" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
-        android:label="Paisapeek"
+        android:label="${appLabel}"
         android:icon="@mipmap/ic_launcher"
         android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
 
