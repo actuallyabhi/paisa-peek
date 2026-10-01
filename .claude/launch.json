@@ -20,6 +20,15 @@
         "export DATA_DIR=/tmp/paisapeek-test DEBUG=1 && uv run manage.py migrate -v0 && uv run manage.py runserver 8001"
       ],
       "port": 8001
+    },
+    {
+      "name": "budget-demo",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "export DATA_DIR=/tmp/paisapeek-demo DEBUG=1 && uv run manage.py runserver 8002"
+      ],
+      "port": 8002
     }
   ]
 }
