@@ -1,0 +1,42 @@
+{% extends "base.html" %}{% load money i18n %}
+{% block title %}{% translate "Budgets & rules" %}{% endblock %}
+{% block content %}
+<h1 class="mb-6 text-2xl font-semibold">{% translate "Budgets & rules" %}</h1>
+
+<section class="card mb-6 space-y-3 p-4">
+  <h2 class="font-medium">{% translate "Monthly budgets" %}</h2>
+  <p class="text-sm text-muted">{% translate "Home → Month → Where it went shows how much of each budget is used. Leave blank for no budget." %}</p>
+  <form method="post" class="space-y-2">
+    {% csrf_token %}<input type="hidden" name="action" value="budgets">
+    {% for c in cats %}
+      <label class="flex items-center justify-between gap-3 text-sm"><span>{% translate c.name %}</span>
+        <input type="number" name="budget-{{ c.pk }}" value="{{ c.budget|default_if_none:''|stringformat:'s' }}" min="0" step="1" inputmode="numeric" placeholder="₹" class="w-32 text-right"></label>
+    {% endfor %}
+    <button class="btn">{% translate "Save budgets" %}</button>
+  </form>
+</section>
+
+<section class="card mb-6 space-y-3 p-4">
+  <h2 class="font-medium">{% translate "Always categorize" %}</h2>
+  <p class="text-sm text-muted">{% translate "When a merchant, description or bank SMS contains the text, it gets the category: SMS can then be confirmed in one tap. Without a rule, the category you last confirmed for that merchant is used." %}</p>
+  {% if rules %}
+  <ul class="divide-y divide-line">
+    {% for r in rules %}
+    <li class="flex items-center justify-between gap-3 py-2 text-sm">
+      <span>“{{ r.pattern }}” → <strong>{% translate r.category.name %}</strong></span>
+      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="delete_rule"><input type="hidden" name="rule" value="{{ r.pk }}">
+        <button class="text-muted hover:underline" aria-label="{% blocktranslate with p=r.pattern %}Remove rule for {{ p }}{% endblocktranslate %}">{% translate "Remove" %}</button></form>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  <form method="post" class="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_1fr_auto]">
+    {% csrf_token %}<input type="hidden" name="action" value="rule">
+    <input name="pattern" required maxlength="100" placeholder="{% translate "e.g. Swiggy" %}" aria-label="{% translate "Text to match" %}">
+    <select name="category" required aria-label="{% translate "Category" %}">
+      {% for c in cats %}<option value="{{ c.pk }}">{% translate c.name %}</option>{% endfor %}
+    </select>
+    <button class="btn col-span-2 sm:col-span-1">{% translate "Add rule" %}</button>
+  </form>
+</section>
+{% endblock %}
