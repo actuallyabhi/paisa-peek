@@ -4,8 +4,22 @@
     {
       "name": "budget",
       "runtimeExecutable": "uv",
-      "runtimeArgs": ["run", "manage.py", "runserver", "8000"],
+      "runtimeArgs": [
+        "run",
+        "manage.py",
+        "runserver",
+        "8000"
+      ],
       "port": 8000
+    },
+    {
+      "name": "budget-apptest",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "export DATA_DIR=/tmp/paisapeek-test DEBUG=1 && uv run manage.py migrate -v0 && uv run manage.py runserver 8001"
+      ],
+      "port": 8001
     }
   ]
 }

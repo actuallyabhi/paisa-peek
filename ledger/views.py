@@ -22,7 +22,7 @@ from django.views.decorators.http import require_POST
 
 from . import backup, charts, csv_import, llm, push, ramble as ramble_parser
 from .paging import paginate
-from .forms import now_hm, party_named, AccountForm, NotifyForm, PartyForm, PartyTxnForm, RambleForm, RecurringForm, TxnForm
+from .forms import now_hm, party_named, review, AccountForm, NotifyForm, PartyForm, PartyTxnForm, RambleForm, RecurringForm, TxnForm
 from .models import Account, ApiToken, Category, NotifySettings, Party, PushSubscription, Recurring, Transaction
 
 
@@ -228,22 +228,10 @@ def inbox(request):
 def txn_status(request, pk):
     """Inbox one-click confirm/ignore. HTMX swaps the card out with the empty response."""
     t = get_object_or_404(Transaction, pk=pk)
-    status = request.POST.get("status")
-    if status not in dict(Transaction.STATUSES):
-        return HttpResponseBadRequest("invalid status")
-    if status == "confirmed" and t.amount <= 0:
-        return HttpResponseBadRequest(_("Set an amount before confirming."))
-    if cat := request.POST.get("category"):
-        t.category = get_object_or_404(Category, pk=cat)
-    # Money coming in: the inbox asks what it was (income / repaid to me / borrowed) instead of a category.
-    if (kind := request.POST.get("kind")) in Transaction.MONEY_IN:
-        name = " ".join(request.POST.get("party_name", "").split())
-        if kind in Transaction.LOAN_KINDS and not name:
-            return HttpResponseBadRequest(_("Who? Lent/borrowed/repaid needs a person or company."))
-        t.kind = kind
-        t.party = party_named(name) if name else t.party
-    t.status = status
-    t.save(update_fields=["status", "category", "kind", "party"])
+    try:
+        review(t, request.POST.get("status"), request.POST.get("category"), request.POST.get("kind"), request.POST.get("party_name", ""))
+    except ValueError as e:
+        return HttpResponseBadRequest(str(e))
     if request.headers.get("HX-Request"):
         # Empty body removes the card; the out-of-band badge refreshes the nav count.
         return render(request, "ledger/_badge.html", {"oob": True})

@@ -105,7 +105,7 @@ Switching between `docker-compose.yml` and this file is safe: both use the same 
   - iPhone (Safari): **Share → Add to Home Screen**.
 - **Notifications:** open the app from its icon → **More → Notifications → Enable on this device → Send a test**. Then choose the daily "log today" time and the reminder time for bills and card statements.
 - **Accounts:** add your savings account, cards and cash; set one as **default**. For each credit card, set the **statement day** and **due day** so reminders arrive on those dates.
-- **SMS auto-capture** (Android, optional): install *SMS to URL Forwarder* (F-Droid), MacroDroid or Tasker. Point it at the URL shown under **More → SMS auto-capture** and filter to your banks' sender IDs.
+- **SMS auto-capture** (Android, optional): install the Paisapeek APK from [GitHub Releases](https://github.com/actuallyabhi/paisa-peek/releases) and paste the URL shown under **More → SMS auto-capture** ([details](android/README.md)). You can also use a forwarder app (*SMS to URL Forwarder*, MacroDroid or Tasker) pointed at that URL and filtered to your banks' sender IDs.
 
 ## 2. Backups
 

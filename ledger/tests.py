@@ -90,6 +90,25 @@ class ApiTests(TestCase):
         r = self.client.post(self.url, body, content_type="application/json", headers={"Authorization": f"Bearer {ApiToken.current()}"})
         self.assertEqual(r.json()["status"], "duplicate")
 
+    def test_app_inbox_review(self):
+        auth = {"Authorization": f"Bearer {ApiToken.current()}"}
+        r = self.client.post(self.url, {"sender": "VM-HDFCBK", "text": SMS_CASES[0][1]}, content_type="application/json", headers=auth)
+        self.assertEqual(r.json()["txn"]["amount"], "−₹270.00")  # summary for the app's notification
+        income = self.client.post(self.url, {"sender": "VM-HDFCBK", "text": SMS_CASES[2][1]}, content_type="application/json", headers=auth).json()["id"]
+        self.assertEqual(self.client.get("/api/inbox").status_code, 401)
+        inbox = self.client.get("/api/inbox", headers=auth).json()
+        self.assertEqual(len(inbox["txns"]), 2)
+        self.assertTrue(next(t for t in inbox["txns"] if t["id"] == income)["money_in"])
+        post = lambda pk, body: self.client.post(f"/api/txns/{pk}/status", body, content_type="application/json", headers=auth)
+        # Lent/borrowed/repaid needs a person; the shared rule from the web Inbox applies.
+        self.assertEqual(post(income, {"status": "confirmed", "kind": "repay_in"}).status_code, 400)
+        self.assertEqual(post(income, {"status": "confirmed", "kind": "repay_in", "party_name": "Meera"}).json(), {"pending": 1})
+        t = Transaction.objects.get(pk=income)
+        self.assertEqual((t.status, t.kind, t.party.name), ("confirmed", "repay_in", "Meera"))
+        cat = inbox["categories"][0]["id"]
+        self.assertEqual(post(r.json()["id"], {"status": "confirmed", "category": cat}).json(), {"pending": 0})
+        self.assertEqual(Transaction.objects.get(pk=r.json()["id"]).category_id, cat)
+
 
 class PageTests(TestCase):
     def test_inbox_confirm(self):

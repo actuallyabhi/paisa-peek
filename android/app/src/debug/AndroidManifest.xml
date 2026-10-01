@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug builds only: allow http://localhost (dev server via `adb reverse`) and a fake-SMS hook for testing. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application android:networkSecurityConfig="@xml/network_security_config">
+        <!-- DUMP is held by adb's shell but never by ordinary apps, so only adb can send fake SMS. -->
+        <receiver android:name=".FakeSmsReceiver" android:exported="true" android:permission="android.permission.DUMP" />
+    </application>
+</manifest>

@@ -47,6 +47,17 @@ A card that matches something already recorded (e.g. the same ₹450 that came i
 
 ## Auto-capture from SMS (Android)
 
+**With the Paisapeek Android app (easiest):**
+1. Download the APK from [GitHub Releases](https://github.com/actuallyabhi/paisa-peek/releases) and install it. It isn't on the Play Store, because Google only allows SMS permissions for default SMS apps.
+2. Open it, paste the URL shown under **More → SMS auto-capture**, tap **Save**, then allow SMS and notifications.
+
+Each bank SMS becomes a notification. Tap **Confirm** to save it as-is, **Review** to pick a category in the app's inbox, or **Ignore**. The app's Inbox tab is a native screen: spends get a category picker, and money in asks what it was and who sent it, with your existing people suggested as you type. If you're offline, the app retries until the SMS goes through.
+- Only SMS from alphanumeric senders (`VM-HDFCBK`, …) are sent. SMS from personal numbers never leave the phone.
+- To change the server, long-press the app icon and choose **SMS setup**.
+- Push reminders don't work inside the app. Keep the PWA installed from Chrome if you use them.
+- Building it yourself, testing, and releases: [android/README.md](../android/README.md).
+
+**With a forwarder app instead:**
 1. Install an SMS forwarder, for example **SMS to URL Forwarder** (F-Droid), MacroDroid or Tasker.
 2. Filter by your banks' sender IDs (`HDFCBK`, `ICICIB`, `AXISBK`, `SBI`, `KOTAKB`, …).
 3. POST to the URL shown under **More → SMS auto-capture**, `https://<host>/api/ingest/sms?token=<token>`, with this JSON body:
@@ -54,6 +65,10 @@ A card that matches something already recorded (e.g. the same ₹450 that came i
    {"sender": "%from%", "text": "%text%", "ts": "%receivedStamp%"}
    ```
    Placeholder syntax depends on the app; `ts` is optional (unix seconds or ms).
+
+**iPhone:** iOS doesn't let apps read SMS, but a Shortcuts automation can forward them:
+1. Shortcuts → **Automation** → **+** → **Message**. Set *Message Contains* to `Rs` (add another automation for `INR`), then choose **Run Immediately**.
+2. Add **Get Contents of URL** with the URL from **More → SMS auto-capture**, *Method* `POST` and *Request Body* `JSON`. Add the fields `sender` = *Shortcut Input → Sender* and `text` = *Shortcut Input → Content*.
 
 Interactive API docs are at `/api/docs`.
 

@@ -7,3 +7,4 @@ staticfiles/
 .claude/
 **/__pycache__/
 *.sqlite3
+android/

@@ -11,11 +11,12 @@ Paisapeek is a self-hosted money diary for people who want to know where every p
 - **People and companies.** Track who owes you and whom you owe, with each person's history.
 - **Accounts.** Savings, cards, credit lines and cash, with real balances and card statement and due-date reminders.
 - **Recurring income and bills,** with push reminders and one-tap Paid / Received.
+- **Android app** that reads bank SMS itself (no forwarder app needed). It notifies you about each one, so you can confirm or ignore it from the notification, and has a native review inbox. The rest of the site runs inside the app.
 - **Installable on your phone (PWA),** with light and dark themes. It works on mobile first.
 - **English, हिन्दी and Hinglish.** Adding a language is one `.po` file.
 - **Full JSON backup and restore, plus CSV import and export.**
 
-Built with Django, Django Ninja, HTMX and Tailwind, on SQLite. It's a single Docker volume.
+Built with Django, Django Ninja, HTMX and Tailwind, on SQLite. It's a single Docker volume. The Android app is Kotlin, with Jetpack Compose and Material 3 Expressive for the review inbox.
 
 ## Screenshots
 
@@ -34,6 +35,7 @@ Built with Django, Django Ninja, HTMX and Tailwind, on SQLite. It's a single Doc
 - **[Deploy it on your server](DEPLOY.md)**: Docker, automatic HTTPS, your own reverse proxy, phone install, backups.
 - **[Features guide](docs/FEATURES.md)**: Ramble, SMS auto-capture, accounts, people, notifications, CSV import, backup & restore.
 - **[Languages & translating](docs/TRANSLATING.md)**: switching language, adding a new one.
+- **[Android app](android/README.md)**: install, build, test with fake SMS, and publish a release.
 
 ## Develop
 
@@ -48,6 +50,12 @@ uv run tailwindcss -i ledger/tailwind.css -o ledger/static/ledger/app.css --mini
 
 Data (the SQLite database and a generated secret key) is stored in `./data`, or wherever `DATA_DIR` points.
 
+Android app (needs the Android SDK and JDK 17+; details in [android/README.md](android/README.md)):
+
+```bash
+cd android && ./gradlew installDebug   # build and install on a USB-connected phone
+```
+
 Adding a bank's SMS format or a new language? See [Auto-capture from SMS](docs/FEATURES.md#auto-capture-from-sms-android) and [TRANSLATING.md](docs/TRANSLATING.md).
 
 ## Roadmap
@@ -60,14 +68,19 @@ Adding a bank's SMS format or a new language? See [Auto-capture from SMS](docs/F
 - [x] Week/month home, mobile UI + installable PWA, accounts with balances, recurring income/bills/transfers, push reminders
 - [x] Full backup/restore, CSV export, Caddy HTTPS and own-proxy Docker setups
 - [x] Charts, global search, pagination, English/हिन्दी/Hinglish, dark mode
+- [x] **Android app**: reads bank SMS directly; a notification per SMS with Confirm / Review / Ignore; a native review inbox in Material 3 Expressive (suggests people as you type, Undo); the rest of the site runs inside the app; signed APKs built by GitHub Actions on every release
+- [x] **iOS**: SMS capture through a Shortcuts automation ([guide](docs/FEATURES.md#auto-capture-from-sms-android)); iOS doesn't let apps read SMS
 
 **Next**
-- [ ] Rules engine + merchant memory ("always categorize X as Y")
+- [ ] Rules engine + merchant memory ("always categorize X as Y"). SMS ingest should also guess categories, so most SMS notifications can be confirmed in one tap.
 - [ ] Screenshot share target (PWA) + OCR + optional LLM fallback
 - [ ] Budgets per category
 - [ ] Bank/credit card statement upload with matching against existing entries
 - [ ] Interest on savings accounts: rate and credit frequency per account, with a scheduled job that adds the interest
 
 **Future**
-- [ ] Native **Android** client app (reads bank SMS directly, no forwarder app needed)
-- [ ] Native **iOS** client app
+- [ ] **On-device LLM in the Android app.** Download a small model (around 1–3B parameters, quantized) and run it on the phone to read bank SMS: amount, merchant, account, category and kind. SMS text would then never need to leave the phone. A setting picks the parser:
+  - **On-device model:** private, works offline, and costs nothing per message.
+  - **LLM via API:** the server's configured `LLM_MODEL` (Ollama or any OpenAI-compatible endpoint).
+  - **Built-in templates:** today's regex templates. This stays the fallback when a model is unavailable or unsure.
+- [ ] More native Android: a month-spend home-screen widget, a native mic for Ramble, native translations for the review inbox (it is English for now)

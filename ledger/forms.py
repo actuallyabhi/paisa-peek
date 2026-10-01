@@ -3,7 +3,7 @@ from django.core.validators import RegexValidator
 from django.utils import timezone
 from django.utils.translation import gettext, gettext_lazy as _
 
-from .models import Account, NotifySettings, Party, Recurring, Tag, Transaction
+from .models import Account, Category, NotifySettings, Party, Recurring, Tag, Transaction
 
 # Field labels live here (not on the models) so translating them never needs a migration.
 LABELS = {
@@ -27,6 +27,25 @@ def now_hm():
 def party_named(name: str, kind: str = "person") -> Party:
     """Existing party by case-insensitive name, else a new one."""
     return Party.objects.filter(name__iexact=name).first() or Party.objects.create(name=name, kind=kind)
+
+
+def review(t: Transaction, status: str, category=None, kind=None, party_name: str = "") -> None:
+    """Inbox confirm/ignore, shared by the web Inbox and the app API. Raises ValueError with a user-facing message."""
+    if status not in dict(Transaction.STATUSES):
+        raise ValueError("invalid status")
+    if status == "confirmed" and t.amount <= 0:
+        raise ValueError(gettext("Set an amount before confirming."))
+    if category:
+        t.category = Category.objects.filter(pk=category).first() or t.category
+    # Money coming in: the inbox asks what it was (income / repaid to me / borrowed) instead of a category.
+    if kind in Transaction.MONEY_IN:
+        name = " ".join((party_name or "").split())
+        if kind in Transaction.LOAN_KINDS and not name:
+            raise ValueError(gettext("Who? Lent/borrowed/repaid needs a person or company."))
+        t.kind = kind
+        t.party = party_named(name) if name else t.party
+    t.status = status
+    t.save(update_fields=["status", "category", "kind", "party"])
 
 
 class TxnForm(forms.ModelForm):
