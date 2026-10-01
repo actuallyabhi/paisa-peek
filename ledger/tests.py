@@ -245,6 +245,18 @@ class PartyTests(TestCase):
         self.client.post("/", {**base, "party_name": "NEW CO"})  # same party, any case
         self.assertEqual(t.party.transactions.count(), 2)
 
+    def test_inbox_credit_asks_what_it_was(self):
+        t = Transaction.objects.create(date=date(2026, 9, 1), amount=500, kind="income", merchant="Rohan",
+                                       source="sms", status="pending")
+        r = self.client.get("/inbox/")
+        self.assertContains(r, 'value="repay_in"')
+        self.assertContains(r, 'name="party_name"')
+        url = f"/txns/{t.pk}/status/"
+        self.assertEqual(self.client.post(url, {"status": "confirmed", "kind": "repay_in"}).status_code, 400)
+        self.client.post(url, {"status": "confirmed", "kind": "repay_in", "party_name": "priya"})
+        t.refresh_from_db()
+        self.assertEqual((t.kind, t.party, t.status), ("repay_in", self.om, "confirmed"))
+
     def test_quick_entry_and_delete_guard(self):
         self.assertNotContains(self.client.get(f"/people/{self.om.pk}/"), 'name="party_name"')
         self.client.post(f"/people/{self.om.pk}/", {"action": "entry", "date": "2026-09-02", "amount": "700",

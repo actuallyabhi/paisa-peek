@@ -17,10 +17,19 @@
       {% if t.amount %}
       <form hx-post="{% url 'txn_status' t.pk %}" hx-target="#t{{ t.pk }}" hx-swap="outerHTML" class="flex gap-2">
         <input type="hidden" name="status" value="confirmed">
+        {% if t.sign == '+' %}
+        <select name="kind" aria-label="{% translate "What is this?" %}" class="w-auto"
+                onchange="this.form.party_name.required = this.value !== 'income'">
+          {% for k, label in money_in %}<option value="{{ k }}" {% if k == t.kind %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+        <input name="party_name" list="party-names" value="{{ t.party.name|default:t.merchant }}" autocomplete="off"
+               placeholder="{% translate "From whom?" %}" aria-label="{% translate "From whom?" %}" class="w-36">
+        {% else %}
         <select name="category" aria-label="{% translate "Category" %}" class="w-auto">
           <option value="">— {% translate "category" %} —</option>
           {% for c in categories %}<option value="{{ c.pk }}" {% if c.pk == t.category_id %}selected{% endif %}>{% translate c.name %}</option>{% endfor %}
         </select>
+        {% endif %}
         <button class="btn">{% translate "Confirm" %}</button>
       </form>
       {% endif %}
