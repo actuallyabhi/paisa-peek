@@ -82,6 +82,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.material3.Typography
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
@@ -130,11 +134,38 @@ private val Dark = darkColorScheme(
 )
 @Composable fun goodColor() = if (isDark(LocalContext.current)) Color(0xFF4CC38A) else Color(0xFF1D8457)
 
+// The site's fonts (ledger/tailwind.css): Figtree for text, Bricolage Grotesque for h1/h2/big numbers, each merged
+// with Mukta so Hindi looks the same as on the web. Built by android/tools/make_fonts.py.
+private val Sans = FontFamily(
+    Font(R.font.paisapeek_sans_regular, FontWeight.Normal),
+    Font(R.font.paisapeek_sans_medium, FontWeight.Medium),
+    Font(R.font.paisapeek_sans_semibold, FontWeight.SemiBold),
+)
+private val Display = FontFamily(
+    Font(R.font.paisapeek_display_semibold, FontWeight.SemiBold),
+    Font(R.font.paisapeek_display_extrabold, FontWeight.ExtraBold),
+)
+private val SiteTypography = Typography().run {
+    fun TextStyle.display() = copy(fontFamily = Display, fontWeight = FontWeight.SemiBold)
+    fun TextStyle.sans() = copy(fontFamily = Sans)
+    copy(
+        displayLarge = displayLarge.display(), displayMedium = displayMedium.display(), displaySmall = displaySmall.display(),
+        headlineLarge = headlineLarge.display(), headlineMedium = headlineMedium.display(), headlineSmall = headlineSmall.display(),
+        titleLarge = titleLarge.display(), titleMedium = titleMedium.sans(), titleSmall = titleSmall.sans(),
+        bodyLarge = bodyLarge.sans(), bodyMedium = bodyMedium.sans(), bodySmall = bodySmall.sans(),
+        labelLarge = labelLarge.sans().copy(fontWeight = FontWeight.SemiBold), // buttons, like .btn
+        labelMedium = labelMedium.sans(), labelSmall = labelSmall.sans(),
+    )
+}
+
 /** Native screens follow the site's light/dark toggle (not just the phone's), like the web pages around them. */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun PaisapeekTheme(content: @Composable () -> Unit) =
-    MaterialExpressiveTheme(colorScheme = if (isDark(LocalContext.current)) Dark else Light, motionScheme = MotionScheme.expressive(), content = content)
+    MaterialExpressiveTheme(
+        colorScheme = if (isDark(LocalContext.current)) Dark else Light, motionScheme = MotionScheme.expressive(),
+        typography = SiteTypography, content = content,
+    )
 
 /** Edge-to-edge with status/nav bar icons readable on the site's theme (the default follows the phone's). */
 fun ComponentActivity.edgeToEdge() {
