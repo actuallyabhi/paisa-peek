@@ -98,7 +98,7 @@ def _period(request):
             "label": (f"{date_format(start, 'j M')} – {date_format(end, 'j M Y')}" if start.year == end.year
                       else f"{date_format(start, 'j M Y')} – {date_format(end, 'j M Y')}"),
             "prev": f"?view=week&start={start - timedelta(days=7)}", "next": f"?view=week&start={end + timedelta(days=1)}",
-            "week_link": f"?view=week&start={start}", "month_link": f"?view=month&month={start:%Y-%m}",
+            "week_link": f"?view=week&start={start}", "month_link": f"?view=month&month={anchor:%Y-%m}",  # anchor, not Monday: Monday may be last month
         }
     try:
         y, m = map(int, request.GET.get("month", "").split("-"))

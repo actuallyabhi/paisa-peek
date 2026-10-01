@@ -370,6 +370,7 @@ class HomeViewTests(TestCase):
         self.assertNotContains(r, "Last week")
         self.assertEqual(r.context["spent"], Decimal("100"))
         self.assertIn("start=2026-09-21", r.context["p"]["prev"])
+        self.assertIn("month=2026-10", r.context["p"]["month_link"])  # Oct→week→month stays Oct, not Sep
         # The choice sticks: plain "/" stays in week view.
         self.assertEqual(self.client.get("/").context["p"]["view"], "week")
         r = self.client.get("/?view=month&month=2026-09")
