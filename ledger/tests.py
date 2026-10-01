@@ -33,6 +33,12 @@ SMS_CASES = [
      "500.00", "income", "Rohan", "5555", "526712345683", "SBI", "2026-09-29"),
     ("VK-KOTAKB", "Sent Rs.270.00 from Kotak Bank AC X1234 to airtel@upi on 29-09-26.UPI Ref 526712345684. Not you, https://kotak.com/KBANKT/Fraud",
      "270.00", "expense", "airtel@upi", "1234", "526712345684", "Kotak", "2026-09-29"),
+    ("JM-SLCEIT-S", "Rs. 14,700 received in slice A/c xx8284 on 01-Oct-26 from Mr Sudhanshu Maurya via UPI (Ref ID: 348863974135). Avl. Bal. Rs. 22,904.87 - slice",
+     "14700.00", "income", "Mr Sudhanshu Maurya", "8284", "348863974135", "slice", "2026-10-01"),
+    ("JM-SLCEIT-S", "Rs. 70 spent on your credit card xx8928 at Mohdnaseemsohameed on 01-Oct-26 (UPI Ref: 627438040171). Not you? Call 080-4832-9999 - slice",
+     "70.00", "expense", "Mohdnaseemsohameed", "8928", "627438040171", "slice", "2026-10-01"),
+    ("VM-PNBSMS", "PNB Credit Card 5672 debited with Rs.150 [CODE:U67381] at MS KISAN SEWA KENDRASID1 on 30-09-2026 18:02 through UPI: 663918122382 Avl limit Rs. 41853.11. -PNB",
+     "150.00", "expense", "MS KISAN SEWA KENDRASID1", "5672", "663918122382", "PNB", "2026-09-30"),
     # No template for this bank: generic heuristic, date falls back to the receive date.
     ("XY-RBLBNK", "Your a/c no. XX7777 is debited for Rs.99.00 on 29-09-2026 towards YOUTUBE. Ref 526712345685",
      "99.00", "expense", "YOUTUBE", "7777", "526712345685", "", "2026-09-29"),
@@ -45,7 +51,7 @@ class ParseTests(TestCase):
         self.assertEqual(len(templates), SmsTemplate.objects.count(), "a seeded template failed to compile")
         for sender, text, *want in SMS_CASES:
             with self.subTest(text=text[:40]):
-                p = parse(templates, sender, text, RECEIVED)
+                p = parse(templates, sender, text, max(RECEIVED, date.fromisoformat(want[-1])))  # never "future"
                 self.assertIsNotNone(p)
                 got = [str(p.amount), p.kind, p.merchant, p.last4, p.ref, p.bank, p.date.isoformat()]
                 self.assertEqual(got, want)
@@ -385,6 +391,15 @@ class HomeViewTests(TestCase):
 class AccountTests(TestCase):
     def setUp(self):
         self.client.force_login(User.objects.create_user("u", password="x"))
+
+    def test_same_name_accounts_show_kind_in_dropdown(self):
+        from .forms import RecurringForm, TxnForm
+        Account.objects.create(name="HDFC", kind="savings")
+        Account.objects.create(name="hdfc", kind="credit_card")
+        Account.objects.create(name="Cash", kind="cash")
+        for form in (TxnForm(), RecurringForm()):
+            labels = [label for _, label in form.fields["account"].choices][1:]
+            self.assertEqual(sorted(labels), ["Cash", "HDFC (Savings account)", "hdfc (Credit card)"])
 
     def save(self, pk=None, **data):
         base = {"name": "x", "kind": "savings", "last4": "", "current_balance": "", "credit_limit": "",
@@ -745,6 +760,15 @@ class RecurringIncomeTests(TestCase):
         self.assertEqual((r.context["money_in"], r.context["money_out"], r.context["net"], r.context["minimum"]),
                          (Decimal("25000"), Decimal("9600"), Decimal("15400"), Decimal("9000")))
         self.assertContains(r, "Received")
+        from unittest.mock import patch
+        with patch("django.utils.timezone.localdate", return_value=date(2026, 10, 1)):
+            r = self.client.get("/recurring/?view=month")  # Netflix's due 9 Oct, so Rent and Stipend this month, none later
+            Recurring.objects.filter(name="Netflix").update(next_due=date(2026, 11, 9))
+            r2 = self.client.get("/recurring/")  # the view choice sticks
+        self.assertEqual([x.name for x in r.context["this_month"]], ["Rent", "Stipend", "Netflix"])
+        self.assertEqual([x.name for x in r2.context["later"]], ["Netflix"])
+        self.assertEqual(len(self.client.get("/recurring/?view=all").context["items"]), 3)
+        Recurring.objects.filter(name="Netflix").update(next_due=date(2026, 10, 9))
         self.client.post(f"/recurring/{stipend.pk}/done/", {"action": "paid"})
         t = Transaction.objects.get(description="Stipend")
         self.assertEqual((t.kind, t.amount, t.sign), ("income", Decimal("25000"), "+"))
@@ -869,7 +893,7 @@ class PaginationTests(TestCase):
             Transaction.objects.create(date=date(2026, 9, 1), amount=1, kind="lend", party=om, account=acct, status="pending")
             Party.objects.create(name=f"p{i}")
             Recurring.objects.create(name=f"r{i}", amount=1, next_due=date(2026, 10, 1))
-        for url in ("/inbox/", f"/people/{om.pk}/", "/people/?all=1", "/recurring/", f"/accounts/{acct.pk}/"):
+        for url in ("/inbox/", f"/people/{om.pk}/", "/people/?all=1", "/recurring/?view=all", f"/accounts/{acct.pk}/"):
             with self.subTest(url=url):
                 self.assertContains(self.client.get(url), 'rel="next"')
 

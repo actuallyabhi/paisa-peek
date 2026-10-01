@@ -23,7 +23,7 @@ from django.views.decorators.http import require_POST
 from . import backup, charts, csv_import, llm, push, ramble as ramble_parser
 from .paging import paginate
 from .forms import now_hm, party_named, review, AccountForm, NotifyForm, PartyForm, PartyTxnForm, RambleForm, RecurringForm, TxnForm
-from .models import Account, ApiToken, Category, NotifySettings, Party, PushSubscription, Recurring, Transaction
+from .models import Account, ApiToken, Category, NotifySettings, Party, PushSubscription, Recurring, Transaction, clamp_day
 
 
 def asset_version() -> str:
@@ -375,9 +375,16 @@ def recurring(request):
     money_in = sum(r.monthly_cost for r in active if r.is_income)
     money_out = sum(r.monthly_cost for r in active if not r.is_income and not r.is_transfer)
     transfers = sum(r.monthly_cost for r in active if r.is_transfer)
+    # "month": what's due by month end (overdue included) vs later; "all": the full paged list. Sticks like home's toggle.
+    view = request.GET.get("view") or request.session.get("recurring_view", "month")
+    view = request.session["recurring_view"] = view if view in ("month", "all") else "month"
+    today = timezone.localdate()
+    month_end = clamp_day(today.year, today.month, 31)
+    this_month = [r for r in active if r.next_due <= month_end]
     return render(request, "ledger/recurring.html", {
         "items": (page := paginate(request, items)), "page": page, "has_items": bool(items), "form": form,
-        "today": timezone.localdate(),
+        "view": view, "this_month": this_month, "later": [r for r in items if r not in this_month],
+        "today": today,
         "money_in": money_in, "money_out": money_out, "transfers": transfers, "net": money_in - money_out - transfers,
         "minimum": sum(r.monthly_cost for r in active if not r.is_income and not r.is_transfer and r.essential),
     })

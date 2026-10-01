@@ -24,6 +24,16 @@ def now_hm():
     return timezone.localtime().time().replace(second=0, microsecond=0)
 
 
+def label_accounts(form):
+    """Account dropdowns: two accounts named "HDFC" read "HDFC (Credit card)" and "HDFC (Savings account)"."""
+    names = [n.casefold() for n in Account.objects.values_list("name", flat=True)]
+    dups = {n for n in names if names.count(n) > 1}
+    for f in ("account", "to_account"):
+        if f in form.fields:
+            form.fields[f].label_from_instance = (
+                lambda a: f"{a.name} ({a.get_kind_display()})" if a.name.casefold() in dups else a.name)
+
+
 def party_named(name: str, kind: str = "person") -> Party:
     """Existing party by case-insensitive name, else a new one."""
     return Party.objects.filter(name__iexact=name).first() or Party.objects.create(name=name, kind=kind)
@@ -66,6 +76,7 @@ class TxnForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if "category" in self.fields:  # shipped category names show in your language
             self.fields["category"].label_from_instance = lambda c: gettext(c.name)
+        label_accounts(self)
         if self.instance.pk:
             self.initial["tag_names"] = ", ".join(self.instance.tags.values_list("name", flat=True))
             self.initial["party_name"] = self.instance.party.name if self.instance.party else ""
@@ -204,6 +215,7 @@ class RecurringForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["kind"].choices = [("expense", _("Expense / bill")), ("income", _("Income (salary, stipend, rent received…)")),
                                        ("transfer", _("Transfer / sending money (not spending)"))]
+        label_accounts(self)
         if not self.instance.pk:
             self.initial.setdefault("account", Account.default())
             self.initial.setdefault("next_due", timezone.localdate())

@@ -77,7 +77,7 @@ Parsed transactions land in **Inbox** as *pending*: confirm them with a category
 - Duplicates are merged: the same UPI ref, or the same message sent again.
 - Unknown card or account numbers create a placeholder account.
 
-**Add support for another bank:** add a template in Admin, a regex with named groups `amount`, `merchant`, `last4`, `date` and `ref`. To ship it as a default for everyone, add it to `ledger/sms_templates.json` with a sample SMS in `ledger/tests.py`.
+**Add support for another bank:** add a template in Admin, a regex with named groups `amount`, `merchant`, `last4`, `date` and `ref`. To ship it as a default for everyone, see [Adding SMS templates](SMS_TEMPLATES.md).
 
 ## Accounts
 

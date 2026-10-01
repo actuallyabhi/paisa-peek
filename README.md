@@ -35,6 +35,7 @@ Built with Django, Django Ninja, HTMX and Tailwind, on SQLite. It's a single Doc
 - **[Deploy it on your server](DEPLOY.md)**: Docker, automatic HTTPS, your own reverse proxy, phone install, backups.
 - **[Features guide](docs/FEATURES.md)**: Ramble, SMS auto-capture, accounts, people, notifications, CSV import, backup & restore.
 - **[Languages & translating](docs/TRANSLATING.md)**: switching language, adding a new one.
+- **[Adding SMS templates](docs/SMS_TEMPLATES.md)**: teach Paisapeek a new bank's SMS format.
 - **[Android app](android/README.md)**: install, build, test with fake SMS, and publish a release.
 
 ## Develop
@@ -56,7 +57,7 @@ Android app (needs the Android SDK and JDK 17+; details in [android/README.md](a
 cd android && ./gradlew installDebug   # build and install on a USB-connected phone
 ```
 
-Adding a bank's SMS format or a new language? See [Auto-capture from SMS](docs/FEATURES.md#auto-capture-from-sms-android) and [TRANSLATING.md](docs/TRANSLATING.md).
+Adding a bank's SMS format or a new language? See [SMS_TEMPLATES.md](docs/SMS_TEMPLATES.md) and [TRANSLATING.md](docs/TRANSLATING.md).
 
 ## Roadmap
 

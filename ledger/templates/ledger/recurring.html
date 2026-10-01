@@ -12,35 +12,30 @@
   <div class="stat"><div class="text-xs text-muted">{% translate "Left / month" %}</div><div class="stat-value {% if net < 0 %}text-bad{% endif %}">{{ net|inr }}</div></div>
 </div>
 
+<div class="mb-3 inline-flex rounded-full border border-line bg-card p-1 text-sm" role="group" aria-label="{% translate "View" %}">
+  <a href="?view=month" class="rounded-full px-3.5 py-1 {% if view == 'month' %}bg-ink font-semibold text-paper{% endif %}" {% if view == 'month' %}aria-current="true"{% endif %}>{% translate "This month" %}</a>
+  <a href="?view=all" class="rounded-full px-3.5 py-1 {% if view == 'all' %}bg-ink font-semibold text-paper{% endif %}" {% if view == 'all' %}aria-current="true"{% endif %}>{% translate "All" %}</a>
+</div>
+
+{% if not has_items %}
+<ul class="card mb-4"><li class="p-6 text-center text-sm text-muted">{% translate "Nothing yet — add your salary or stipend, rent, recharge, Wi-Fi, gym, subscriptions below." %}</li></ul>
+{% elif view == "month" %}
+<h2 class="mb-2 text-sm font-semibold">{% blocktranslate with month=today|date:"F" %}Due in {{ month }}{% endblocktranslate %}</h2>
 <ul class="card mb-4 divide-y divide-line">
-{% for r in items %}
-  <li class="px-3 py-3 {% if not r.active %}opacity-50{% endif %} {% if r.pk in flash_r %}animate-flash{% endif %}">
-    <div class="flex items-start gap-3">
-      <a href="{% url 'recurring_edit' r.pk %}" class="min-w-0 flex-1">
-        <div class="truncate font-medium">{{ r.name }}{% if r.is_income %} <span class="rounded bg-good-soft px-1.5 text-xs font-normal text-good">{% translate "income" %}</span>{% elif r.is_transfer %} <span class="rounded bg-sunk px-1.5 text-xs font-normal">🔁 {% translate "transfer" %}</span>{% elif r.essential %} <span class="text-xs text-muted">· {% translate "essential" %}</span>{% endif %}</div>
-        <div class="text-xs text-muted"><span class="{% if r.is_income %}font-medium text-good{% endif %}">{% if r.is_income %}+{% endif %}{{ r.amount|inr }}</span> {{ r.cadence }}{% if r.unit != "month" or r.every != 1 %} · {% blocktranslate with amount=r.monthly_cost|inr %}≈{{ amount }}/mo{% endblocktranslate %}{% endif %}</div>
-        <div class="text-xs {% if r.next_due < today %}font-medium text-bad{% elif r.next_due == today %}font-medium text-ink{% else %}text-muted{% endif %}">
-          {% with day=r.next_due|date:"d M" %}
-          {% if r.next_due < today %}{% if r.is_income %}{% blocktranslate %}Expected since {{ day }}{% endblocktranslate %}{% else %}{% blocktranslate %}Overdue since {{ day }}{% endblocktranslate %}{% endif %}
-          {% elif r.next_due == today %}{% if r.is_income %}{% translate "Expected today" %}{% else %}{% translate "Due today" %}{% endif %}
-          {% else %}{% blocktranslate with day=r.next_due|date:"D, d M Y" %}Next {{ day }}{% endblocktranslate %}{% endif %}
-          {% endwith %}
-        </div>
-      </a>
-      {% if r.active %}
-      <form method="post" action="{% url 'recurring_done' r.pk %}" class="flex shrink-0 gap-1.5">
-        {% csrf_token %}
-        <button name="action" value="skip" class="btn-secondary px-3 text-sm">{% translate "Skip" %}</button>
-        <button name="action" value="paid" class="btn px-3 text-sm {% if r.is_income %}bg-good hover:brightness-110 {% endif %}">{% if r.is_income %}{% translate "Received" %}{% elif r.is_transfer %}{% translate "Sent" %}{% else %}{% translate "Paid" %}{% endif %}</button>
-      </form>
-      {% endif %}
-    </div>
-  </li>
-{% empty %}
-  <li class="p-6 text-center text-sm text-muted">{% translate "Nothing yet — add your salary or stipend, rent, recharge, Wi-Fi, gym, subscriptions below." %}</li>
+{% for r in this_month %}{% include "ledger/_recurring_item.html" %}
+{% empty %}<li class="p-4 text-center text-sm text-muted">{% translate "Nothing else due this month." %}</li>
 {% endfor %}
 </ul>
+{% if later %}
+<details class="mb-4">
+  <summary class="mb-2 cursor-pointer text-sm font-semibold text-muted">{% translate "Later" %} ({{ later|length }})</summary>
+  <ul class="card divide-y divide-line">{% for r in later %}{% include "ledger/_recurring_item.html" %}{% endfor %}</ul>
+</details>
+{% endif %}
+{% else %}
+<ul class="card mb-4 divide-y divide-line">{% for r in items %}{% include "ledger/_recurring_item.html" %}{% endfor %}</ul>
 {% include "ledger/_pagination.html" %}
+{% endif %}
 
 <details class="card mt-4 p-4" {% if form.errors or not has_items %}open{% endif %}>
   <summary class="cursor-pointer font-medium">{% translate "Add recurring" %}</summary>

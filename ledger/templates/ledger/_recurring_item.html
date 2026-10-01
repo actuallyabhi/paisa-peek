@@ -1,0 +1,23 @@
+{% load money i18n %}
+<li class="px-3 py-3 {% if not r.active %}opacity-50{% endif %} {% if r.pk in flash_r %}animate-flash{% endif %}">
+  <div class="flex items-start gap-3">
+    <a href="{% url 'recurring_edit' r.pk %}" class="min-w-0 flex-1">
+      <div class="truncate font-medium">{{ r.name }}{% if r.is_income %} <span class="rounded bg-good-soft px-1.5 text-xs font-normal text-good">{% translate "income" %}</span>{% elif r.is_transfer %} <span class="rounded bg-sunk px-1.5 text-xs font-normal">🔁 {% translate "transfer" %}</span>{% elif r.essential %} <span class="text-xs text-muted">· {% translate "essential" %}</span>{% endif %}</div>
+      <div class="text-xs text-muted"><span class="{% if r.is_income %}font-medium text-good{% endif %}">{% if r.is_income %}+{% endif %}{{ r.amount|inr }}</span> {{ r.cadence }}{% if r.unit != "month" or r.every != 1 %} · {% blocktranslate with amount=r.monthly_cost|inr %}≈{{ amount }}/mo{% endblocktranslate %}{% endif %}</div>
+      <div class="text-xs {% if r.next_due < today %}font-medium text-bad{% elif r.next_due == today %}font-medium text-ink{% else %}text-muted{% endif %}">
+        {% with day=r.next_due|date:"d M" %}
+        {% if r.next_due < today %}{% if r.is_income %}{% blocktranslate %}Expected since {{ day }}{% endblocktranslate %}{% else %}{% blocktranslate %}Overdue since {{ day }}{% endblocktranslate %}{% endif %}
+        {% elif r.next_due == today %}{% if r.is_income %}{% translate "Expected today" %}{% else %}{% translate "Due today" %}{% endif %}
+        {% else %}{% blocktranslate with day=r.next_due|date:"D, d M Y" %}Next {{ day }}{% endblocktranslate %}{% endif %}
+        {% endwith %}
+      </div>
+    </a>
+    {% if r.active %}
+    <form method="post" action="{% url 'recurring_done' r.pk %}" class="flex shrink-0 gap-1.5">
+      {% csrf_token %}
+      <button name="action" value="skip" class="btn-secondary px-3 text-sm">{% translate "Skip" %}</button>
+      <button name="action" value="paid" class="btn px-3 text-sm {% if r.is_income %}bg-good hover:brightness-110 {% endif %}">{% if r.is_income %}{% translate "Received" %}{% elif r.is_transfer %}{% translate "Sent" %}{% else %}{% translate "Paid" %}{% endif %}</button>
+    </form>
+    {% endif %}
+  </div>
+</li>

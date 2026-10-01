@@ -20,5 +20,11 @@
   {"bank": "SBI", "sender": "(?i)SBI", "kind": "income",
    "body": "(?is)A/?c\\s*[xX*]*(?P<last4>\\d{3,4})\\s+credited\\s+by\\s+Rs\\.?\\s*(?P<amount>[\\d,]+(?:\\.\\d+)?)\\s+on\\s+(?P<date>\\d{2}\\w{3}\\d{2})\\s+(?:transfer\\s+from|by)\\s+(?P<merchant>.+?)\\s+\\(?Ref\\s*No\\.?\\s*(?P<ref>\\d+)"},
   {"bank": "Kotak", "sender": "(?i)KOTAK", "kind": "expense",
-   "body": "(?is)Sent\\s+Rs\\.?\\s*(?P<amount>[\\d,]+(?:\\.\\d+)?)\\s+from\\s+Kotak\\s+Bank\\s+AC\\s+[xX*]*(?P<last4>\\d{3,4})\\s+to\\s+(?P<merchant>\\S+)\\s+on\\s+(?P<date>\\d{2}-\\d{2}-\\d{2,4})\\.\\s*UPI\\s+Ref\\s+(?P<ref>\\d+)"}
+   "body": "(?is)Sent\\s+Rs\\.?\\s*(?P<amount>[\\d,]+(?:\\.\\d+)?)\\s+from\\s+Kotak\\s+Bank\\s+AC\\s+[xX*]*(?P<last4>\\d{3,4})\\s+to\\s+(?P<merchant>\\S+)\\s+on\\s+(?P<date>\\d{2}-\\d{2}-\\d{2,4})\\.\\s*UPI\\s+Ref\\s+(?P<ref>\\d+)"},
+  {"bank": "slice", "sender": "(?i)SLICE|SLCE", "kind": "income",
+   "body": "(?is)Rs\\.?\\s*(?P<amount>[\\d,]+(?:\\.\\d+)?)\\s+received\\s+in\\s+slice\\s+A/?c\\s+[xX*]*(?P<last4>\\d{3,4})\\s+on\\s+(?P<date>\\d{2}-\\w{3}-\\d{2,4})\\s+from\\s+(?P<merchant>.+?)\\s+via\\s+UPI(?:\\s*\\(Ref\\s*ID:?\\s*(?P<ref>\\d+))?"},
+  {"bank": "slice", "sender": "(?i)SLICE|SLCE", "kind": "expense",
+   "body": "(?is)Rs\\.?\\s*(?P<amount>[\\d,]+(?:\\.\\d+)?)\\s+spent\\s+on\\s+your\\s+credit\\s+card\\s+[xX*]*(?P<last4>\\d{4})\\s+at\\s+(?P<merchant>.+?)\\s+on\\s+(?P<date>\\d{2}-\\w{3}-\\d{2,4})(?:\\s*\\(UPI\\s+Ref:?\\s*(?P<ref>\\d+))?"},
+  {"bank": "PNB", "sender": "(?i)PNB|PUNB", "kind": "expense",
+   "body": "(?is)PNB\\s+Credit\\s+Card\\s+[xX*]*(?P<last4>\\d{4})\\s+debited\\s+with\\s+Rs\\.?\\s*(?P<amount>[\\d,]+(?:\\.\\d+)?)\\s+(?:\\[CODE:\\w+\\]\\s+)?at\\s+(?P<merchant>.+?)\\s+on\\s+(?P<date>\\d{2}-\\d{2}-\\d{4})(?:\\s+[\\d:]+)?(?:\\s+through\\s+UPI:?\\s*(?P<ref>\\d+))?"}
 ]
