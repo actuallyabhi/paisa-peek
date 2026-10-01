@@ -1,3 +1,5 @@
+import base64
+import binascii
 import json
 import tomllib
 from datetime import date, timedelta
@@ -18,12 +20,14 @@ from django.utils import timezone
 from django.utils.formats import date_format
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _, gettext_lazy, ngettext
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
-from . import backup, charts, csv_import, llm, push, ramble as ramble_parser
+from . import backup, charts, csv_import, llm, ocr, push, ramble as ramble_parser
+from .ingest import Skipped, ingest
 from .paging import paginate
 from .forms import now_hm, party_named, review, AccountForm, NotifyForm, PartyForm, PartyTxnForm, RambleForm, RecurringForm, TxnForm
-from .models import Account, ApiToken, Category, NotifySettings, Party, PushSubscription, Recurring, Transaction, clamp_day
+from .models import Account, ApiToken, Category, NotifySettings, Party, PushSubscription, Recurring, Rule, Transaction, clamp_day
 
 
 def asset_version() -> str:
@@ -184,7 +188,8 @@ def home(request):
         "focus_log": request.GET.get("log") == "1",
         "daily": charts.daily_spend(qs, period["start"], period["end"], today, period["view"]),
         "months": charts.months_in_out(period["start"].replace(day=1)) if period["view"] == "month" else None,
-        "cat_rows": charts.category_shares(by_cat, spent),
+        "cat_rows": charts.category_shares(by_cat, spent, dict(
+            Category.objects.filter(budget__gt=0).values_list("name", "budget")) if period["view"] == "month" else {}),
         # Brand-new install: offer restore / first account instead of an empty list.
         "onboarding": not Transaction.objects.exists() and not Account.objects.exists(),
         "hello": _hello(request.user), "quip": QUIPS[timezone.localdate().toordinal() % len(QUIPS)],
@@ -201,9 +206,76 @@ def txn_edit(request, pk):
         nxt = _home_for(request, t.date)
     form = TxnForm(request.POST or None, instance=t)
     if request.method == "POST" and form.is_valid():
-        form.save()
+        t = form.save()
+        if request.POST.get("remember") and t.category and (key := (t.merchant or t.description).strip()[:100]):
+            Rule.objects.update_or_create(pattern__iexact=key, defaults={"pattern": key, "category": t.category})
         return redirect(nxt)
-    return render(request, "ledger/txn_edit.html", {"t": t, "form": form, "next": nxt})
+    return render(request, "ledger/txn_edit.html", {"t": t, "form": form, "next": nxt,
+                                                     "rule_key": t.merchant or t.description})
+
+
+@csrf_exempt  # the PWA share sheet and the Android app post here without a token; SameSite=Lax keeps it same-site
+@login_required
+@require_POST
+def share(request):
+    """A shared or uploaded payment screenshot → OCR → a pending transaction in the Inbox."""
+    if f := request.FILES.get("image"):
+        data = f.read(10 * 1024 * 1024 + 1)
+    else:  # the Android app sends base64 (WebView.postUrl can only post a form body)
+        try:
+            data = base64.b64decode(request.POST.get("image_b64", ""), validate=True)
+        except binascii.Error:
+            data = b""
+    if not data or len(data) > 10 * 1024 * 1024:
+        messages.error(request, _("Share an image under 10 MB."))
+        return redirect("inbox")
+    try:
+        t, dup = ingest(ocr.image_text(data), source="screenshot")
+    except ocr.OcrError as e:
+        messages.error(request, _("Couldn't read the screenshot: %(error)s") % {"error": e})
+    except Skipped:
+        messages.error(request, _("No payment found in that screenshot."))
+    else:
+        if dup:
+            messages.info(request, _("Already have this one ✓"))
+        else:
+            messages.success(request, _("Read it 📸 Check the amount, then confirm."))
+    return redirect("inbox")
+
+
+@login_required
+def categories(request):
+    """Monthly budgets per category, and "always categorize X as Y" rules."""
+    cats = list(Category.objects.all())
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if action == "budgets":
+            for c in cats:
+                raw = request.POST.get(f"budget-{c.pk}", "").replace(",", "").strip()
+                try:
+                    c.budget = Decimal(raw).quantize(Decimal("0.01")) if raw else None
+                except InvalidOperation:
+                    continue
+                if c.budget is not None and c.budget <= 0:
+                    c.budget = None
+            Category.objects.bulk_update(cats, ["budget"])
+            messages.success(request, _("Budgets saved."))
+        elif action == "rule":
+            pattern = " ".join(request.POST.get("pattern", "").split())[:100]
+            cat = Category.objects.filter(pk=request.POST.get("category") or 0).first()
+            if pattern and cat:
+                Rule.objects.update_or_create(pattern__iexact=pattern, defaults={"pattern": pattern, "category": cat})
+                # Sort out what's already waiting in the Inbox too.
+                n = Transaction.objects.filter(status="pending", kind="expense", category__isnull=True).filter(
+                    Q(merchant__icontains=pattern) | Q(description__icontains=pattern) | Q(raw_text__icontains=pattern)
+                ).update(category=cat)
+                messages.success(request, ngettext("Rule saved. Applied to %(n)d waiting transaction.",
+                                                   "Rule saved. Applied to %(n)d waiting transactions.", n) % {"n": n}
+                                 if n else _("Rule saved."))
+        elif action == "delete_rule":
+            Rule.objects.filter(pk=request.POST.get("rule") or 0).delete()
+        return redirect("categories")
+    return render(request, "ledger/categories.html", {"cats": cats, "rules": Rule.objects.select_related("category")})
 
 
 @login_required
@@ -256,6 +328,7 @@ def settings_page(request):
         "version": VERSION,
         "links": [
             (reverse("accounts"), _("Accounts"), _("Balances, cards, credit lines and the default account")),
+            (reverse("categories"), _("Budgets & rules"), _("Monthly budgets per category; always categorize a merchant")),
             (reverse("import_csv"), _("Import CSV"), _("Bring in history from a spreadsheet")),
             (reverse("admin:index"), _("Admin"), _("Categories, tags, SMS templates, everything")),
         ],

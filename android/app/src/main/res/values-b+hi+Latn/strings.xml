@@ -67,4 +67,6 @@
     <string name="allowed">Allowed</string>
     <string name="allow">Allow karo</string>
     <string name="downloading">%1$s download ho raha hai…</string>
+    <string name="reading_screenshot">Screenshot padh rahe hain…</string>
+    <string name="screenshot_unreadable">Woh image khul nahi paayi.</string>
 </resources>

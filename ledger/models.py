@@ -65,6 +65,7 @@ class Account(models.Model):
 class Category(models.Model):
     name = models.CharField(max_length=100, unique=True)
     essential = models.BooleanField(default=False)
+    budget = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, help_text="Monthly limit")
 
     class Meta:
         ordering = ["name"]
@@ -72,6 +73,26 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Rule(models.Model):
+    """"Always categorize X as Y": text containing `pattern` (merchant, description or SMS) gets `category`."""
+
+    pattern = models.CharField(max_length=100, unique=True)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+
+    class Meta:
+        ordering = ["pattern"]
+
+    def __str__(self):
+        return f"{self.pattern} → {self.category}"
+
+    @classmethod
+    def match(cls, text: str) -> Category | None:
+        """Longest matching pattern wins, so "amazon prime" beats "amazon"."""
+        low = text.lower()
+        hits = [r for r in cls.objects.select_related("category") if r.pattern.lower() in low]
+        return max(hits, key=lambda r: len(r.pattern)).category if hits else None
 
 
 class Tag(models.Model):

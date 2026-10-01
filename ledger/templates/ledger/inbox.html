@@ -1,7 +1,15 @@
 {% extends "base.html" %}{% load money i18n %}
 {% block title %}{% translate "Inbox" %}{% endblock %}
 {% block content %}
-<h1 class="mb-4 text-2xl font-semibold">{% translate "Review inbox" %}</h1>
+<div class="mb-4 flex items-center justify-between gap-3">
+  <h1 class="text-2xl font-semibold">{% translate "Review inbox" %}</h1>
+  {# Desktop / iPhone (no share sheet): pick a payment screenshot. Android shares straight to /share/. #}
+  <form method="post" action="{% url 'share' %}" enctype="multipart/form-data">
+    {% csrf_token %}
+    <label class="btn-secondary cursor-pointer px-3 text-sm">📸 {% translate "Add screenshot" %}
+      <input type="file" name="image" accept="image/*" class="hidden" onchange="this.form.submit()"></label>
+  </form>
+</div>
 <div class="space-y-3">
 {% for t in txns %}
   <article id="t{{ t.pk }}" class="card p-4">

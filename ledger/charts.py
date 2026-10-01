@@ -75,12 +75,19 @@ def months_in_out(month_start: date, n=6) -> dict:
             "kept": cur["income"] - cur["spent"]}
 
 
-def category_shares(by_cat, spent) -> list[dict]:
-    """One series (nominal categories) → one colour; bar length = amount, label = share."""
-    rows = list(by_cat)
+def category_shares(by_cat, spent, budgets=None) -> list[dict]:
+    """One series (nominal categories) → one colour; bar length = amount, label = share.
+    A category with a budget instead fills its bar towards the budget, red once over; unspent budgets show as ₹0."""
+    budgets = budgets or {}
+    rows = list(by_cat) + [{"category__name": n, "total": 0} for n in budgets if n not in {r["category__name"] for r in by_cat}]
     top = max([r["total"] for r in rows] + [0])
-    return [{"name": r["category__name"], "total": r["total"], "w": pct(r["total"], top),
-             "share": round(float(r["total"]) / float(spent) * 100) if spent else 0} for r in rows]
+    out = []
+    for r in rows:
+        b = budgets.get(r["category__name"])
+        out.append({"name": r["category__name"], "total": r["total"], "budget": b, "over": bool(b and r["total"] > b),
+                    "w": min(pct(r["total"], b), 100) if b else pct(r["total"], top),
+                    "share": round(float(r["total"]) / float(spent) * 100) if spent else 0})
+    return out
 
 
 def owed_diverging(parties, limit=8) -> dict:

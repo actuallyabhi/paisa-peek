@@ -1,8 +1,9 @@
 from django.contrib import admin
 
-from .models import Account, Category, Party, SmsTemplate, Tag, Transaction
+from .models import Account, Category, Party, Rule, SmsTemplate, Tag, Transaction
 
-admin.site.register(Category, list_display=["name", "essential"])
+admin.site.register(Category, list_display=["name", "essential", "budget"])
+admin.site.register(Rule, list_display=["pattern", "category"])
 admin.site.register(Tag)
 admin.site.register(Party, list_display=["name", "kind"], list_filter=["kind"], search_fields=["name"])
 admin.site.register(Account, list_display=["name", "kind", "last4"])

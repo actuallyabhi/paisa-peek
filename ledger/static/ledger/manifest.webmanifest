@@ -16,6 +16,10 @@
     {"src": "/static/ledger/icon-512.png", "sizes": "512x512", "type": "image/png"},
     {"src": "/static/ledger/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
   ],
+  "share_target": {
+    "action": "/share/", "method": "POST", "enctype": "multipart/form-data",
+    "params": {"files": [{"name": "image", "accept": ["image/*"]}]}
+  },
   "shortcuts": [
     {"name": "Log spending", "short_name": "Log", "url": "/?log=1", "icons": [{"src": "/static/ledger/icon-192.png", "sizes": "192x192"}]},
     {"name": "People", "url": "/people/", "icons": [{"src": "/static/ledger/icon-192.png", "sizes": "192x192"}]}

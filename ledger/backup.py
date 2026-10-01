@@ -19,13 +19,13 @@ from django.db import DatabaseError, transaction
 from django.db.migrations.recorder import MigrationRecorder
 from django.utils import timezone
 
-from .models import Account, ApiToken, Category, NotifySettings, Party, Recurring, SmsTemplate, Tag, Transaction
+from .models import Account, ApiToken, Category, NotifySettings, Party, Recurring, Rule, SmsTemplate, Tag, Transaction
 
 FORMAT, VERSION = "paisapeek-backup", 1
 LEGACY_FORMATS = {"budget-backup", "damdi-backup"}  # files exported under earlier names
 # Dependency order: everything a row points to comes before it.
-MODELS = [Category, Tag, Party, Account, SmsTemplate, Transaction, Recurring, NotifySettings, ApiToken]
-LABELS = {m._meta.label_lower: i for i, m in enumerate(MODELS)}  # "ledger.transaction" -> 5
+MODELS = [Category, Rule, Tag, Party, Account, SmsTemplate, Transaction, Recurring, NotifySettings, ApiToken]
+LABELS = {m._meta.label_lower: i for i, m in enumerate(MODELS)}  # "ledger.transaction" -> 6
 MAX_BYTES = 50 * 1024 * 1024
 
 

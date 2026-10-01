@@ -1062,3 +1062,107 @@ class NavTests(TestCase):
         self.assertEqual([str(a) for a in active], ["Recurring"])
         active = [label for name, label, act, icon in self.client.get("/accounts/").context["tabs"] if "accounts" in act]
         self.assertEqual([str(a) for a in active], ["More"])  # More stays highlighted on Recurring pages
+
+
+class RulesAndMemoryTests(TestCase):
+    """SMS arrive with a category (rule → last confirmed for the merchant → keyword), so one tap confirms."""
+
+    def setUp(self):
+        from .models import Rule
+        self.Rule = Rule
+        self.food, self.shop = Category.objects.get(name="Food & Outings"), Category.objects.get(name="Shopping")
+        User.objects.create_user("u", password="p")
+        self.client.login(username="u", password="p")
+
+    def sms(self, text):
+        return ingest(text, sender="VM-HDFCBK", received=RECEIVED)[0]
+
+    def test_rule_memory_keyword_order(self):
+        # Keyword fallback.
+        self.assertEqual(self.sms("Sent Rs.120.00 From HDFC Bank A/C *1234 To SWIGGY On 29/09/26 Ref 500000000001").category, self.food)
+        # Memory: last confirmed category for this exact merchant.
+        t = self.sms("Sent Rs.300.00 From HDFC Bank A/C *1234 To RAJU STORES On 29/09/26 Ref 500000000002")
+        self.assertIsNone(t.category)
+        t.category, t.status = self.shop, "confirmed"
+        t.save()
+        self.assertEqual(self.sms("Sent Rs.80.00 From HDFC Bank A/C *1234 To RAJU STORES On 30/09/26 Ref 500000000003").category, self.shop)
+        # A rule beats both; the longest pattern wins.
+        self.Rule.objects.create(pattern="swiggy", category=self.shop)
+        self.Rule.objects.create(pattern="swiggy instamart", category=Category.objects.get(name="Groceries"))
+        self.assertEqual(self.sms("Sent Rs.99.00 From HDFC Bank A/C *1234 To SWIGGY On 30/09/26 Ref 500000000004").category, self.shop)
+        self.assertEqual(self.sms("Sent Rs.98.00 From HDFC Bank A/C *1234 To SWIGGY INSTAMART On 30/09/26 Ref 500000000005").category.name, "Groceries")
+        # Money in is never categorized (the inbox asks what it was instead).
+        self.assertIsNone(self.sms("Rs.500.00 credited to HDFC Bank A/C *1234 from SWIGGY on 30/09/26 Ref 500000000006").category)
+
+    def test_rule_pages(self):
+        t = self.sms("Sent Rs.300.00 From HDFC Bank A/C *1234 To RAJU STORES On 29/09/26 Ref 500000000002")
+        r = self.client.post("/categories/", {"action": "rule", "pattern": "raju", "category": self.shop.pk})
+        self.assertRedirects(r, "/categories/")
+        t.refresh_from_db()
+        self.assertEqual(t.category, self.shop)  # waiting Inbox items get the new rule too
+        self.client.post("/categories/", {"action": "rule", "pattern": "RAJU", "category": self.food.pk})
+        self.assertEqual(self.Rule.objects.get().category, self.food)  # same pattern, any case: updated, not doubled
+        self.client.post("/categories/", {"action": "delete_rule", "rule": self.Rule.objects.get().pk})
+        self.assertFalse(self.Rule.objects.exists())
+        # "Always use this category" on the edit page.
+        self.client.post(f"/txns/{t.pk}/", {"date": "2026-09-29", "amount": "300", "kind": "expense", "category": self.shop.pk,
+                                           "status": "confirmed", "description": "RAJU STORES", "remember": "1"})
+        self.assertEqual(str(self.Rule.objects.get()), "RAJU STORES → Shopping")
+
+
+class BudgetTests(TestCase):
+    def setUp(self):
+        User.objects.create_user("u", password="p")
+        self.client.login(username="u", password="p")
+
+    def test_budgets_show_on_home(self):
+        food, rent = Category.objects.get(name="Food & Outings"), Category.objects.get(name="Rent")
+        self.client.post("/categories/", {"action": "budgets", f"budget-{food.pk}": "1,000", f"budget-{rent.pk}": "20000"})
+        food.refresh_from_db()
+        self.assertEqual(food.budget, Decimal("1000.00"))
+        today = date.today()
+        Transaction.objects.create(date=today, amount=1500, category=food)
+        rows = {r["name"]: r for r in self.client.get(f"/?view=month&month={today:%Y-%m}").context["cat_rows"]}
+        self.assertTrue(rows["Food & Outings"]["over"])
+        self.assertEqual(rows["Food & Outings"]["w"], 100)
+        self.assertEqual((rows["Rent"]["total"], rows["Rent"]["over"]), (0, False))  # unspent budget still shows
+        self.client.post("/categories/", {"action": "budgets", f"budget-{food.pk}": ""})
+        food.refresh_from_db()
+        self.assertIsNone(food.budget)
+
+
+class ScreenshotTests(TestCase):
+    GPAY = ("₹450. Paid to Swiggy. Completed. 30 Sep 2026, 8:41 pm. UPI transaction ID. 527312345678. "
+            "To: Swiggy. swiggy@icici. From: ABHISHEK (HDFC Bank) xxxx1234")
+
+    def setUp(self):
+        User.objects.create_user("u", password="p")
+        self.client.login(username="u", password="p")
+
+    def post(self, **data):
+        from unittest import mock
+        with mock.patch("ledger.ocr.image_text", return_value=self.GPAY):
+            return self.client.post("/share/", data)
+
+    def test_share_creates_pending_and_dedupes(self):
+        import base64
+        r = self.post(image_b64=base64.b64encode(b"fake png").decode())
+        self.assertRedirects(r, "/inbox/")
+        t = Transaction.objects.get()
+        self.assertEqual((t.amount, t.source, t.status, t.ref, t.category.name), (Decimal("450.00"), "screenshot", "pending", "527312345678", "Food & Outings"))
+        # The bank SMS for the same UPI payment is the same transaction.
+        self.assertTrue(ingest("Sent Rs.450.00 From HDFC Bank A/C *1234 To SWIGGY On 30/09/26 Ref 527312345678",
+                               sender="VM-HDFCBK", received=RECEIVED)[1])
+        self.assertEqual(self.post(image_b64="!!notbase64").status_code, 302)
+        self.assertEqual(Transaction.objects.count(), 1)
+
+    def test_bank_sms_fixes_ocr_amount(self):
+        self.GPAY = self.GPAY.replace("₹450", "₹2450")  # ₹ misread as a 2
+        self.post(image_b64="ZmFrZQ==")
+        ingest("Sent Rs.450.00 From HDFC Bank A/C *1234 To SWIGGY On 30/09/26 Ref 527312345678", sender="VM-HDFCBK", received=RECEIVED)
+        self.assertEqual(Transaction.objects.get().amount, Decimal("450.00"))
+
+    def test_share_target_in_manifest(self):
+        from django.contrib.staticfiles import finders
+        with open(finders.find("ledger/manifest.webmanifest")) as f:
+            self.assertEqual(json.load(f)["share_target"]["action"], "/share/")

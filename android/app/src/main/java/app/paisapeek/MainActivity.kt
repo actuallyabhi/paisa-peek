@@ -5,10 +5,13 @@ import android.annotation.SuppressLint
 import android.app.DownloadManager
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.util.Base64
 import android.view.View
 import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
@@ -123,7 +126,8 @@ class MainActivity : ComponentActivity() {
         // The site pads its header/nav with env(safe-area-inset-*), so only make room for the keyboard.
         // WebView ignores its own padding, so inset a container instead.
         setContentView(FrameLayout(this).apply { addView(web) }.padForSystemBars(WindowInsetsCompat.Type.ime()))
-        if (savedInstanceState == null) web.loadUrl(base + intent.getStringExtra("path").orEmpty()) else web.restoreState(savedInstanceState)
+        if (savedInstanceState != null) web.restoreState(savedInstanceState)
+        else if (!share(intent)) web.loadUrl(base + intent.getStringExtra("path").orEmpty())
     }
 
     /**
@@ -143,7 +147,31 @@ class MainActivity : ComponentActivity() {
     /** InboxActivity's Edit opens a web page here. */
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        intent.getStringExtra("path")?.let { web.loadUrl(Prefs.base(this) + it) }
+        if (!share(intent)) intent.getStringExtra("path")?.let { web.loadUrl(Prefs.base(this) + it) }
+    }
+
+    /**
+     * A shared screenshot: post it to /share/ from the WebView, so it goes with the login cookie and the
+     * page that comes back (the Inbox with the new card) just shows. postUrl only sends a form body, hence base64.
+     */
+    private fun share(intent: Intent): Boolean {
+        if (intent.action != Intent.ACTION_SEND) return false
+        @Suppress("DEPRECATION") val uri = intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM) ?: return false
+        Toast.makeText(this, R.string.reading_screenshot, Toast.LENGTH_SHORT).show()
+        Thread {
+            val body = runCatching {
+                var bmp = contentResolver.openInputStream(uri)!!.use { BitmapFactory.decodeStream(it) }!!
+                val longest = maxOf(bmp.width, bmp.height)
+                if (longest > 2400) bmp = Bitmap.createScaledBitmap(bmp, bmp.width * 2400 / longest, bmp.height * 2400 / longest, true)
+                val jpeg = java.io.ByteArrayOutputStream().also { bmp.compress(Bitmap.CompressFormat.JPEG, 90, it) }.toByteArray()
+                "image_b64=" + java.net.URLEncoder.encode(Base64.encodeToString(jpeg, Base64.NO_WRAP), "UTF-8")
+            }.getOrNull()
+            runOnUiThread {
+                if (body != null) web.postUrl(Prefs.base(this) + "/share/", body.toByteArray())
+                else { Toast.makeText(this, R.string.screenshot_unreadable, Toast.LENGTH_LONG).show(); web.loadUrl(Prefs.base(this) + "/inbox/") }
+            }
+        }.start()
+        return true
     }
 
     override fun onRestart() {

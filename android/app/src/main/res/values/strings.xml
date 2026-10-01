@@ -68,4 +68,6 @@
     <string name="allowed">Allowed</string>
     <string name="allow">Allow</string>
     <string name="downloading">Downloading %1$s…</string>
+    <string name="reading_screenshot">Reading the screenshot…</string>
+    <string name="screenshot_unreadable">Couldn\'t open that image.</string>
 </resources>

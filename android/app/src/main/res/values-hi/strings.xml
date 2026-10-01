@@ -67,4 +67,6 @@
     <string name="allowed">इजाज़त मिल गई</string>
     <string name="allow">इजाज़त दें</string>
     <string name="downloading">%1$s डाउनलोड हो रहा है…</string>
+    <string name="reading_screenshot">स्क्रीनशॉट पढ़ रहे हैं…</string>
+    <string name="screenshot_unreadable">वह तस्वीर खुल नहीं पाई।</string>
 </resources>

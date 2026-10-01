@@ -13,7 +13,7 @@ from django.utils import timezone
 from pydantic import BaseModel, ValidationError
 
 from . import llm
-from .models import Account, Category, Party, Tag, Transaction
+from .models import Account, Category, Party, Rule, Tag, Transaction
 
 log = logging.getLogger(__name__)
 
@@ -27,7 +27,9 @@ def _by_name(objs) -> dict:
 
 
 def guess_category(text: str, categories: dict) -> Category | None:
-    """Category you last used for a similar description, else a keyword hint."""
+    """Your rule for it, else the category you last used for a similar description, else a keyword hint."""
+    if rule := Rule.match(text):
+        return rule
     words = [w for w in re.findall(r"[a-z]{3,}", text.lower()) if w not in STOPWORDS]
     for w in words:
         t = (Transaction.objects.filter(status="confirmed", category__isnull=False, description__icontains=w)

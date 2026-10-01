@@ -84,14 +84,15 @@
 {% if daily.has_data %}{% include "ledger/_chart_daily.html" %}{% endif %}
 {% if months.has_data %}{% include "ledger/_chart_months.html" %}{% endif %}
 
-{% if by_cat %}
+{% if cat_rows %}
 <details class="card mb-6 p-4" {% if p.view == 'month' %}open{% endif %}>
   <summary class="cursor-pointer font-display font-semibold">{% translate "Where it went" %}</summary>
   <div class="mt-3 space-y-2.5">
   {% for c in cat_rows %}
     <div tabindex="0" data-tip-value="{{ c.total|inr }}" data-tip-label="{% if c.name %}{% translate c.name %}{% else %}{% translate "Uncategorized" %}{% endif %} · {{ c.share }}%">
-      <div class="flex justify-between text-sm"><span>{% if c.name %}{% translate c.name %}{% else %}{% translate "Uncategorized" %}{% endif %}</span><span class="tabular-nums">{{ c.total|inr }} <span class="text-xs text-muted">{{ c.share }}%</span></span></div>
-      <div class="mt-1 h-2 rounded-full bg-sunk"><div class="h-2 rounded-full bg-out" style="width: {{ c.w }}%"></div></div>
+      <div class="flex justify-between text-sm"><span>{% if c.name %}{% translate c.name %}{% else %}{% translate "Uncategorized" %}{% endif %}</span>
+        <span class="tabular-nums {% if c.over %}text-bad{% endif %}">{{ c.total|inr }} {% if c.budget %}<span class="text-xs text-muted">{% blocktranslate with budget=c.budget|inr %}of {{ budget }}{% endblocktranslate %}</span>{% else %}<span class="text-xs text-muted">{{ c.share }}%</span>{% endif %}</span></div>
+      <div class="mt-1 h-2 rounded-full bg-sunk"><div class="h-2 rounded-full {% if c.over %}bg-bad{% else %}bg-out{% endif %}" style="width: {{ c.w }}%"></div></div>
     </div>
   {% endfor %}
   </div>

@@ -78,6 +78,7 @@ Adding a bank's SMS format or a new language? See [SMS_TEMPLATES.md](docs/SMS_TE
 - [ ] Budgets per category
 - [ ] Bank/credit card statement upload with matching against existing entries
 - [ ] Interest on savings accounts: rate and credit frequency per account, with a scheduled job that adds the interest
+- [ ] Multiple user support on single server.
 
 **Future**
 - [ ] **On-device LLM in the Android app.** Download a small model (around 1–3B parameters, quantized) and run it on the phone to read bank SMS: amount, merchant, account, category and kind. SMS text would then never need to leave the phone. A setting picks the parser:

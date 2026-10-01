@@ -10,7 +10,9 @@ from django.db import transaction as db_tx
 from django.db.models import Q
 from django.utils import timezone
 
-from .models import Account, SmsTemplate, Transaction
+from . import llm
+from .models import Account, Category, Rule, SmsTemplate, Transaction
+from .ramble import _by_name, guess_category
 
 log = logging.getLogger(__name__)
 
@@ -20,10 +22,12 @@ DENY = re.compile(
     re.I,
 )
 AMOUNT = re.compile(r"(?:rs\.?|inr|₹)\s*([\d,]+(?:\.\d{1,2})?)", re.I)
-DIRECTION = re.compile(r"\b(debited|sent|spent|paid|withdrawn|purchase|credited|received|deposited|refund(?:ed)?)\b", re.I)
-DEBIT_WORDS = {"debited", "sent", "spent", "paid", "withdrawn", "purchase"}
+# "completed"/"successful": what payment-app screenshots say instead of "debited".
+DIRECTION = re.compile(r"\b(debited|sent|spent|paid|withdrawn|purchase|completed|successful|credited|received|deposited"
+                       r"|refund(?:ed)?)\b", re.I)
+DEBIT_WORDS = {"debited", "sent", "spent", "paid", "withdrawn", "purchase", "completed", "successful"}
 LAST4 = re.compile(r"\b(?:a/?c|acct|account|card)(?:\s*no\.?)?(?:\s*ending(?:\s*with)?)?\s*[xX*]*\s*(\d{3,4})\b", re.I)
-REF = re.compile(r"\b(?:ref(?:\s*no)?|utr|upi(?:\s*ref)?)[\s:.#-]*(\d{9,})", re.I)
+REF = re.compile(r"\b(?:ref(?:\s*no)?|utr|upi(?:\s*ref)?|(?:upi\s*)?transaction\s*id|txn\s*id)[\s:.#-]*(\d{9,})", re.I)
 _END = r"(?:\.\s|\.$|[;,(]|\s+on\b|\s+ref\b|\s+avl|\s*$)"
 TO = re.compile(r"\b(?:towards|trf to|to|at)\s+([A-Za-z0-9@&' _.-]+?)" + _END, re.I)
 FROM = re.compile(r"\bfrom\s+([A-Za-z0-9@&' _.-]+?)" + _END, re.I)
@@ -73,6 +77,8 @@ def clean_merchant(s: str) -> str:
 
 
 def kind_of(text: str) -> str:
+    if re.match(r"(?:received|from)\b", text, re.I):  # a screenshot headed "From Rohan" / "Received"
+        return "income"
     m = DIRECTION.search(text)
     return "income" if m and m.group(1).lower() not in DEBIT_WORDS else "expense"
 
@@ -125,6 +131,47 @@ def generic_parse(text: str, received: date) -> Parsed | None:
     return p
 
 
+LLM_SCHEMA = {
+    "type": "object", "additionalProperties": False, "required": ["amount", "kind", "merchant", "date", "ref"],
+    "properties": {
+        "amount": {"type": "number", "description": "0 if this is not a completed payment"},
+        "kind": {"type": "string", "enum": ["expense", "income"]},
+        "merchant": {"type": "string", "description": "who was paid, or who paid"},
+        "date": {"type": "string", "description": "YYYY-MM-DD, or empty if not shown"},
+        "ref": {"type": "string", "description": "UPI / UTR / transaction id digits, or empty"},
+    },
+}
+LLM_PROMPT = ("You read OCR text from a screenshot of an Indian payment app or bank (GPay, PhonePe, Paytm…). "
+              "Extract the one completed payment it shows. OCR often misreads ₹ as 2, %, = or z. Today is {today}.")
+
+
+def llm_parse(text: str, received: date) -> Parsed | None:
+    """Fallback for screenshots the regexes can't read. None when off, failing, or not a payment."""
+    if not llm.enabled():
+        return None
+    try:
+        r = llm.chat_json(LLM_PROMPT.format(today=received.isoformat()), text, LLM_SCHEMA)
+        amount = parse_amount(str(r["amount"]))
+    except (llm.LLMError, KeyError, TypeError) as e:
+        log.warning("screenshot LLM failed: %s", e)
+        return None
+    if not amount:
+        return None
+    return Parsed(amount=amount, kind="income" if r.get("kind") == "income" else "expense",
+                  date=parse_date(r.get("date") or "", received), merchant=clean_merchant(r.get("merchant") or ""),
+                  ref="".join(filter(str.isdigit, r.get("ref") or ""))[:50])
+
+
+def categorize(merchant: str, text: str = "") -> Category | None:
+    """Your rule, else the category you last confirmed for this merchant, else a keyword guess."""
+    if rule := Rule.match(f"{merchant}\n{text}"):
+        return rule
+    if merchant and (t := Transaction.objects.filter(status="confirmed", merchant__iexact=merchant, category__isnull=False)
+                     .select_related("category").first()):
+        return t.category
+    return guess_category(merchant, _by_name(Category.objects.all())) if merchant else None
+
+
 def account_for(p: Parsed, text: str) -> Account | None:
     """Find by last 4 digits; first sighting creates a placeholder account."""
     if not p.last4:
@@ -146,7 +193,7 @@ def ingest(text: str, sender: str = "", source: str = "sms", received: date | No
     if not text or DENY.search(text):
         raise Skipped
     templates = compile_templates(SmsTemplate.objects.filter(enabled=True).order_by("id"))
-    p = parse(templates, sender, text, received)
+    p = parse(templates, sender, text, received) or (llm_parse(text, received) if source == "screenshot" else None)
 
     with db_tx.atomic():  # IMMEDIATE mode: check+insert can't race another worker
         if not p:
@@ -175,11 +222,13 @@ def ingest(text: str, sender: str = "", source: str = "sms", received: date | No
             if text not in dup.raw_text:
                 dup.raw_text += "\n---\n" + text
                 dup.ref = dup.ref or p.ref
-                dup.save(update_fields=["raw_text", "ref"])
+                if dup.source == "screenshot" and source == "sms" and dup.status == "pending":
+                    dup.amount = p.amount  # the bank's figure beats OCR's reading of ₹
+                dup.save(update_fields=["raw_text", "ref", "amount"])
             return dup, True
 
         return Transaction.objects.create(
             date=p.date, time=received_time if p.date == received else None,
             amount=p.amount, kind=p.kind, merchant=p.merchant, description=p.merchant,
-            account=account, source=source, raw_text=text, ref=p.ref, status="pending",
+            category=categorize(p.merchant, text) if p.kind == "expense" else None, account=account, source=source, raw_text=text, ref=p.ref, status="pending",
         ), False

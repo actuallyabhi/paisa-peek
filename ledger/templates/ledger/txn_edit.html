@@ -5,6 +5,8 @@
 <form method="post" class="space-y-3 card p-4">
   {% include "ledger/_form.html" %}
   <input type="hidden" name="next" value="{{ next }}">
+  {% if rule_key %}<label class="flex items-center gap-2 text-sm"><input type="checkbox" name="remember" value="1" class="w-auto">
+    {% blocktranslate %}Always use this category for “{{ rule_key }}”{% endblocktranslate %}</label>{% endif %}
   <button class="btn">{% translate "Save" %}</button>
 </form>
 {% if t.raw_text %}
