@@ -12,7 +12,7 @@ from django.utils import timezone
 
 from . import llm
 from .models import Account, Category, Rule, SmsTemplate, Transaction
-from .ramble import _by_name, guess_category
+from .ramble import _by_name, guess_category, keyword_category
 
 log = logging.getLogger(__name__)
 
@@ -166,13 +166,15 @@ def llm_parse(text: str, received: date) -> Parsed | None:
 
 
 def categorize(merchant: str, text: str = "") -> Category | None:
-    """Your rule, else the category you last confirmed for this merchant, else a keyword guess."""
+    """Your rule, else the category you last confirmed for this merchant, else a keyword guess from the merchant,
+    else from the whole message ("…towards LIC premium", "Spent at ATM… for haircut")."""
     if rule := Rule.match(f"{merchant}\n{text}"):
         return rule
     if merchant and (t := Transaction.objects.filter(status="confirmed", merchant__iexact=merchant, category__isnull=False)
                      .select_related("category").first()):
         return t.category
-    return guess_category(merchant, _by_name(Category.objects.all())) if merchant else None
+    cats = _by_name(Category.objects.all())
+    return (guess_category(merchant, cats) if merchant else None) or (keyword_category(text, cats) if text else None)
 
 
 def account_for(p: Parsed, text: str) -> Account | None:

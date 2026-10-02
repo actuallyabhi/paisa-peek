@@ -3,6 +3,7 @@ from django.core.validators import RegexValidator
 from django.utils import timezone
 from django.utils.translation import gettext, gettext_lazy as _
 
+from .ingest import categorize
 from .interest import period_end
 from .models import Account, Category, NotifySettings, Party, Recurring, Tag, Transaction
 
@@ -123,6 +124,10 @@ class TxnForm(forms.ModelForm):
     def save(self, commit=True):
         name = self.cleaned_data.get("party_name")
         self.instance.party = party_named(name) if name else None
+        # New expense with no category picked: guess it like an SMS would ("Haircut at Looks" → Personal Care).
+        t = self.instance
+        if not t.pk and t.kind == "expense" and not t.category and (about := t.description or name):
+            t.category = categorize(about, t.notes)
         obj = super().save(commit)
         if commit and "tag_names" in self.fields:
             obj.tags.set([Tag.objects.filter(name__iexact=n).first() or Tag.objects.create(name=n)
@@ -203,7 +208,8 @@ class AccountForm(forms.ModelForm):
             self.initial["current_balance"] = -b if self.instance.is_credit else b
 
     def clean_interest_every(self):
-        return self.cleaned_data.get("interest_every") or 3  # hidden unless savings; quarterly like most banks
+        every = self.cleaned_data.get("interest_every")
+        return 3 if every in (None, "") else every  # hidden unless savings; quarterly like most banks (0 = daily is valid)
 
     def save(self, commit=True):
         obj = super().save(commit=False)

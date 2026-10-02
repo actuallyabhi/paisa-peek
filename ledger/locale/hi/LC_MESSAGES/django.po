@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Paisapeek\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-02 23:53+0530\n"
+"POT-Creation-Date: 2026-10-03 00:06+0530\n"
 "PO-Revision-Date: 2026-10-01 01:35+0530\n"
 "Last-Translator: Paisapeek contributors\n"
 "Language-Team: Hindi\n"
@@ -21,133 +21,133 @@ msgid_plural "%(n)d others"
 msgstr[0] "%(n)d अन्य"
 msgstr[1] "%(n)d अन्य"
 
-#: forms.py:11
+#: forms.py:12
 msgid "Date"
 msgstr "तारीख"
 
-#: forms.py:11
+#: forms.py:12
 msgid "Time"
 msgstr "समय"
 
-#: forms.py:11
+#: forms.py:12
 msgid "Amount"
 msgstr "रकम"
 
-#: forms.py:11 templates/ledger/party.html:70 templates/ledger/people.html:46
+#: forms.py:12 templates/ledger/party.html:70 templates/ledger/people.html:46
 msgid "Type"
 msgstr "प्रकार"
 
-#: forms.py:11
+#: forms.py:12
 msgid "Description"
 msgstr "विवरण"
 
-#: forms.py:12 templates/ledger/categories.html:36
+#: forms.py:13 templates/ledger/categories.html:36
 #: templates/ledger/inbox.html:39
 msgid "Category"
 msgstr "श्रेणी"
 
-#: forms.py:12
+#: forms.py:13
 msgid "Account"
 msgstr "खाता"
 
-#: forms.py:12 templates/ledger/inbox.html:43
+#: forms.py:13 templates/ledger/inbox.html:43
 msgid "To account"
 msgstr "किस खाते में"
 
-#: forms.py:12 templates/ledger/party.html:71
+#: forms.py:13 templates/ledger/party.html:71
 msgid "Notes"
 msgstr "नोट्स"
 
-#: forms.py:13
+#: forms.py:14
 msgid "Status"
 msgstr "स्थिति"
 
-#: forms.py:13 templates/ledger/party.html:69 templates/ledger/people.html:19
+#: forms.py:14 templates/ledger/party.html:69 templates/ledger/people.html:19
 #: templates/ledger/people.html:45
 msgid "Name"
 msgstr "नाम"
 
-#: forms.py:13
+#: forms.py:14
 msgid "Every"
 msgstr "हर"
 
-#: forms.py:13
+#: forms.py:14
 msgid "Unit"
 msgstr "इकाई"
 
-#: forms.py:13
+#: forms.py:14
 msgid "Next date"
 msgstr "अगली तारीख"
 
-#: forms.py:14
+#: forms.py:15
 msgid "Remind days before"
 msgstr "कितने दिन पहले याद दिलाएँ"
 
-#: forms.py:14
+#: forms.py:15
 msgid "Essential expense (part of the minimum)"
 msgstr "ज़रूरी खर्च (न्यूनतम में शामिल)"
 
-#: forms.py:15
+#: forms.py:16
 msgid "Active"
 msgstr "चालू"
 
-#: forms.py:15
+#: forms.py:16
 msgid "Credit limit"
 msgstr "क्रेडिट लिमिट"
 
-#: forms.py:15
+#: forms.py:16
 msgid "Statement day"
 msgstr "स्टेटमेंट का दिन"
 
-#: forms.py:16
+#: forms.py:17
 msgid "Due day"
 msgstr "भुगतान का दिन"
 
-#: forms.py:16
+#: forms.py:17
 msgid "Default account for new transactions"
 msgstr "नए लेन-देन के लिए डिफ़ॉल्ट खाता"
 
-#: forms.py:48
+#: forms.py:49
 msgid "Set an amount before confirming."
 msgstr "पक्का करने से पहले रकम डालें।"
 
-#: forms.py:56 forms.py:115
+#: forms.py:57 forms.py:116
 msgid "Who? Lent/borrowed/repaid needs a person or company."
 msgstr "किसके साथ? उधार/लौटाने के लिए व्यक्ति या कंपनी ज़रूरी है।"
 
-#: forms.py:69
+#: forms.py:70
 msgid "Person / company"
 msgstr "व्यक्ति / कंपनी"
 
-#: forms.py:70
+#: forms.py:71
 msgid "e.g. Rohan"
 msgstr "जैसे रोहन"
 
-#: forms.py:72
+#: forms.py:73
 msgid "Tags"
 msgstr "टैग"
 
-#: forms.py:72
+#: forms.py:73
 msgid "Goa trip, Office"
 msgstr "गोवा ट्रिप, ऑफ़िस"
 
-#: forms.py:99 forms.py:241
+#: forms.py:100 forms.py:247
 msgid "Amount must be positive."
 msgstr "रकम शून्य से ज़्यादा होनी चाहिए।"
 
-#: forms.py:118
+#: forms.py:119
 msgid "Only for transfers."
 msgstr "सिर्फ़ ट्रांसफ़र के लिए।"
 
-#: forms.py:120
+#: forms.py:121
 msgid "Pick a different account."
 msgstr "कोई दूसरा खाता चुनें।"
 
-#: forms.py:180
+#: forms.py:185
 msgid "Current balance"
 msgstr "मौजूदा बैलेंस"
 
-#: forms.py:181
+#: forms.py:186
 msgid ""
 "What your bank/app shows right now. For cards, credit lines and loans: the "
 "amount you owe."
@@ -155,67 +155,67 @@ msgstr ""
 "अभी आपका बैंक/ऐप जो दिखा रहा है। कार्ड, क्रेडिट लाइन और लोन के लिए: जितना आपको "
 "चुकाना है।"
 
-#: forms.py:183
+#: forms.py:188
 msgid "Last 4 digits"
 msgstr "आख़िरी 4 अंक"
 
-#: forms.py:184
+#: forms.py:189
 msgid "Up to 4 digits."
 msgstr "ज़्यादा से ज़्यादा 4 अंक।"
 
-#: forms.py:185
+#: forms.py:190
 msgid "Matches bank SMS to this account."
 msgstr "बैंक के SMS इसी खाते से जुड़ेंगे।"
 
-#: forms.py:191
+#: forms.py:196
 msgid "Interest rate (% a year)"
 msgstr "ब्याज दर (% सालाना)"
 
-#: forms.py:191
+#: forms.py:196
 msgid "Interest credited"
 msgstr "ब्याज कब मिलता है"
 
-#: forms.py:192
+#: forms.py:197
 msgid "Next interest credit"
 msgstr "अगली ब्याज तारीख"
 
-#: forms.py:194
+#: forms.py:199
 msgid "Day of month the statement generates (cards)"
 msgstr "महीने का वह दिन जब स्टेटमेंट बनता है (कार्ड)"
 
-#: forms.py:195
+#: forms.py:200
 msgid "Day of month payment is due"
 msgstr "महीने का वह दिन जब भुगतान करना है"
 
-#: forms.py:196
+#: forms.py:201
 msgid "Savings accounts: an estimate lands in your Inbox on each credit date."
 msgstr "बचत खाते: हर ब्याज की तारीख पर एक अनुमान आपके इनबॉक्स में आएगा।"
 
-#: forms.py:232
+#: forms.py:238
 msgid "Expense / bill"
 msgstr "खर्च / बिल"
 
-#: forms.py:232
+#: forms.py:238
 msgid "Income (salary, stipend, rent received…)"
 msgstr "आमदनी (सैलरी, स्टाइपेंड, मिला किराया…)"
 
-#: forms.py:233
+#: forms.py:239
 msgid "Transfer / sending money (not spending)"
 msgstr "ट्रांसफ़र / पैसे भेजना (खर्च नहीं)"
 
-#: forms.py:251
+#: forms.py:257
 msgid "Daily “log today's spending” reminder"
 msgstr "रोज़ “आज का खर्च लिखें” रिमाइंडर"
 
-#: forms.py:251 forms.py:252
+#: forms.py:257 forms.py:258
 msgid "at"
 msgstr "समय"
 
-#: forms.py:252
+#: forms.py:258
 msgid "Bill, subscription and card statement reminders"
 msgstr "बिल, सब्सक्रिप्शन और कार्ड स्टेटमेंट रिमाइंडर"
 
-#: forms.py:253
+#: forms.py:259
 msgid "Auto-confirm savings interest"
 msgstr "बचत का ब्याज अपने-आप जोड़ें"
 
@@ -528,6 +528,10 @@ msgid "Wallet"
 msgstr "वॉलेट"
 
 #: models.py:29
+msgid "Daily"
+msgstr "रोज़"
+
+#: models.py:29
 msgid "Monthly"
 msgstr "हर महीने"
 
@@ -543,103 +547,103 @@ msgstr "हर छह महीने"
 msgid "Yearly"
 msgstr "हर साल"
 
-#: models.py:134
+#: models.py:139
 msgid "Person"
 msgstr "व्यक्ति"
 
-#: models.py:134
+#: models.py:139
 msgid "Company"
 msgstr "कंपनी"
 
-#: models.py:149
+#: models.py:154
 msgid "Expense"
 msgstr "खर्च"
 
-#: models.py:149
+#: models.py:154
 msgid "Income"
 msgstr "आमदनी"
 
-#: models.py:149
+#: models.py:154
 msgid "Transfer"
 msgstr "ट्रांसफ़र"
 
-#: models.py:150
+#: models.py:155
 msgid "Lent (they owe me)"
 msgstr "उधार दिया (उन्हें लौटाना है)"
 
-#: models.py:150
+#: models.py:155
 msgid "Borrowed (I owe them)"
 msgstr "उधार लिया (मुझे लौटाना है)"
 
-#: models.py:151
+#: models.py:156
 msgid "Repaid to me"
 msgstr "मुझे लौटाया"
 
-#: models.py:151
+#: models.py:156
 msgid "Repaid by me"
 msgstr "मैंने लौटाया"
 
-#: models.py:153 templates/ledger/account_edit.html:42
+#: models.py:158 templates/ledger/account_edit.html:42
 #: templates/ledger/home.html:120 templates/ledger/party.html:48
 msgid "pending"
 msgstr "बाकी"
 
-#: models.py:153
+#: models.py:158
 msgid "confirmed"
 msgstr "पक्का"
 
-#: models.py:153
+#: models.py:158
 msgid "ignored"
 msgstr "नज़रअंदाज़"
 
-#: models.py:235
+#: models.py:240
 msgid "day(s)"
 msgstr "दिन"
 
-#: models.py:235
+#: models.py:240
 msgid "week(s)"
 msgstr "हफ़्ते"
 
-#: models.py:235
+#: models.py:240
 msgid "month(s)"
 msgstr "महीने"
 
-#: models.py:235
+#: models.py:240
 msgid "year(s)"
 msgstr "साल"
 
-#: models.py:275
+#: models.py:280
 msgid "every day"
 msgstr "हर दिन"
 
-#: models.py:275
+#: models.py:280
 #, python-format
 msgid "every %(n)d days"
 msgstr "हर %(n)d दिन"
 
-#: models.py:275
+#: models.py:280
 msgid "every week"
 msgstr "हर हफ़्ते"
 
-#: models.py:275
+#: models.py:280
 #, python-format
 msgid "every %(n)d weeks"
 msgstr "हर %(n)d हफ़्ते"
 
-#: models.py:276
+#: models.py:281
 msgid "every month"
 msgstr "हर महीने"
 
-#: models.py:276
+#: models.py:281
 #, python-format
 msgid "every %(n)d months"
 msgstr "हर %(n)d महीने"
 
-#: models.py:276
+#: models.py:281
 msgid "every year"
 msgstr "हर साल"
 
-#: models.py:276
+#: models.py:281
 #, python-format
 msgid "every %(n)d years"
 msgstr "हर %(n)d साल"

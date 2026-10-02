@@ -71,6 +71,7 @@ Adding a bank's SMS format or a new language? See [SMS_TEMPLATES.md](docs/SMS_TE
 - [x] Charts, global search, pagination, English/हिन्दी/Hinglish, dark mode
 - [x] **Android app**: reads bank SMS directly; a notification per SMS with Confirm / Review / Ignore; a native review inbox in Material 3 Expressive (suggests people as you type, Undo); the rest of the site runs inside the app; signed APKs built by GitHub Actions on every release
 - [x] Savings interest: rate and credit frequency per account; the scheduler estimates interest on daily balances on each credit date (to the Inbox, or auto-confirmed)
+- [x] Category detection from merchant names: keywords for every category (salon → Personal Care, tuition → Education…), matched inside UPI/card names, the rest of the SMS and manual entries; your rules and past choices still come first
 - [x] **iOS**: SMS capture through a Shortcuts automation ([guide](docs/FEATURES.md#auto-capture-from-sms-android)); iOS doesn't let apps read SMS
 
 **Next**
@@ -90,8 +91,4 @@ Adding a bank's SMS format or a new language? See [SMS_TEMPLATES.md](docs/SMS_TE
   - **On-device model:** private, works offline, and costs nothing per message.
   - **LLM via API:** the server's configured `LLM_MODEL` (Ollama or any OpenAI-compatible endpoint).
   - **Built-in templates:** today's regex templates. This stays the fallback when a model is unavailable or unsure.
-- [ ] **Auto-detect categories from merchant names.** Grow the small keyword table in `ledger/ramble.py` (`KEYWORDS`) into a merchant dictionary, so a first-time merchant still gets a sensible category: "salon", "barber", "spa", "parlour" → Personal Care; "restaurant", "cafe", "dhaba", "biryani" → Food & Outings; "school", "tuition", "coaching" → Education; "lic", "insurance" → Insurance; "pharma", "clinic" → Health, and so on, covering the newer categories too.
-  - Match inside UPI/card merchant strings (`SHREE GANESH SALON`, `BIRYANIBYKILO`), not only whole words.
-  - Keep the order: your rules → the category you last used for that merchant → the keyword guess.
-  - Optionally let people add their own keywords per category on the Budgets & rules page.
 - [ ] More native Android: a month-spend home-screen widget, a native mic for Ramble, native translations for the review inbox (it is English for now)

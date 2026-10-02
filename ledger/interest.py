@@ -13,9 +13,14 @@ def add_months(d: date, months: int) -> date:
     return clamp_day(d.year + y, m + 1, 31 if last else d.day)
 
 
+def step(d: date, every: int, n: int = 1) -> date:
+    """`n` credit periods after `d` (before, if negative). every = months, 0 = daily."""
+    return d + timedelta(days=n) if every == 0 else add_months(d, every * n)
+
+
 def period_end(today: date, every: int) -> date:
     """Default first credit date: the end of the current period (quarterly → 30 Jun / 30 Sep / 31 Dec / 31 Mar)."""
-    return clamp_day(today.year, -(-today.month // every) * every, 31)
+    return today if every == 0 else clamp_day(today.year, -(-today.month // every) * every, 31)
 
 
 def estimate(account: Account, start: date, end: date) -> Decimal:
@@ -36,8 +41,8 @@ def credit_due(today: date) -> list[Transaction]:
     made, auto = [], NotifySettings.get().interest_auto_confirm
     for a in Account.objects.filter(interest_rate__gt=0, interest_next__lte=today):
         while a.interest_next <= today:  # several, if the scheduler was down over a credit date
-            when, start = a.interest_next, add_months(a.interest_next, -a.interest_every)
-            a.interest_next = add_months(when, a.interest_every)
+            when, start = a.interest_next, step(a.interest_next, a.interest_every, -1)
+            a.interest_next = step(when, a.interest_every)
             # Claim this credit date first, so a second scheduler can't add it twice.
             if not Account.objects.filter(pk=a.pk, interest_next=when).update(interest_next=a.interest_next):
                 break

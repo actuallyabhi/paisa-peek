@@ -48,6 +48,8 @@ def run_once(now: datetime | None = None, send=None) -> list[str]:
     now = now or timezone.localtime()
     sent = []
     for t in credit_due(now.date()):
+        if t.account.interest_every == 0:  # daily: a notification every day would be noise
+            continue
         if t.status == "confirmed":
             send(f"{t.account}: interest {inr(t.amount)} added", "Estimated interest was added. Edit it if your bank's differs.",
                  reverse("txn_edit", args=[t.pk]))

@@ -164,6 +164,46 @@ class RambleTests(TestCase):
         rows, _ = self.rows("petrol 300")
         self.assertEqual(rows[0][4], "Other")
 
+    def test_keywords_in_merchant_names(self):
+        from .ramble import _by_name, keyword_category
+        cats = _by_name(Category.objects.all())
+        guess = lambda text: (c := keyword_category(text, cats)) and c.name
+        self.assertEqual(guess("SHREE GANESH SALON"), "Personal Care")
+        self.assertEqual(guess("BIRYANIBYKILO"), "Food & Outings")  # run-together UPI name
+        self.assertEqual(guess("Sharma Tuition Classes"), "Education")
+        self.assertEqual(guess("LIC OF INDIA"), "Insurance")
+        self.assertEqual(guess("BOOKMYSHOW"), "Entertainment")
+        self.assertEqual(guess("MAKEMYTRIP INDIA PVT LTD"), "Travel")
+        self.assertEqual(guess("Shree Balaji Mandir"), "Donations")
+        self.assertEqual(guess("Recharge"), "Bills & Recharge")  # not "charge" → Fees: longest keyword wins
+        self.assertEqual(guess("Electrician"), "Household")
+        self.assertIsNone(guess("COCA COLA"))  # "ola" only as a whole word
+        self.assertIsNone(guess("Current account"))  # nor "rent"
+        Category.objects.filter(name="Personal Care").delete()
+        self.assertIsNone(keyword_category("SALON", _by_name(Category.objects.all())))  # deleted category: no guess
+
+    def test_ingest_categorizes_new_merchant_by_keyword(self):
+        t, _ = ingest("Rs.350.00 debited from A/c XX1234 to SHREE GANESH SALON on 29-09-26. UPI Ref 526712349999",
+                      received=RECEIVED)
+        self.assertEqual((t.merchant, t.category.name), ("SHREE GANESH SALON", "Personal Care"))
+        # Merchant filler like "shree" doesn't pull in another Shree shop's category from history.
+        Transaction.objects.create(date=RECEIVED, amount=50, description="Shree Sweets", merchant="Shree Sweets",
+                                   category=Category.objects.get(name="Food & Outings"))
+        from .ingest import categorize
+        self.assertEqual(categorize("SHREE GANESH SALON").name, "Personal Care")
+
+    def test_sms_text_and_manual_entries_are_categorized(self):
+        # No merchant keyword (or no merchant at all): the rest of the message is read too.
+        t, _ = ingest("Rs.1200.00 debited from A/c XX1234 on 29-09-26 towards LIC policy 12345. UPI Ref 526712340001",
+                      received=RECEIVED)
+        self.assertEqual(t.category.name, "Insurance")
+        self.client.force_login(User.objects.create_user("u", password="x"))
+        base = {"date": "2026-09-29", "amount": "300", "kind": "expense", "status": "confirmed", "category": ""}
+        self.client.post("/", {**base, "description": "Haircut at Looks salon"})
+        self.assertEqual(Transaction.objects.get(description="Haircut at Looks salon").category.name, "Personal Care")
+        self.client.post("/", {**base, "description": "Swiggy", "category": Category.objects.get(name="Other").pk})
+        self.assertEqual(Transaction.objects.get(description="Swiggy").category.name, "Other")  # your pick stays
+
     def test_loans(self):
         from .models import Party
         Party.objects.create(name="Priya")
@@ -1243,6 +1283,16 @@ class InterestTests(TestCase):
         a.refresh_from_db()
         self.assertEqual(a.interest_next, date(2026, 12, 31))
         self.assertEqual(len(credit_due(date(2027, 4, 1))), 2)  # catches up on missed dates (Dec, Mar)
+
+    def test_daily_credit(self):
+        from .interest import credit_due, period_end
+        self.assertEqual(period_end(date(2026, 8, 14), 0), date(2026, 8, 14))
+        a = Account.objects.create(name="Jupiter", opening_balance=36500, interest_rate=Decimal("7"),
+                                   interest_every=0, interest_next=date(2026, 10, 1))
+        made = credit_due(date(2026, 10, 3))  # 1, 2 and 3 Oct
+        self.assertEqual([(t.date, t.amount) for t in made], [(date(2026, 10, d), Decimal("7.00")) for d in (1, 2, 3)])
+        a.refresh_from_db()
+        self.assertEqual(a.interest_next, date(2026, 10, 4))
 
     def test_form_defaults_next_credit_and_scheduler_pushes(self):
         from .reminders import run_once

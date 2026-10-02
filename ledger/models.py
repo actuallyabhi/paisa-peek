@@ -26,7 +26,7 @@ class Account(models.Model):
     due_day = models.PositiveSmallIntegerField(null=True, blank=True, validators=[MinValueValidator(1), MaxValueValidator(31)])
     is_default = models.BooleanField(default=False, help_text="Pre-selected for new transactions")
     # Savings interest: the scheduler adds an estimate to the Inbox on each credit date (ledger/interest.py).
-    INTEREST_EVERY = [(1, _("Monthly")), (3, _("Quarterly")), (6, _("Half-yearly")), (12, _("Yearly"))]
+    INTEREST_EVERY = [(0, _("Daily")), (1, _("Monthly")), (3, _("Quarterly")), (6, _("Half-yearly")), (12, _("Yearly"))]  # months
     interest_rate = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True,
                                         validators=[MinValueValidator(0), MaxValueValidator(100)])
     interest_every = models.PositiveSmallIntegerField(choices=INTEREST_EVERY, default=3)

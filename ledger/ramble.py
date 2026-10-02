@@ -36,10 +36,21 @@ def guess_category(text: str, categories: dict) -> Category | None:
              .select_related("category").first())
         if t:
             return t.category
+    return keyword_category(text, categories)
+
+
+def keyword_category(text: str, categories: dict) -> Category | None:
+    """Category from words in a merchant name or description ("SHREE GANESH SALON" → Personal Care).
+    Keywords of 6+ letters also match inside run-together names (BIRYANIBYKILO); shorter ones only as whole
+    words, so "ola" isn't found in "cola" or "rent" in "current". The longest keyword found wins."""
+    low, best = text.lower(), None
     for name, keys in KEYWORDS.items():
-        if name.lower() in categories and any(w in keys for w in words):
-            return categories[name.lower()]
-    return None
+        if (cat := categories.get(name.lower())) is None:  # renamed or deleted category
+            continue
+        for k in keys:
+            if (best is None or len(k) > best[0]) and (k in low if len(k) >= 6 else re.search(rf"\b{re.escape(k)}\b", low)):
+                best = (len(k), cat)
+    return best[1] if best else None
 
 
 def guess_account(text: str, accounts) -> Account | None:
@@ -165,20 +176,59 @@ def _llm_parse(text: str, today: date) -> list[dict]:
 # ---------- heuristic path ----------
 
 STOPWORDS = {"the", "and", "for", "with", "paid", "spent", "rupees", "rupee", "bucks", "rs", "inr", "on", "at", "to",
-             "today", "yesterday", "ago", "days", "last", "from", "got", "received", "via", "using", "card", "account"}
+             "today", "yesterday", "ago", "days", "last", "from", "got", "received", "via", "using", "card", "account",
+             # Merchant-name filler: "Shree Ganesh Salon" mustn't take the category of "Shree Sweets".
+             "shree", "shri", "sri", "new", "store", "stores", "shop", "enterprises", "enterprise", "traders", "pvt",
+             "ltd", "limited", "private", "india", "services", "sons", "co", "upi", "pay", "payment", "payments"}
+# Lower-case words found in descriptions and merchant names (bank SMS, UPI, card statements). See keyword_category().
 KEYWORDS = {
     "Fuel & Transport": {"petrol", "fuel", "diesel", "cng", "uber", "ola", "rapido", "cab", "auto", "metro", "bus",
-                         "train", "parking", "toll"},
+                         "train", "parking", "toll", "fastag", "indianoil", "iocl", "hpcl", "bpcl", "shell", "nayara",
+                         "taxi", "blusmart", "namma yatri"},
     "Food & Outings": {"chai", "tea", "coffee", "lunch", "dinner", "breakfast", "swiggy", "zomato", "pizza", "movie",
-                       "restaurant", "snacks", "samosa", "food", "outing", "party", "treat"},
-    "Groceries": {"grocery", "groceries", "vegetables", "sabzi", "milk", "blinkit", "zepto", "bigbasket", "dmart"},
-    "Bills & Recharge": {"recharge", "bill", "electricity", "wifi", "broadband", "airtel", "jio", "bsnl"},
-    "Health": {"medicine", "medicines", "meds", "doctor", "pharmacy", "hospital", "chemist"},
-    "Shopping": {"amazon", "flipkart", "meesho", "myntra", "clothes", "shoes"},
-    "Subscriptions": {"netflix", "spotify", "youtube", "prime", "subscription"},
-    "Rent": {"rent"},
-    "Vehicle": {"repair", "puncture", "servicing"},
-    "Gifts & Family": {"gift"},
+                       "restaurant", "snacks", "samosa", "food", "foods", "outing", "party", "treat", "cafe", "dhaba",
+                       "biryani", "bakery", "bakers", "sweets", "mithai", "kitchen", "dominos", "pizzahut", "mcdonald",
+                       "kfc", "burger", "subway", "starbucks", "chaayos", "haldiram", "eatery", "canteen", "juice",
+                       "ice cream", "icecream", "barbeque", "hotel"},
+    "Groceries": {"grocery", "groceries", "vegetables", "sabzi", "milk", "blinkit", "zepto", "bigbasket", "dmart",
+                  "kirana", "supermarket", "jiomart", "instamart", "grofers", "dairy", "fruits", "provision",
+                  "general store", "more retail", "spencers", "nature basket"},
+    "Bills & Recharge": {"recharge", "bill", "electricity", "wifi", "broadband", "airtel", "jio", "bsnl", "postpaid",
+                         "prepaid", "dth", "tata play", "tatasky", "gas", "indane", "bharatgas", "water bill",
+                         "act fibernet", "vodafone"},
+    "Health": {"medicine", "medicines", "meds", "doctor", "pharmacy", "hospital", "chemist", "medical", "clinic",
+               "pharma", "apollo", "medplus", "netmeds", "pharmeasy", "tata 1mg", "diagnostic", "pathology", "lab",
+               "dental", "dentist", "physio", "nursing"},
+    "Shopping": {"amazon", "flipkart", "meesho", "myntra", "clothes", "shoes", "ajio", "decathlon", "croma",
+                 "reliance digital", "lifestyle", "westside", "pantaloons", "shoppers stop", "zudio", "trends",
+                 "footwear", "garments", "fashion", "electronics", "mall"},
+    "Subscriptions": {"netflix", "spotify", "youtube", "prime", "subscription", "hotstar", "jiocinema", "sonyliv",
+                      "zee5", "apple.com", "google play", "icloud", "chatgpt", "openai"},
+    "Rent": {"rent", "house rent", "pg rent", "nobroker"},
+    "Vehicle": {"repair", "puncture", "servicing", "service center", "car wash", "tyre", "tyres", "automobile",
+                "motors", "spare parts"},
+    "Gifts & Family": {"gift", "gifts", "florist", "flowers", "igp", "fnp"},
+    "Personal Care": {"salon", "saloon", "barber", "parlour", "parlor", "spa", "haircut", "grooming", "nykaa",
+                      "cosmetics", "beauty", "unisex", "naturals", "lakme", "gym", "fitness", "cult.fit", "cultfit",
+                      "yoga"},
+    "Education": {"school", "college", "tuition", "coaching", "academy", "institute", "university", "udemy",
+                  "coursera", "byjus", "unacademy", "books", "stationery", "exam fee"},
+    "Insurance": {"insurance", "lic", "policybazaar", "acko", "hdfc ergo", "icici lombard", "star health"},
+    "EMI & Loans": {"emi", "loan", "bajaj finance", "bajaj finserv", "home credit", "nach", "ecs"},
+    "Household": {"furniture", "ikea", "pepperfry", "hardware", "plumber", "electrician", "carpenter", "laundry",
+                  "dry clean", "maid", "cleaning", "urban company", "urbanclap", "utensils", "home centre",
+                  "appliances", "pest control"},
+    "Entertainment": {"bookmyshow", "pvr", "inox", "cinepolis", "cinema", "movies", "concert", "gaming", "steam",
+                      "playstation", "paytm insider", "amusement", "bowling"},
+    "Travel": {"irctc", "makemytrip", "goibibo", "cleartrip", "ixigo", "redbus", "abhibus", "indigo", "air india",
+               "akasa", "spicejet", "vistara", "oyo", "airbnb", "booking.com", "agoda", "resort", "airport",
+               "travels", "tours"},
+    "Investments": {"zerodha", "groww", "upstox", "kuvera", "mutual fund", "sip", "nps", "ppf",
+                    "smallcase", "angel one", "indmoney", "etmoney"},
+    "Donations": {"donation", "donate", "temple", "mandir", "gurudwara", "church", "masjid", "charity", "trust",
+                  "ngo", "foundation"},
+    "Fees & Charges": {"charges", "charge", "late fee", "annual fee", "processing fee", "penalty", "convenience fee",
+                       "service charge", "sms charges", "amc", "gst on"},
 }
 # Filler removed from heuristic descriptions ("paid 450 for petrol on hdfc card" -> "Petrol").
 DROP = {"i", "paid", "spent", "spend", "rupees", "rupee", "bucks", "rs", "inr", "via", "using", "card", "account",
