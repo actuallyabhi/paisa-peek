@@ -74,6 +74,11 @@
     <div class="num-big text-2xl font-extrabold tabular-nums text-good" data-countup="{{ income|stringformat:'s' }}">{{ income|inr }}</div>
     {% if income and spent %}<div class="mt-0.5 text-xs text-muted">{% if income > spent %}{% translate "you're ahead 🎉" %}{% else %}{% translate "spending > income 👀" %}{% endif %}</div>{% endif %}
   </div>
+  {% if credit %}
+  <a href="{% url 'accounts' %}" class="card col-span-2 flex items-center justify-between gap-3 {% if credit.pct > 50 %}border-bad bg-bad-soft{% else %}border-gold bg-gold-soft{% endif %} px-4 py-3">
+    <span class="text-sm font-medium">💳 {% if credit.pct > 30 %}{% blocktranslate with pct=credit.pct amount=credit.prepay|inr %}Credit usage is {{ pct }}% — consider prepaying {{ amount }} to get under 30%.{% endblocktranslate %}{% else %}{% blocktranslate with name=credit.hot.0.account.name pct=credit.hot.0.pct amount=credit.hot.0.prepay|inr %}{{ name }} is at {{ pct }}% of its limit — consider prepaying {{ amount }}.{% endblocktranslate %}{% endif %}</span><span aria-hidden="true">›</span>
+  </a>
+  {% endif %}
   {% if pending_count %}
   <a href="{% url 'inbox' %}" class="card col-span-2 flex items-center justify-between border-gold bg-gold-soft px-4 py-3">
     <span class="text-sm font-medium">📬 {% blocktranslate count n=pending_count %}{{ n }} bank SMS waiting for a quick look{% plural %}{{ n }} bank SMS waiting for a quick look{% endblocktranslate %}</span><span aria-hidden="true">›</span>

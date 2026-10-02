@@ -195,6 +195,8 @@ def home(request):
         "hello": _hello(request.user), "quip": QUIPS[timezone.localdate().toordinal() % len(QUIPS)],
         "today": timezone.localdate(), "yesterday": timezone.localdate() - timedelta(days=1),
         "streak": _streak(timezone.localdate()),
+        # Home only nags when utilization (overall or any one card) crosses 30%; the full picture lives on Accounts.
+        "credit": cu if (cu := Account.credit_usage()) and (cu["pct"] > 30 or cu["hot"]) else None,
     })
 
 
@@ -414,7 +416,8 @@ def accounts(request):
         a.bal = a.balance
     assets = sum(a.bal for a in accts if not a.is_credit)
     dues = -sum(a.bal for a in accts if a.is_credit)
-    return render(request, "ledger/accounts.html", {"accounts": accts, "assets": assets, "dues": dues, "net": assets - dues})
+    return render(request, "ledger/accounts.html", {"accounts": accts, "assets": assets, "dues": dues, "net": assets - dues,
+                                                    "credit": Account.credit_usage()})
 
 
 @login_required

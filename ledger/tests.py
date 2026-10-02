@@ -514,6 +514,20 @@ class AccountTests(TestCase):
         sav = self.save(pk=sav.pk, name="HDFC Savings", current_balance="8000", is_default="on")
         self.assertEqual(sav.balance, Decimal("8000"))
 
+    def test_credit_usage_sums_all_cards_and_nudges_home(self):
+        a = self.save(name="Card A", kind="credit_card", current_balance="1000", credit_limit="50000")
+        self.assertIsNone(self.client.get("/").context["credit"])  # 2%: no nag on home
+        self.assertEqual(self.client.get("/accounts/").context["credit"]["level"], "great")
+        self.save(name="Card B", kind="credit_card", current_balance="20000", credit_limit="50000")
+        self.save(name="Loan", kind="loan", current_balance="90000", credit_limit="100000")  # not a card: ignored
+        cu = Account.credit_usage()
+        self.assertEqual((cu["used"], cu["limit"], cu["pct"], cu["level"]), (Decimal("21000"), Decimal("100000"), 21, "good"))
+        self.assertEqual([c["account"].name for c in cu["hot"]], ["Card B"])  # 40% on its own
+        self.assertContains(self.client.get("/"), "Card B is at 40%")
+        self.save(pk=a.pk, name="Card A", kind="credit_card", current_balance="30000", credit_limit="50000")
+        cu = self.client.get("/").context["credit"]
+        self.assertEqual((cu["pct"], cu["level"], cu["prepay"]), (50, "high", Decimal("20000")))
+
     def test_single_default_prefills_forms(self):
         a = self.save(name="Pocket", kind="cash", is_default="on")
         b = self.save(name="Wallet", kind="wallet", is_default="on")

@@ -87,6 +87,25 @@ class Account(models.Model):
     def balance(self) -> Decimal:
         return self.opening_balance + self.net()
 
+    @classmethod
+    def credit_usage(cls):
+        """Utilization across all credit cards: total owed ÷ sum of their limits. Above 30% hurts the credit score; prepay = amount
+        that brings it back to 30%. None when no card has a limit set."""
+        cards = []
+        for a in cls.objects.filter(kind="credit_card", credit_limit__gt=0):
+            used = max(-a.balance, Decimal(0))  # card balance is negative while you owe
+            cards.append({"account": a, "used": used, "limit": a.credit_limit,
+                          "pct": round(used * 100 / a.credit_limit), "prepay": max(used - a.credit_limit * Decimal("0.3"), 0)})
+        if not cards:
+            return None
+        cards.sort(key=lambda c: -c["pct"])
+        used, limit = sum(c["used"] for c in cards), sum(c["limit"] for c in cards)
+        pct = round(used * 100 / limit)
+        level = "great" if pct <= 10 else "good" if pct <= 30 else "high" if pct <= 50 else "danger"
+        return {"cards": cards, "used": used, "limit": limit, "pct": pct,
+                "level": level, "prepay": max(used - limit * Decimal("0.3"), 0),
+                "hot": [c for c in cards if c["pct"] > 30]}  # any single card over 30% also deserves a nudge
+
 
 class Category(models.Model):
     name = models.CharField(max_length=100, unique=True)
