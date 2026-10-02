@@ -83,11 +83,12 @@ suspend fun api(
 data class Txn(
     val id: Int, val amount: String, val moneyIn: Boolean, val merchant: String, val whenText: String,
     val account: String, val source: String, val rawText: String, val kind: String,
-    val category: Int?, val categoryName: String, val partyName: String,
+    val category: Int?, val categoryName: String, val partyName: String, val toAccount: Int?,
 ) {
     constructor(j: JSONObject) : this(
         j.getInt("id"), j.optString("amount"), j.optBoolean("money_in"), j.optString("merchant"), j.optString("when"),
         j.optString("account"), j.optString("source"), j.optString("raw_text"), j.optString("kind"),
         if (j.isNull("category")) null else j.optInt("category"), j.optString("category_name"), j.optString("party_name"),
+        if (j.isNull("to_account")) null else j.optInt("to_account"), // absent (older server) reads as null
     )
 }

@@ -21,6 +21,9 @@ DENY = re.compile(
     r"|has requested money|\bis due\b|\bdue (?:on|by)\b",
     re.I,
 )
+# Cash moving between bank and wallet is a transfer, not spending/income: the spending is logged when the cash is spent.
+CASH_WORD, WITHDRAWAL = re.compile(r"\b(?:atm|cash)\b", re.I), re.compile(r"\b(?:withdraw\w*|wdl)\b", re.I)
+DEPOSIT = re.compile(r"\b(?:deposit\w*|cdm)\b", re.I)
 AMOUNT = re.compile(r"(?:rs\.?|inr|₹)\s*([\d,]+(?:\.\d{1,2})?)", re.I)
 # "completed"/"successful": what payment-app screenshots say instead of "debited".
 DIRECTION = re.compile(r"\b(debited|sent|spent|paid|withdrawn|purchase|completed|successful|credited|received|deposited"
@@ -227,8 +230,15 @@ def ingest(text: str, sender: str = "", source: str = "sms", received: date | No
                 dup.save(update_fields=["raw_text", "ref", "amount"])
             return dup, True
 
+        kind, to_account = p.kind, None
+        if (cash := Account.cash()) and CASH_WORD.search(text):
+            if p.kind == "expense" and WITHDRAWAL.search(text):
+                kind, to_account = "transfer", cash  # ATM: bank → cash
+            elif p.kind == "income" and DEPOSIT.search(text) and account != cash:
+                kind, account, to_account = "transfer", cash, account  # cash deposit: cash → bank
+
         return Transaction.objects.create(
             date=p.date, time=received_time if p.date == received else None,
-            amount=p.amount, kind=p.kind, merchant=p.merchant, description=p.merchant,
-            category=categorize(p.merchant, text) if p.kind == "expense" else None, account=account, source=source, raw_text=text, ref=p.ref, status="pending",
+            amount=p.amount, kind=kind, merchant=p.merchant, description=p.merchant, to_account=to_account,
+            category=categorize(p.merchant, text) if kind == "expense" else None, account=account, source=source, raw_text=text, ref=p.ref, status="pending",
         ), False

@@ -58,6 +58,7 @@ class TxnOut(Schema):
     category: int | None
     category_name: str
     party_name: str
+    to_account: int | None = None  # transfers, e.g. ATM withdrawal → Cash
 
 
 def _txn(t: Transaction) -> dict:
@@ -69,6 +70,7 @@ def _txn(t: Transaction) -> dict:
         "category": t.category_id, "category_name": gettext(t.category.name) if t.category else "",
         # Only a real person: prefilling the UPI ID made every confirm create a junk "rohan@oksbi" party.
         "party_name": t.party.name if t.party else "",
+        "to_account": t.to_account_id,
     }
 
 

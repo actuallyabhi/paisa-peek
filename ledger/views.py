@@ -191,7 +191,7 @@ def home(request):
         "cat_rows": charts.category_shares(by_cat, spent, dict(
             Category.objects.filter(budget__gt=0).values_list("name", "budget")) if period["view"] == "month" else {}),
         # Brand-new install: offer restore / first account instead of an empty list.
-        "onboarding": not Transaction.objects.exists() and not Account.objects.exists(),
+        "onboarding": not Transaction.objects.exists() and not Account.objects.exclude(kind="cash").exists(),  # Cash is seeded
         "hello": _hello(request.user), "quip": QUIPS[timezone.localdate().toordinal() % len(QUIPS)],
         "today": timezone.localdate(), "yesterday": timezone.localdate() - timedelta(days=1),
         "streak": _streak(timezone.localdate()),
@@ -288,7 +288,7 @@ def txn_delete(request, pk):
 @login_required
 def inbox(request):
     return render(request, "ledger/inbox.html", {
-        "txns": (page := paginate(request, Transaction.objects.filter(status="pending").select_related("account", "category"))),
+        "txns": (page := paginate(request, Transaction.objects.filter(status="pending").select_related("account", "category", "party"))),
         "page": page,
         "categories": Category.objects.all(),
         "money_in": [(k, v) for k, v in Transaction.KINDS if k in Transaction.MONEY_IN],

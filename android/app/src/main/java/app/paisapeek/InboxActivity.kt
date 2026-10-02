@@ -311,7 +311,7 @@ private fun TxnCard(
     var category by rememberSaveable(t.id) { mutableStateOf(t.category) }
     var kind by rememberSaveable(t.id) { mutableStateOf(t.kind) }
     var party by rememberSaveable(t.id) { mutableStateOf(t.partyName) }
-    var toAccount by rememberSaveable(t.id) { mutableStateOf<Int?>(null) }
+    var toAccount by rememberSaveable(t.id) { mutableStateOf(t.toAccount) }
     val needsParty = kind in LOAN_KINDS && party.isBlank()
     val colors = MaterialTheme.colorScheme
 

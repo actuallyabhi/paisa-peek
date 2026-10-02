@@ -82,7 +82,7 @@ class IngestTests(TestCase):
         with self.assertRaises(Skipped):
             self.sms("483920 is your OTP for txn of Rs 500 at AMAZON")
         self.assertEqual(Transaction.objects.count(), 3)
-        self.assertEqual(Account.objects.count(), 2)
+        self.assertEqual(Account.objects.exclude(kind="cash").count(), 2)  # + the seeded Cash
 
 
 class ApiTests(TestCase):
@@ -445,8 +445,7 @@ class AccountTests(TestCase):
     def test_same_name_accounts_show_kind_in_dropdown(self):
         from .forms import RecurringForm, TxnForm
         Account.objects.create(name="HDFC", kind="savings")
-        Account.objects.create(name="hdfc", kind="credit_card")
-        Account.objects.create(name="Cash", kind="cash")
+        Account.objects.create(name="hdfc", kind="credit_card")  # + the seeded Cash
         for form in (TxnForm(), RecurringForm()):
             labels = [label for _, label in form.fields["account"].choices][1:]
             self.assertEqual(sorted(labels), ["Cash", "HDFC (Savings account)", "hdfc (Credit card)"])
@@ -476,7 +475,7 @@ class AccountTests(TestCase):
         self.assertEqual(sav.balance, Decimal("8000"))
 
     def test_single_default_prefills_forms(self):
-        a = self.save(name="Cash", kind="cash", is_default="on")
+        a = self.save(name="Pocket", kind="cash", is_default="on")
         b = self.save(name="Wallet", kind="wallet", is_default="on")
         a.refresh_from_db()
         self.assertEqual((a.is_default, b.is_default), (False, True))
@@ -1201,6 +1200,27 @@ class ScreenshotTests(TestCase):
         from django.contrib.staticfiles import finders
         with open(finders.find("ledger/manifest.webmanifest")) as f:
             self.assertEqual(json.load(f)["share_target"]["action"], "/share/")
+
+
+class CashTests(TestCase):
+    def test_atm_and_cash_deposit_are_transfers(self):
+        cash = Account.cash()
+        self.assertEqual((cash.name, cash.kind), ("Cash", "cash"))  # seeded by migration 0012
+        atm, _ = ingest("Rs.2000.00 withdrawn at ATM from A/c XX1234 on 02-10-26. Avl bal Rs 5000", received=RECEIVED)
+        self.assertEqual((atm.kind, atm.to_account, atm.category, atm.account.last4), ("transfer", cash, None, "1234"))
+        dep, _ = ingest("Rs.500.00 deposited in A/c XX1234 by cash deposit at CDM on 02-10-26.", received=RECEIVED)
+        self.assertEqual((dep.kind, dep.account, dep.to_account), ("transfer", cash, atm.account))
+        spend, _ = ingest("Rs.300.00 debited from A/c XX1234 to CASHFREE*SWIGGY on 02-10-26. UPI Ref 526712345999", received=RECEIVED)
+        self.assertEqual(spend.kind, "expense")  # "cashfree" isn't cash
+        self.client.force_login(User.objects.create_user("u", password="x"))
+        self.assertContains(self.client.get("/inbox/"), f'value="{cash.pk}" selected')  # the ATM card arrives with Cash picked
+        self.client.post(f"/txns/{atm.pk}/status/", {"status": "confirmed", "kind": "transfer", "to_account": cash.pk})
+        self.client.post(f"/txns/{dep.pk}/status/", {"status": "confirmed", "kind": "transfer", "to_account": atm.account.pk})
+        self.assertEqual(cash.balance, Decimal("1500"))  # 2000 in from the ATM, 500 out to the deposit
+
+    def test_onboarding_still_shows_with_only_cash(self):
+        self.client.force_login(User.objects.create_user("u", password="x"))
+        self.assertContains(self.client.get("/"), "Namaste")
 
 
 class InterestTests(TestCase):

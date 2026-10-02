@@ -48,6 +48,11 @@ class Account(models.Model):
     def default(cls):
         return cls.objects.filter(is_default=True).first()
 
+    @classmethod
+    def cash(cls):
+        """The cash wallet (seeded as "Cash"): ATM withdrawals move money into it, cash deposits out of it."""
+        return cls.objects.filter(kind="cash").first()
+
     @property
     def is_credit(self):
         return self.kind in self.CREDIT_KINDS
