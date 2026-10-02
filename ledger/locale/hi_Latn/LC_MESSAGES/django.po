@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Paisapeek\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-02 23:20+0530\n"
+"POT-Creation-Date: 2026-10-02 23:53+0530\n"
 "PO-Revision-Date: 2026-10-01 01:35+0530\n"
 "Last-Translator: Paisapeek contributors\n"
 "Language-Team: Hinglish\n"
@@ -21,133 +21,133 @@ msgid_plural "%(n)d others"
 msgstr[0] "%(n)d aur banda"
 msgstr[1] "%(n)d aur log"
 
-#: forms.py:10
+#: forms.py:11
 msgid "Date"
 msgstr "Date"
 
-#: forms.py:10
+#: forms.py:11
 msgid "Time"
 msgstr "Time"
 
-#: forms.py:10
+#: forms.py:11
 msgid "Amount"
 msgstr "Amount"
 
-#: forms.py:10 templates/ledger/party.html:70 templates/ledger/people.html:46
+#: forms.py:11 templates/ledger/party.html:70 templates/ledger/people.html:46
 msgid "Type"
 msgstr "Type"
 
-#: forms.py:10
+#: forms.py:11
 msgid "Description"
 msgstr "Kis cheez ka"
 
-#: forms.py:11 templates/ledger/categories.html:36
+#: forms.py:12 templates/ledger/categories.html:36
 #: templates/ledger/inbox.html:39
 msgid "Category"
 msgstr "Category"
 
-#: forms.py:11
+#: forms.py:12
 msgid "Account"
 msgstr "Account"
 
-#: forms.py:11 templates/ledger/inbox.html:43
+#: forms.py:12 templates/ledger/inbox.html:43
 msgid "To account"
 msgstr "Kis account mein"
 
-#: forms.py:11 templates/ledger/party.html:71
+#: forms.py:12 templates/ledger/party.html:71
 msgid "Notes"
 msgstr "Notes"
 
-#: forms.py:12
+#: forms.py:13
 msgid "Status"
 msgstr "Status"
 
-#: forms.py:12 templates/ledger/party.html:69 templates/ledger/people.html:19
+#: forms.py:13 templates/ledger/party.html:69 templates/ledger/people.html:19
 #: templates/ledger/people.html:45
 msgid "Name"
 msgstr "Naam"
 
-#: forms.py:12
+#: forms.py:13
 msgid "Every"
 msgstr "Har"
 
-#: forms.py:12
+#: forms.py:13
 msgid "Unit"
 msgstr "Unit"
 
-#: forms.py:12
+#: forms.py:13
 msgid "Next date"
 msgstr "Agli date"
 
-#: forms.py:13
+#: forms.py:14
 msgid "Remind days before"
 msgstr "Kitne din pehle yaad dilayein"
 
-#: forms.py:13
+#: forms.py:14
 msgid "Essential expense (part of the minimum)"
 msgstr "Zaroori kharcha (minimum mein gina jayega)"
 
-#: forms.py:14
+#: forms.py:15
 msgid "Active"
 msgstr "Chalu"
 
-#: forms.py:14
+#: forms.py:15
 msgid "Credit limit"
 msgstr "Credit limit"
 
-#: forms.py:14
+#: forms.py:15
 msgid "Statement day"
 msgstr "Statement ka din"
 
-#: forms.py:15
+#: forms.py:16
 msgid "Due day"
 msgstr "Payment ka din"
 
-#: forms.py:15
+#: forms.py:16
 msgid "Default account for new transactions"
 msgstr "Naye transactions ke liye default account"
 
-#: forms.py:47
+#: forms.py:48
 msgid "Set an amount before confirming."
 msgstr "Pakka karne se pehle amount daalo."
 
-#: forms.py:55 forms.py:114
+#: forms.py:56 forms.py:115
 msgid "Who? Lent/borrowed/repaid needs a person or company."
 msgstr "Kiske saath? Udhaar ke liye banda ya company chahiye."
 
-#: forms.py:68
+#: forms.py:69
 msgid "Person / company"
 msgstr "Banda / company"
 
-#: forms.py:69
+#: forms.py:70
 msgid "e.g. Rohan"
 msgstr "jaise Rohan"
 
-#: forms.py:71
+#: forms.py:72
 msgid "Tags"
 msgstr "Tags"
 
-#: forms.py:71
+#: forms.py:72
 msgid "Goa trip, Office"
 msgstr "Goa trip, Office"
 
-#: forms.py:98 forms.py:230
+#: forms.py:99 forms.py:241
 msgid "Amount must be positive."
 msgstr "Amount zero se zyada hona chahiye."
 
-#: forms.py:117
+#: forms.py:118
 msgid "Only for transfers."
 msgstr "Sirf transfer ke liye."
 
-#: forms.py:119
+#: forms.py:120
 msgid "Pick a different account."
 msgstr "Koi doosra account chuno."
 
-#: forms.py:179
+#: forms.py:180
 msgid "Current balance"
 msgstr "Abhi ka balance"
 
-#: forms.py:180
+#: forms.py:181
 msgid ""
 "What your bank/app shows right now. For cards, credit lines and loans: the "
 "amount you owe."
@@ -155,49 +155,70 @@ msgstr ""
 "Jo abhi bank/app dikha raha hai. Card, credit line aur loan mein: jitna "
 "chukana hai."
 
-#: forms.py:182
+#: forms.py:183
 msgid "Last 4 digits"
 msgstr "Aakhri 4 digits"
 
-#: forms.py:183
+#: forms.py:184
 msgid "Up to 4 digits."
 msgstr "Zyada se zyada 4 digits."
 
-#: forms.py:184
+#: forms.py:185
 msgid "Matches bank SMS to this account."
 msgstr "Bank ke SMS isi account se judenge."
 
-#: forms.py:190
+#: forms.py:191
+msgid "Interest rate (% a year)"
+msgstr "Interest rate (% saalana)"
+
+#: forms.py:191
+msgid "Interest credited"
+msgstr "Interest kab milta hai"
+
+#: forms.py:192
+msgid "Next interest credit"
+msgstr "Agli interest date"
+
+#: forms.py:194
 msgid "Day of month the statement generates (cards)"
 msgstr "Mahine ka woh din jab statement banta hai (card)"
 
-#: forms.py:191
+#: forms.py:195
 msgid "Day of month payment is due"
 msgstr "Mahine ka woh din jab payment karna hai"
 
-#: forms.py:221
+#: forms.py:196
+msgid "Savings accounts: an estimate lands in your Inbox on each credit date."
+msgstr ""
+"Savings account: har interest date pe ek andaaza aapke Inbox mein aayega."
+
+#: forms.py:232
 msgid "Expense / bill"
 msgstr "Kharcha / bill"
 
-#: forms.py:221
+#: forms.py:232
 msgid "Income (salary, stipend, rent received…)"
 msgstr "Kamai (salary, stipend, kiraya mila…)"
 
-#: forms.py:222
+#: forms.py:233
 msgid "Transfer / sending money (not spending)"
 msgstr "Transfer / paise bhejna (kharcha nahi)"
 
-#: forms.py:240
+#: forms.py:251
 msgid "Daily “log today's spending” reminder"
 msgstr "Roz ka “aaj ka kharcha likho” reminder"
 
-#: forms.py:240 forms.py:241
+#: forms.py:251 forms.py:252
 msgid "at"
 msgstr "time"
 
-#: forms.py:241
+#: forms.py:252
 msgid "Bill, subscription and card statement reminders"
 msgstr "Bill, subscription aur card statement reminders"
+
+#: forms.py:253
+msgid "Auto-confirm savings interest"
+msgstr "Savings interest apne-aap jodo"
 
 #: i18n_data.py:7
 msgid "Bills & Recharge"
@@ -507,103 +528,119 @@ msgstr "Cash"
 msgid "Wallet"
 msgstr "Wallet"
 
-#: models.py:113
+#: models.py:29
+msgid "Monthly"
+msgstr "Har mahine"
+
+#: models.py:29
+msgid "Quarterly"
+msgstr "Har teen mahine"
+
+#: models.py:29
+msgid "Half-yearly"
+msgstr "Har chhe mahine"
+
+#: models.py:29
+msgid "Yearly"
+msgstr "Har saal"
+
+#: models.py:134
 msgid "Person"
 msgstr "Banda"
 
-#: models.py:113
+#: models.py:134
 msgid "Company"
 msgstr "Company"
 
-#: models.py:128
+#: models.py:149
 msgid "Expense"
 msgstr "Kharcha"
 
-#: models.py:128
+#: models.py:149
 msgid "Income"
 msgstr "Kamai"
 
-#: models.py:128
+#: models.py:149
 msgid "Transfer"
 msgstr "Transfer"
 
-#: models.py:129
+#: models.py:150
 msgid "Lent (they owe me)"
 msgstr "Udhaar diya (unhe lautana hai)"
 
-#: models.py:129
+#: models.py:150
 msgid "Borrowed (I owe them)"
 msgstr "Udhaar liya (mujhe lautana hai)"
 
-#: models.py:130
+#: models.py:151
 msgid "Repaid to me"
 msgstr "Mujhe lautaya"
 
-#: models.py:130
+#: models.py:151
 msgid "Repaid by me"
 msgstr "Maine lautaya"
 
-#: models.py:132 templates/ledger/account_edit.html:39
+#: models.py:153 templates/ledger/account_edit.html:42
 #: templates/ledger/home.html:120 templates/ledger/party.html:48
 msgid "pending"
 msgstr "baaki"
 
-#: models.py:132
+#: models.py:153
 msgid "confirmed"
 msgstr "pakka"
 
-#: models.py:132
+#: models.py:153
 msgid "ignored"
 msgstr "chhod diya"
 
-#: models.py:214
+#: models.py:235
 msgid "day(s)"
 msgstr "din"
 
-#: models.py:214
+#: models.py:235
 msgid "week(s)"
 msgstr "hafte"
 
-#: models.py:214
+#: models.py:235
 msgid "month(s)"
 msgstr "mahine"
 
-#: models.py:214
+#: models.py:235
 msgid "year(s)"
 msgstr "saal"
 
-#: models.py:254
+#: models.py:275
 msgid "every day"
 msgstr "har din"
 
-#: models.py:254
+#: models.py:275
 #, python-format
 msgid "every %(n)d days"
 msgstr "har %(n)d din"
 
-#: models.py:254
+#: models.py:275
 msgid "every week"
 msgstr "har hafte"
 
-#: models.py:254
+#: models.py:275
 #, python-format
 msgid "every %(n)d weeks"
 msgstr "har %(n)d hafte"
 
-#: models.py:255
+#: models.py:276
 msgid "every month"
 msgstr "har mahine"
 
-#: models.py:255
+#: models.py:276
 #, python-format
 msgid "every %(n)d months"
 msgstr "har %(n)d mahine"
 
-#: models.py:255
+#: models.py:276
 msgid "every year"
 msgstr "har saal"
 
-#: models.py:255
+#: models.py:276
 #, python-format
 msgid "every %(n)d years"
 msgstr "har %(n)d saal"
@@ -884,23 +921,23 @@ msgstr "Accounts"
 
 #: templates/ledger/account_edit.html:21 templates/ledger/party.html:34
 #: templates/ledger/party.html:72 templates/ledger/recurring_edit.html:6
-#: templates/ledger/settings.html:53 templates/ledger/txn_edit.html:10
+#: templates/ledger/settings.html:57 templates/ledger/txn_edit.html:10
 msgid "Save"
 msgstr "Save karo"
 
-#: templates/ledger/account_edit.html:33
+#: templates/ledger/account_edit.html:36
 msgid "Recent"
 msgstr "Haal ke"
 
-#: templates/ledger/account_edit.html:44 templates/ledger/party.html:59
+#: templates/ledger/account_edit.html:47 templates/ledger/party.html:59
 msgid "No transactions yet."
 msgstr "Abhi koi transaction nahi."
 
-#: templates/ledger/account_edit.html:48
+#: templates/ledger/account_edit.html:51
 msgid "Delete this account?"
 msgstr "Yeh account hatayein?"
 
-#: templates/ledger/account_edit.html:49
+#: templates/ledger/account_edit.html:52
 msgid "Delete account"
 msgstr "Account hatao"
 
@@ -1591,7 +1628,13 @@ msgstr ""
 "iPhone pe pehle Paisapeek ko Home Screen pe jodo (Share → Add to Home "
 "Screen), phir yahan chalu karo."
 
-#: templates/ledger/settings.html:51
+#: templates/ledger/settings.html:53
+msgid ""
+"Adds the estimated interest straight to your savings account instead of the "
+"Inbox."
+msgstr "Andaaze wala interest Inbox ki jagah seedha aapke savings account mein judega."
+
+#: templates/ledger/settings.html:55
 #, python-format
 msgid ""
 "Bills use each <a class=\"underline\" href=\"%(recurring_url)s\">recurring "
@@ -1604,19 +1647,19 @@ msgstr ""
 "<a class=\"underline\" href=\"%(accounts_url)s\">account</a> mein set "
 "statement aur payment ke din se aate hain."
 
-#: templates/ledger/settings.html:58
+#: templates/ledger/settings.html:62
 msgid "Backup & restore"
 msgstr "Backup aur restore"
 
-#: templates/ledger/settings.html:60
+#: templates/ledger/settings.html:64
 msgid "Export full backup (.json)"
 msgstr "Poora backup nikalo (.json)"
 
-#: templates/ledger/settings.html:61
+#: templates/ledger/settings.html:65
 msgid "Export transactions (.csv)"
 msgstr "Transactions nikalo (.csv)"
 
-#: templates/ledger/settings.html:63
+#: templates/ledger/settings.html:67
 #, python-format
 msgid ""
 "The backup has everything — accounts & balances, people & companies with "
@@ -1632,11 +1675,11 @@ msgstr ""
 "class=\"underline\" href=\"%(import_url)s\">CSV import</a> wale columns hi "
 "use karti hai."
 
-#: templates/ledger/settings.html:68
+#: templates/ledger/settings.html:72
 msgid "SMS auto-capture"
 msgstr "SMS se apne-aap entry"
 
-#: templates/ledger/settings.html:69
+#: templates/ledger/settings.html:73
 msgid ""
 "Point your SMS forwarder (SMS to URL Forwarder, MacroDroid, Tasker) at this "
 "URL with JSON"
@@ -1644,47 +1687,47 @@ msgstr ""
 "Apne SMS forwarder (SMS to URL Forwarder, MacroDroid, Tasker) ko is URL pe "
 "JSON ke saath bhejo"
 
-#: templates/ledger/settings.html:72
+#: templates/ledger/settings.html:76
 msgid "Or header"
 msgstr "Ya header"
 
-#: templates/ledger/settings.html:72
+#: templates/ledger/settings.html:76
 msgid "API docs"
 msgstr "API docs"
 
-#: templates/ledger/settings.html:73
+#: templates/ledger/settings.html:77
 msgid "The old URL will stop working. Continue?"
 msgstr "Purana URL kaam karna band kar dega. Aage badhein?"
 
-#: templates/ledger/settings.html:74
+#: templates/ledger/settings.html:78
 msgid "Regenerate token"
 msgstr "Naya token banao"
 
-#: templates/ledger/settings.html:79
+#: templates/ledger/settings.html:83
 msgid "About"
 msgstr "Parichay"
 
-#: templates/ledger/settings.html:80
+#: templates/ledger/settings.html:84
 msgid "a free, open-source, self-hosted money diary."
 msgstr "ek free, open-source, self-hosted paison ki diary."
 
-#: templates/ledger/settings.html:81
+#: templates/ledger/settings.html:85
 msgid "Made with ☕ by"
 msgstr "☕ ke saath banaya:"
 
-#: templates/ledger/settings.html:84
+#: templates/ledger/settings.html:88
 msgid "Source code on GitHub"
 msgstr "GitHub par source code"
 
-#: templates/ledger/settings.html:85
+#: templates/ledger/settings.html:89
 msgid "Found a bug or have an idea? Open an issue — stars are welcome too."
 msgstr "Koi bug mila ya koi idea hai? Issue kholiye — star bhi de sakte hain."
 
-#: templates/ledger/settings.html:88
+#: templates/ledger/settings.html:92
 msgid "Log out"
 msgstr "Log out"
 
-#: templates/ledger/settings.html:95
+#: templates/ledger/settings.html:99
 msgid ""
 "This browser can't receive push. On iPhone, open Paisapeek from the Home "
 "Screen icon."
@@ -1692,33 +1735,33 @@ msgstr ""
 "Yeh browser notifications nahi le sakta. iPhone pe Paisapeek ko Home Screen "
 "icon se kholo."
 
-#: templates/ledger/settings.html:96
+#: templates/ledger/settings.html:100
 msgid "Notifications need HTTPS. Open Paisapeek via its https:// address."
 msgstr ""
 "Notifications ke liye HTTPS chahiye. Paisapeek ko uske https:// address se "
 "kholo."
 
-#: templates/ledger/settings.html:97
+#: templates/ledger/settings.html:101
 msgid "Notifications are blocked for this site in your browser settings."
 msgstr "Browser settings mein is site ke notifications band hain."
 
-#: templates/ledger/settings.html:98
+#: templates/ledger/settings.html:102
 msgid "✓ This device gets notifications."
 msgstr "✓ Is device pe notifications aate hain."
 
-#: templates/ledger/settings.html:99
+#: templates/ledger/settings.html:103
 msgid "This device isn't subscribed yet."
 msgstr "Is device pe abhi chalu nahi."
 
-#: templates/ledger/settings.html:100
+#: templates/ledger/settings.html:104
 msgid "Sent ✓"
 msgstr "Bhej diya ✓"
 
-#: templates/ledger/settings.html:100
+#: templates/ledger/settings.html:104
 msgid "No devices reached"
 msgstr "Koi device nahi mila"
 
-#: templates/ledger/settings.html:101
+#: templates/ledger/settings.html:105
 msgid ""
 "✓ The app notifies you about each bank SMS. Bill and daily reminders need "
 "Paisapeek installed from Chrome."
@@ -1726,15 +1769,15 @@ msgstr ""
 "✓ App har bank SMS par notification deta hai. Bill aur roz ke reminders ke "
 "liye Paisapeek ko Chrome se install karo."
 
-#: templates/ledger/settings.html:102
+#: templates/ledger/settings.html:106
 msgid "Allow notifications for Paisapeek, then try again."
 msgstr "Paisapeek ko notifications allow karo, phir try karo."
 
-#: templates/ledger/settings.html:103 views.py:360
+#: templates/ledger/settings.html:107 views.py:360
 msgid "Paisapeek says hi 👋"
 msgstr "Paisapeek ki taraf se namaste 👋"
 
-#: templates/ledger/settings.html:103 views.py:360
+#: templates/ledger/settings.html:107 views.py:360
 msgid "Notifications work. We'll nudge you, not nag you."
 msgstr ""
 "Notifications chal rahe hain. Hum yaad dilayenge, pareshaan nahi karenge."
@@ -1985,21 +2028,21 @@ msgstr "CSV file chuno."
 msgid "File is over 2 MB; split it up."
 msgstr "File 2 MB se badi hai; ise tod lo."
 
-#: views.py:678
+#: views.py:680
 #, python-format
 msgid "Noted in %(name)s's ledger ✍️"
 msgstr "%(name)s ke hisaab mein likh liya ✍️"
 
-#: views.py:687
+#: views.py:689
 msgid "Settled, no money changed hands"
 msgstr "Hisaab barabar, koi paisa nahi diya-liya"
 
-#: views.py:688
+#: views.py:690
 #, python-format
 msgid "%(name)s is all settled 🤝"
 msgstr "%(name)s ka hisaab barabar 🤝"
 
-#: views.py:692
+#: views.py:694
 msgid "Has transactions; reassign or delete those first."
 msgstr "Isme transactions hain; pehle unhe badlo ya hatao."
 

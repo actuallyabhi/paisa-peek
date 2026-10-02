@@ -70,6 +70,7 @@ Adding a bank's SMS format or a new language? See [SMS_TEMPLATES.md](docs/SMS_TE
 - [x] Full backup/restore, CSV export, Caddy HTTPS and own-proxy Docker setups
 - [x] Charts, global search, pagination, English/हिन्दी/Hinglish, dark mode
 - [x] **Android app**: reads bank SMS directly; a notification per SMS with Confirm / Review / Ignore; a native review inbox in Material 3 Expressive (suggests people as you type, Undo); the rest of the site runs inside the app; signed APKs built by GitHub Actions on every release
+- [x] Savings interest: rate and credit frequency per account; the scheduler estimates interest on daily balances on each credit date (to the Inbox, or auto-confirmed)
 - [x] **iOS**: SMS capture through a Shortcuts automation ([guide](docs/FEATURES.md#auto-capture-from-sms-android)); iOS doesn't let apps read SMS
 
 **Next**
@@ -77,12 +78,20 @@ Adding a bank's SMS format or a new language? See [SMS_TEMPLATES.md](docs/SMS_TE
 - [ ] Screenshot share target (PWA + App) + OCR + optional LLM fallback
 - [ ] Budgets per category
 - [ ] Bank/credit card statement upload with matching against existing entries
-- [ ] Interest on savings accounts: rate and credit frequency per account, with a scheduled job that adds the interest
 - [ ] Multiple user support on single server.
+- [ ] **Cashback on transactions.** An optional "Cashback" field on an expense, filled in by hand, in ₹ or % (e.g. ₹50 or 5%). Plan:
+  - It appears on the add/edit form, in the review inbox for SMS transactions (web and Android), and in Ramble ("₹500 at Swiggy, 10% cashback"). It stays collapsed and empty unless you open it.
+  - Store the result in ₹ (`cashback` on the transaction). A percentage is worked out from the amount when you save, and recalculated if the amount changes.
+  - The full amount still leaves the account; spend, category totals and budgets use the net cost (amount − cashback). The transaction shows "₹500 · ₹50 back".
+  - Home and month views show "Cashback earned this month". CSV import and export get a `cashback` column.
 
 **Future**
 - [ ] **On-device LLM in the Android app.** Download a small model (around 1–3B parameters, quantized) and run it on the phone to read bank SMS: amount, merchant, account, category and kind. SMS text would then never need to leave the phone. A setting picks the parser:
   - **On-device model:** private, works offline, and costs nothing per message.
   - **LLM via API:** the server's configured `LLM_MODEL` (Ollama or any OpenAI-compatible endpoint).
   - **Built-in templates:** today's regex templates. This stays the fallback when a model is unavailable or unsure.
+- [ ] **Auto-detect categories from merchant names.** Grow the small keyword table in `ledger/ramble.py` (`KEYWORDS`) into a merchant dictionary, so a first-time merchant still gets a sensible category: "salon", "barber", "spa", "parlour" → Personal Care; "restaurant", "cafe", "dhaba", "biryani" → Food & Outings; "school", "tuition", "coaching" → Education; "lic", "insurance" → Insurance; "pharma", "clinic" → Health, and so on, covering the newer categories too.
+  - Match inside UPI/card merchant strings (`SHREE GANESH SALON`, `BIRYANIBYKILO`), not only whole words.
+  - Keep the order: your rules → the category you last used for that merchant → the keyword guess.
+  - Optionally let people add their own keywords per category on the Budgets & rules page.
 - [ ] More native Android: a month-spend home-screen widget, a native mic for Ramble, native translations for the review inbox (it is English for now)

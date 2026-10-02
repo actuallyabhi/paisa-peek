@@ -6,7 +6,7 @@ from ledger.reminders import run_once
 
 
 class Command(BaseCommand):
-    help = "Send due push reminders (daily log, bills, card statements). --loop checks every minute."
+    help = "Send due push reminders (daily log, bills, card statements) and add savings interest. --loop checks every minute."
 
     def add_arguments(self, parser):
         parser.add_argument("--loop", action="store_true")

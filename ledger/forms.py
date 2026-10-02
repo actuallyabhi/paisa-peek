@@ -3,6 +3,7 @@ from django.core.validators import RegexValidator
 from django.utils import timezone
 from django.utils.translation import gettext, gettext_lazy as _
 
+from .interest import period_end
 from .models import Account, Category, NotifySettings, Party, Recurring, Tag, Transaction
 
 # Field labels live here (not on the models) so translating them never needs a migration.
@@ -66,7 +67,7 @@ def review(t: Transaction, status: str, category=None, kind=None, party_name: st
 class TxnForm(forms.ModelForm):
     party_name = forms.CharField(
         label=_("Person / company"), required=False, max_length=100,
-        widget=forms.TextInput(attrs={"list": "party-names", "placeholder": _("e.g. Rohan"), "autocomplete": "off"}),
+        widget=forms.TextInput(attrs={"data-names": "", "placeholder": _("e.g. Rohan"), "autocomplete": "off"}),
     )
     tag_names = forms.CharField(label=_("Tags"), required=False, widget=forms.TextInput(attrs={"placeholder": _("Goa trip, Office")}))
 
@@ -185,19 +186,29 @@ class AccountForm(forms.ModelForm):
 
     class Meta:
         model = Account
-        fields = ["name", "kind", "last4", "current_balance", "credit_limit", "statement_day", "due_day", "is_default"]
-        labels = LABELS
+        fields = ["name", "kind", "last4", "current_balance", "credit_limit", "statement_day", "due_day",
+                  "interest_rate", "interest_every", "interest_next", "is_default"]
+        labels = {**LABELS, "interest_rate": _("Interest rate (% a year)"), "interest_every": _("Interest credited"),
+                  "interest_next": _("Next interest credit")}
+        widgets = {"interest_next": ISO_DATE}
         help_texts = {"statement_day": _("Day of month the statement generates (cards)"),
-                      "due_day": _("Day of month payment is due")}
+                      "due_day": _("Day of month payment is due"),
+                      "interest_rate": _("Savings accounts: an estimate lands in your Inbox on each credit date.")}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["interest_every"].required = False
         if self.instance.pk:
             b = self.instance.balance
             self.initial["current_balance"] = -b if self.instance.is_credit else b
 
+    def clean_interest_every(self):
+        return self.cleaned_data.get("interest_every") or 3  # hidden unless savings; quarterly like most banks
+
     def save(self, commit=True):
         obj = super().save(commit=False)
+        if obj.interest_rate and not obj.interest_next:
+            obj.interest_next = period_end(timezone.localdate(), obj.interest_every)
         entered = self.cleaned_data.get("current_balance")
         if entered is not None:
             target = -abs(entered) if obj.kind in Account.CREDIT_KINDS else entered
@@ -234,8 +245,9 @@ class RecurringForm(forms.ModelForm):
 class NotifyForm(forms.ModelForm):
     class Meta:
         model = NotifySettings
-        fields = ["daily_enabled", "daily_time", "reminders_enabled", "reminder_time"]
+        fields = ["daily_enabled", "daily_time", "reminders_enabled", "reminder_time", "interest_auto_confirm"]
         widgets = {"daily_time": forms.TimeInput(format="%H:%M", attrs={"type": "time"}),
                    "reminder_time": forms.TimeInput(format="%H:%M", attrs={"type": "time"})}
         labels = {"daily_enabled": _("Daily “log today's spending” reminder"), "daily_time": _("at"),
-                  "reminders_enabled": _("Bill, subscription and card statement reminders"), "reminder_time": _("at")}
+                  "reminders_enabled": _("Bill, subscription and card statement reminders"), "reminder_time": _("at"),
+                  "interest_auto_confirm": _("Auto-confirm savings interest")}

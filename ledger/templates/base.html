@@ -93,6 +93,38 @@
     </div>
   </nav>
   <datalist id="party-names">{% for n in party_names %}<option value="{{ n }}">{% endfor %}</datalist>
+  <div id="name-tips" hidden class="absolute z-50 overflow-hidden rounded-xl border border-line bg-card shadow-lg"></div>
+  <script>
+    // Name suggestions under [data-names] fields. A plain list="party-names" made Android WebView open a
+    // full-screen, unthemed sheet of every name over the form; this shows the closest 6, in the site's theme.
+    (() => {
+      const names = [...document.querySelectorAll("#party-names option")].map((o) => o.value);
+      const box = document.getElementById("name-tips");
+      const hide = () => { box.hidden = true; };
+      const show = (el) => {
+        const q = el.value.trim().toLowerCase();
+        const hits = names.filter((n) => n.toLowerCase().includes(q) && n.toLowerCase() !== q).slice(0, 6);
+        if (!hits.length) return hide();
+        box.replaceChildren(...hits.map((n) => {
+          const b = Object.assign(document.createElement("button"), { type: "button", textContent: n,
+            className: "block w-full px-3 py-2.5 text-left text-sm hover:bg-sunk focus:bg-sunk" });
+          // pointerdown + preventDefault: pick it before the field loses focus and hides the list.
+          b.onpointerdown = (e) => { e.preventDefault(); el.value = n; el.dispatchEvent(new Event("input", { bubbles: true })); hide(); };
+          b.onclick = b.onpointerdown; // keyboard Enter on a focused suggestion
+          return b;
+        }));
+        const r = el.getBoundingClientRect();
+        Object.assign(box.style, { left: `${r.left + scrollX}px`, top: `${r.bottom + scrollY + 4}px`, width: `${r.width}px` });
+        box.hidden = false;
+      };
+      const field = (e) => e.target.matches?.("[data-names]") && e.target;
+      document.addEventListener("focusin", (e) => field(e) && show(e.target));
+      document.addEventListener("input", (e) => field(e) && document.activeElement === e.target && show(e.target));
+      document.addEventListener("focusout", (e) => field(e) && !box.contains(e.relatedTarget) && hide());
+      document.addEventListener("keydown", (e) => e.key === "Escape" && hide());
+      addEventListener("resize", () => { const el = document.activeElement; el?.matches("[data-names]") ? show(el) : hide(); });
+    })();
+  </script>
   <script>window.PaisapeekApp?.signedIn?.(true); // Android app: resume SMS capture after logging back in</script>
   {% endif %}
   <div id="chart-tip" role="status" hidden class="pointer-events-none fixed z-50 rounded-xl border border-line bg-card px-3 py-1.5 text-sm shadow-lg"></div>

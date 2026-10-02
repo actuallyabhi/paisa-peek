@@ -27,7 +27,7 @@
       <td class="p-3 text-right tabular-nums whitespace-nowrap">
         {% if p.balance > 0 %}<span class="text-good">{% blocktranslate with amount=p.balance|inr %}owes you {{ amount }}{% endblocktranslate %}</span>
         {% elif p.balance < 0 %}<span class="text-bad">{% blocktranslate with amount=p.balance|neg|inr %}you owe {{ amount }}{% endblocktranslate %}</span>
-        {% else %}<span class="text-muted">{% translate "settled" %}</span>{% endif %}
+        {% elif p.loans %}<span class="text-muted">{% translate "settled" %}</span>{% else %}<span class="text-muted">—</span>{% endif %}
       </td>
     </tr>
   {% empty %}

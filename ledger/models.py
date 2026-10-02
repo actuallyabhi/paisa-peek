@@ -25,6 +25,12 @@ class Account(models.Model):
     statement_day = models.PositiveSmallIntegerField(null=True, blank=True, validators=[MinValueValidator(1), MaxValueValidator(31)])
     due_day = models.PositiveSmallIntegerField(null=True, blank=True, validators=[MinValueValidator(1), MaxValueValidator(31)])
     is_default = models.BooleanField(default=False, help_text="Pre-selected for new transactions")
+    # Savings interest: the scheduler adds an estimate to the Inbox on each credit date (ledger/interest.py).
+    INTEREST_EVERY = [(1, _("Monthly")), (3, _("Quarterly")), (6, _("Half-yearly")), (12, _("Yearly"))]
+    interest_rate = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True,
+                                        validators=[MinValueValidator(0), MaxValueValidator(100)])
+    interest_every = models.PositiveSmallIntegerField(choices=INTEREST_EVERY, default=3)
+    interest_next = models.DateField(null=True, blank=True)
 
     class Meta:
         ordering = ["-is_default", "name"]
@@ -46,16 +52,31 @@ class Account(models.Model):
     def is_credit(self):
         return self.kind in self.CREDIT_KINDS
 
-    def net(self) -> Decimal:
-        """Sum of confirmed money in (+) and out (−) of this account."""
-        ok = Transaction.objects.filter(status="confirmed")
-        own = ok.filter(account=self).aggregate(s=Sum(Case(
+    @staticmethod
+    def _signed():
+        """Money in (+) / out (−) of `account` (transfers: out of it; the receiving side is counted separately)."""
+        return Case(
             When(kind__in=Transaction.MONEY_IN, then=F("amount")),
             When(kind__in=Transaction.MONEY_OUT + ("transfer",), then=-F("amount")),
             default=Value(0), output_field=models.DecimalField(max_digits=14, decimal_places=2),
-        )))["s"] or 0
+        )
+
+    def net(self) -> Decimal:
+        """Sum of confirmed money in (+) and out (−) of this account."""
+        ok = Transaction.objects.filter(status="confirmed")
+        own = ok.filter(account=self).aggregate(s=Sum(self._signed()))["s"] or 0
         incoming = ok.filter(kind="transfer", to_account=self).aggregate(s=Sum("amount"))["s"] or 0
         return Decimal(own) + Decimal(incoming)
+
+    def daily_net(self, before: date) -> dict[date, Decimal]:
+        """Confirmed net change per day, for days before `before`."""
+        ok = Transaction.objects.filter(status="confirmed", date__lt=before).order_by()
+        out: dict[date, Decimal] = {}
+        for rows in (ok.filter(account=self).values("date").annotate(s=Sum(self._signed())),
+                     ok.filter(kind="transfer", to_account=self).values("date").annotate(s=Sum("amount"))):
+            for r in rows:
+                out[r["date"]] = out.get(r["date"], Decimal(0)) + r["s"]
+        return out
 
     @property
     def balance(self) -> Decimal:
@@ -270,12 +291,13 @@ class Recurring(models.Model):
 
 
 class NotifySettings(models.Model):
-    """Singleton: when to send push reminders."""
+    """Singleton: when to send push reminders, and what the scheduler may do on its own."""
 
     daily_enabled = models.BooleanField("Daily “log today's spending” reminder", default=False)
     daily_time = models.TimeField(default=time(21, 0))
     reminders_enabled = models.BooleanField("Bill, subscription and card statement reminders", default=True)
     reminder_time = models.TimeField(default=time(9, 0))
+    interest_auto_confirm = models.BooleanField(default=False)  # else estimated interest waits in the Inbox
 
     @classmethod
     def get(cls):

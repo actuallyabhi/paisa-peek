@@ -42,9 +42,20 @@ def run_once(now: datetime | None = None, send=None) -> list[str]:
     """Send every due reminder not sent before. Returns the keys sent."""
     from . import push
 
+    from .interest import credit_due
+
     send = send or push.send
+    now = now or timezone.localtime()
     sent = []
-    for key, title, body, url in due(now or timezone.localtime()):
+    for t in credit_due(now.date()):
+        if t.status == "confirmed":
+            send(f"{t.account}: interest {inr(t.amount)} added", "Estimated interest was added. Edit it if your bank's differs.",
+                 reverse("txn_edit", args=[t.pk]))
+        else:
+            send(f"{t.account}: interest {inr(t.amount)}", "Estimated interest is in your Inbox. Match it to your bank's, then confirm.",
+                 reverse("inbox"))
+        sent.append(f"interest:{t.pk}")
+    for key, title, body, url in due(now):
         try:
             SentReminder.objects.create(key=key)  # claim first: a second scheduler can't double-send
         except IntegrityError:

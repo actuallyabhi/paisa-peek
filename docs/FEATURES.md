@@ -86,6 +86,7 @@ Under **More → Accounts** you can add savings/current accounts, credit cards, 
 - **Current balance:** enter what your bank shows now (for cards and loans, the amount you owe). The app works out the rest from your transactions, and you can re-enter it at any time to reconcile.
 - **Default account:** one account is pre-selected for manual entries, Ramble and CSV rows.
 - **Card bill payments:** record paying a card as a *Transfer* from savings to the card. Both balances move, and it doesn't count as spending.
+- **Savings interest:** on a savings account, set the interest rate (% a year), how often it's credited (monthly, quarterly, half-yearly or yearly) and the next credit date. If you leave the date blank, it defaults to the end of the current period, for example 30 Sep for quarterly. On each credit date the scheduler works out interest on the account's daily closing balance, the way banks do. The estimate goes to the Inbox as income, so you can match it to your bank's figure and confirm it, and a push notification tells you. Turn on **More → Notifications → Auto-confirm savings interest** to have it added straight to the account instead. If the scheduler was down over a credit date, the missed entries are added on its next run.
 
 ## People & companies (lent / borrowed)
 

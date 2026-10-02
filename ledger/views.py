@@ -629,7 +629,7 @@ def search(request):
 # ---------- people & companies: who owes whom ----------
 
 def _parties():
-    """Parties annotated with balance (+ they owe me, − I owe them), last activity and entry count."""
+    """Parties annotated with balance (+ they owe me, − I owe them), last activity, entry and loan-entry counts."""
     ok = Q(transactions__status="confirmed")
     dec = DecimalField(max_digits=14, decimal_places=2)
     return Party.objects.annotate(
@@ -640,6 +640,7 @@ def _parties():
         )), Value(Decimal(0)), output_field=dec),
         last_date=Max("transactions__date", filter=~Q(transactions__status="ignored")),
         entries=Count("transactions", filter=~Q(transactions__status="ignored")),
+        loans=Count("transactions", filter=~Q(transactions__status="ignored") & Q(transactions__kind__in=Transaction.LOAN_KINDS)),
     )
 
 
@@ -650,7 +651,8 @@ def people(request):
         return redirect("party", pk=form.save().pk)
     parties = sorted(_parties(), key=lambda p: (-abs(p.balance), p.name.lower()))
     show_all = request.GET.get("all") == "1"
-    shown = parties if show_all else [p for p in parties if p.balance or not p.entries]
+    # Hide only settled loans; a shop or company you just pay has nothing to settle, so it always shows.
+    shown = parties if show_all else [p for p in parties if p.balance or not p.loans]
     sums = dict(Transaction.objects.filter(status="confirmed", kind__in=("lend", "repay_in")).order_by()
                 .values("kind").annotate(s=Sum("amount")).values_list("kind", "s"))
     lent, repaid = sums.get("lend", Decimal(0)), sums.get("repay_in", Decimal(0))
@@ -660,7 +662,7 @@ def people(request):
         "lending": {"lent": lent, "repaid": min(repaid, lent), "out": still_out,
                     "repaid_w": charts.pct(min(repaid, lent), lent), "out_w": charts.pct(still_out, lent)},
         "form": form, "show_all": show_all, "parties": (page := paginate(request, shown)), "page": page,
-        "settled": sum(1 for p in parties if not p.balance and p.entries),
+        "settled": sum(1 for p in parties if not p.balance and p.loans),
         "owed_to_me": sum(p.balance for p in parties if p.balance > 0),
         "i_owe": -sum(p.balance for p in parties if p.balance < 0),
     })

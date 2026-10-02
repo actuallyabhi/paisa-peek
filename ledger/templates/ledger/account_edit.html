@@ -10,7 +10,7 @@
   <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
     {% for field in form %}
       <label class="block text-sm {% if field.field.widget.input_type == 'checkbox' %}flex items-center gap-2 sm:col-span-2{% endif %}"
-             {% if field.name == "credit_limit" or field.name == "statement_day" or field.name == "due_day" %}data-credit{% endif %}>
+             {% if field.name == "credit_limit" or field.name == "statement_day" or field.name == "due_day" %}data-credit{% elif field.name|slice:":9" == "interest_" %}data-interest{% endif %}>
         {% if field.field.widget.input_type == 'checkbox' %}{{ field }} <span>{{ field.label }}</span>
         {% else %}<span class="text-muted">{{ field.label }}</span>{{ field }}{% endif %}
         {% if field.help_text %}<span class="mt-0.5 block text-xs text-muted">{{ field.help_text }}</span>{% endif %}
@@ -21,10 +21,13 @@
   <button class="btn w-full sm:w-auto">{% translate "Save" %}</button>
 </form>
 <script>
-  // Limit, statement and due day only matter for cards, credit lines and loans.
+  // Limit, statement and due day only matter for cards, credit lines and loans; interest for savings.
   (() => {
     const kind = document.querySelector('[name=kind]'), credit = {{ credit_kinds|safe }};
-    const sync = () => document.querySelectorAll('[data-credit]').forEach(el => el.hidden = !credit.includes(kind.value));
+    const sync = () => {
+      document.querySelectorAll('[data-credit]').forEach(el => el.hidden = !credit.includes(kind.value));
+      document.querySelectorAll('[data-interest]').forEach(el => el.hidden = kind.value !== "savings");
+    };
     kind.addEventListener('change', sync); sync();
   })();
 </script>

@@ -1,9 +1,10 @@
 import json
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 
 from django.contrib.auth.models import User
 from django.test import TestCase
+from django.utils import timezone
 
 from .ingest import Skipped, compile_templates, ingest, parse, parse_amount
 from .models import Account, ApiToken, Category, SmsTemplate, Transaction
@@ -299,7 +300,6 @@ class PartyTests(TestCase):
         self.assertEqual((t.kind, t.party, t.status), ("repay_in", self.om, "confirmed"))
 
     def test_inbox_debit_can_be_lent_or_transferred(self):
-        from .models import Account
         savings, wallet = Account.objects.create(name="Savings"), Account.objects.create(name="Wallet", kind="wallet")
         mk = lambda: Transaction.objects.create(date=date(2026, 9, 1), amount=500, kind="expense", account=savings,
                                                 category_id=1, source="sms", status="pending")
@@ -320,6 +320,17 @@ class PartyTests(TestCase):
         self.assertEqual((family.kind, family.to_account, family.party.name), ("transfer", None, "Papa"))
         self.assertEqual(Transaction.objects.filter(kind="income").count(), 0)
         self.assertEqual(wallet.balance, 500)  # own-account transfer lands in the wallet
+
+    def test_company_paid_via_expense_is_listed(self):
+        from .models import Party
+        shop = Party.objects.create(name="Croma", kind="company")
+        Transaction.objects.create(date=date(2026, 9, 1), amount=900, kind="expense", party=shop)
+        self.add("lend", 100)
+        self.add("repay_in", 100)  # Priya: a settled loan, hidden until "Show settled"
+        r = self.client.get("/people/")
+        self.assertContains(r, "Croma")
+        self.assertNotContains(r, ">Priya<")
+        self.assertEqual(r.context["settled"], 1)
 
     def test_quick_entry_and_delete_guard(self):
         self.assertNotContains(self.client.get(f"/people/{self.om.pk}/"), 'name="party_name"')
@@ -1081,7 +1092,7 @@ class NavTests(TestCase):
         self.assertNotIn("/recurring/", links)
         self.assertIn("/accounts/", links)
         self.assertContains(more, 'href="https://github.com/4-bit-soft/paisa-peek"')
-        self.assertContains(more, "Abhishek Maurya")
+        self.assertContains(more, "Abhishek")
         active = [label for name, label, act, icon in self.client.get("/recurring/").context["tabs"] if "recurring" in act]
         self.assertEqual([str(a) for a in active], ["Recurring"])
         active = [label for name, label, act, icon in self.client.get("/accounts/").context["tabs"] if "accounts" in act]
@@ -1190,3 +1201,46 @@ class ScreenshotTests(TestCase):
         from django.contrib.staticfiles import finders
         with open(finders.find("ledger/manifest.webmanifest")) as f:
             self.assertEqual(json.load(f)["share_target"]["action"], "/share/")
+
+
+class InterestTests(TestCase):
+    def test_estimate_on_daily_balance_and_credit_once(self):
+        from .interest import add_months, credit_due, period_end
+        self.assertEqual(add_months(date(2026, 6, 30), 3), date(2026, 9, 30))
+        self.assertEqual(add_months(date(2026, 9, 30), 3), date(2026, 12, 31))  # month-end stays month-end
+        self.assertEqual(period_end(date(2026, 8, 14), 3), date(2026, 9, 30))
+        self.assertEqual(period_end(date(2026, 2, 1), 12), date(2026, 12, 31))
+        a = Account.objects.create(name="SBI", opening_balance=100000, interest_rate=Decimal("3.65"),
+                                   interest_every=3, interest_next=date(2026, 9, 30))
+        # Halfway through the quarter (16 Aug) ₹50,000 goes out; pending entries don't count.
+        Transaction.objects.create(date=date(2026, 8, 16), amount=50000, kind="expense", account=a)
+        Transaction.objects.create(date=date(2026, 7, 1), amount=99999, kind="income", account=a, status="pending")
+        self.assertEqual(credit_due(date(2026, 9, 29)), [])
+        [t] = credit_due(date(2026, 9, 30))
+        # 1 Jul–30 Sep = 92 days: 46 at ₹1,00,000 + 46 at ₹50,000, at 3.65% / 365 = 0.01% a day.
+        self.assertEqual((t.amount, t.kind, t.status, t.account, t.date), (Decimal("690.00"), "income", "pending", a, date(2026, 9, 30)))
+        self.assertEqual(credit_due(date(2026, 9, 30)), [])  # once per credit date
+        a.refresh_from_db()
+        self.assertEqual(a.interest_next, date(2026, 12, 31))
+        self.assertEqual(len(credit_due(date(2027, 4, 1))), 2)  # catches up on missed dates (Dec, Mar)
+
+    def test_form_defaults_next_credit_and_scheduler_pushes(self):
+        from .reminders import run_once
+        self.client.force_login(User.objects.create_user("u", password="x"))
+        self.client.post("/accounts/new/", {"name": "HDFC", "kind": "savings", "current_balance": "1000",
+                                            "interest_rate": "3", "interest_every": "3"})
+        a = Account.objects.get(name="HDFC")
+        self.assertIsNotNone(a.interest_next)
+        Account.objects.filter(pk=a.pk).update(interest_next=date(2026, 9, 30), opening_balance=365000)
+        a.refresh_from_db()
+        sent = []
+        keys = run_once(timezone.make_aware(datetime(2026, 9, 30, 0, 5)), send=lambda *m: sent.append(m))
+        self.assertEqual(len([k for k in keys if k.startswith("interest:")]), 1)
+        self.assertIn("HDFC: interest", sent[0][0])
+        self.assertEqual(Transaction.objects.get(source="interest").status, "pending")
+        # More → auto-confirm: the next credit goes straight onto the account.
+        self.client.post("/settings/", {"action": "notify", "daily_time": "21:00", "reminder_time": "09:00",
+                                        "reminders_enabled": "on", "interest_auto_confirm": "on"})
+        run_once(timezone.make_aware(datetime(2026, 12, 31, 0, 5)), send=lambda *m: sent.append(m))
+        self.assertEqual(Transaction.objects.filter(source="interest").latest("date").status, "confirmed")
+        self.assertIn("added", sent[-1][0])

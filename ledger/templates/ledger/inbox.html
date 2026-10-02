@@ -30,7 +30,7 @@
                 onchange="this.form.party_name.required = this.value !== 'income'">
           {% for k, label in money_in %}<option value="{{ k }}" {% if k == t.kind %}selected{% endif %}>{{ label }}</option>{% endfor %}
         </select>
-        <input name="party_name" list="party-names" value="{{ t.party.name|default:t.merchant }}" autocomplete="off"
+        <input name="party_name" data-names value="{{ t.party.name|default:t.merchant }}" autocomplete="off"
                placeholder="{% translate "From whom?" %}" aria-label="{% translate "From whom?" %}" class="w-36">
         {% else %}
         <select name="kind" aria-label="{% translate "What is this?" %}" class="w-auto" onchange="debitKind(this)">
@@ -44,7 +44,7 @@
           <option value="">{% translate "To someone else" %}</option>
           {% for a in accounts %}{% if a.pk != t.account_id %}<option value="{{ a.pk }}">→ {{ a }}</option>{% endif %}{% endfor %}
         </select>
-        <input name="party_name" list="party-names" value="{{ t.party.name }}" autocomplete="off" hidden disabled
+        <input name="party_name" data-names value="{{ t.party.name }}" autocomplete="off" hidden disabled
                placeholder="{% translate "To whom?" %}" aria-label="{% translate "To whom?" %}" class="w-36">
         {% endif %}
         <button class="btn">{% translate "Confirm" %}</button>
