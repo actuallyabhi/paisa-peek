@@ -34,7 +34,15 @@
     <string name="help_borrow">यह आपने उधार लिया, अब आपको लौटाना है।</string>
     <string name="from_whom">किससे?</string>
     <string name="from_whom_optional">किससे? (ज़रूरी नहीं)</string>
-    <string name="needs_person">उधार या लौटाए गए पैसे के लिए ज़रूरी</string>
+    <string name="help_expense">किसी चीज़ पर खर्च। आपके खर्च में गिना जाएगा।</string>
+    <string name="help_transfer">अपने दूसरे खाते में डाला, या परिवार/दोस्तों को भेजा। खर्च में नहीं गिना जाता।</string>
+    <string name="help_lend">यह आपने उधार दिया, अब उन्हें लौटाना है।</string>
+    <string name="help_repay_out">आपने लिया हुआ उधार लौटाया।</string>
+    <string name="to_whom">किसे?</string>
+    <string name="to_whom_optional">किसे? (ज़रूरी नहीं)</string>
+    <string name="to_account">किस खाते में</string>
+    <string name="someone_else">किसी और को (परिवार, दोस्त…)</string>
+    <string name="needs_person">उधार दिए, लिए या लौटाए गए पैसे के लिए ज़रूरी</string>
     <string name="new_person_hint">नया व्यक्ति, पक्का करने पर जुड़ जाएगा</string>
     <string name="add_new_person">“%1$s” को नए व्यक्ति के रूप में जोड़ें</string>
     <string name="connect_title">Paisapeek जोड़ें</string>

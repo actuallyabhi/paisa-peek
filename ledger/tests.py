@@ -114,6 +114,7 @@ class ApiTests(TestCase):
         cat = inbox["categories"][0]["id"]
         self.assertEqual(post(r.json()["id"], {"status": "confirmed", "category": cat}).json(), {"pending": 0})
         self.assertEqual(Transaction.objects.get(pk=r.json()["id"]).category_id, cat)
+        self.assertIn("transfer", [k["id"] for k in inbox["money_out_kinds"]])
 
 
 class PageTests(TestCase):
@@ -296,6 +297,29 @@ class PartyTests(TestCase):
         self.client.post(url, {"status": "confirmed", "kind": "repay_in", "party_name": "priya"})
         t.refresh_from_db()
         self.assertEqual((t.kind, t.party, t.status), ("repay_in", self.om, "confirmed"))
+
+    def test_inbox_debit_can_be_lent_or_transferred(self):
+        from .models import Account
+        savings, wallet = Account.objects.create(name="Savings"), Account.objects.create(name="Wallet", kind="wallet")
+        mk = lambda: Transaction.objects.create(date=date(2026, 9, 1), amount=500, kind="expense", account=savings,
+                                                category_id=1, source="sms", status="pending")
+        self.assertContains(self.client.get("/inbox/"), 'value="lend"', count=0)  # nothing pending yet
+        lent, own, family = mk(), mk(), mk()
+        r = self.client.get("/inbox/")
+        self.assertContains(r, 'value="lend"')
+        self.assertContains(r, 'name="to_account"')
+        post = lambda t, **kw: self.client.post(f"/txns/{t.pk}/status/", {"status": "confirmed", **kw})
+        self.assertEqual(post(lent, kind="lend").status_code, 400)  # who?
+        post(lent, kind="lend", party_name="priya")
+        post(own, kind="transfer", to_account=wallet.pk, party_name="")
+        post(family, kind="transfer", party_name="Papa")
+        post(mk(), kind="income")  # a debit can't become income
+        lent.refresh_from_db(); own.refresh_from_db(); family.refresh_from_db()
+        self.assertEqual((lent.kind, lent.party, lent.category), ("lend", self.om, None))
+        self.assertEqual((own.kind, own.to_account, own.party), ("transfer", wallet, None))
+        self.assertEqual((family.kind, family.to_account, family.party.name), ("transfer", None, "Papa"))
+        self.assertEqual(Transaction.objects.filter(kind="income").count(), 0)
+        self.assertEqual(wallet.balance, 500)  # own-account transfer lands in the wallet
 
     def test_quick_entry_and_delete_guard(self):
         self.assertNotContains(self.client.get(f"/people/{self.om.pk}/"), 'name="party_name"')

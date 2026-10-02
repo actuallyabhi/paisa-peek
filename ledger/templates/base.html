@@ -93,6 +93,7 @@
     </div>
   </nav>
   <datalist id="party-names">{% for n in party_names %}<option value="{{ n }}">{% endfor %}</datalist>
+  <script>window.PaisapeekApp?.signedIn?.(true); // Android app: resume SMS capture after logging back in</script>
   {% endif %}
   <div id="chart-tip" role="status" hidden class="pointer-events-none fixed z-50 rounded-xl border border-line bg-card px-3 py-1.5 text-sm shadow-lg"></div>
   <script>

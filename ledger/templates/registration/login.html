@@ -11,4 +11,6 @@
   <input type="hidden" name="next" value="{{ next }}">
   <button class="btn w-full">{% translate "Let me in" %}</button>
 </form>
+{# Android app: logged out (or the session ran out) → stop SMS capture until you log back in. #}
+<script>window.PaisapeekApp?.signedIn?.(false);</script>
 {% endblock %}

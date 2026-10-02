@@ -39,7 +39,7 @@ def party_named(name: str, kind: str = "person") -> Party:
     return Party.objects.filter(name__iexact=name).first() or Party.objects.create(name=name, kind=kind)
 
 
-def review(t: Transaction, status: str, category=None, kind=None, party_name: str = "") -> None:
+def review(t: Transaction, status: str, category=None, kind=None, party_name: str = "", to_account=None) -> None:
     """Inbox confirm/ignore, shared by the web Inbox and the app API. Raises ValueError with a user-facing message."""
     if status not in dict(Transaction.STATUSES):
         raise ValueError("invalid status")
@@ -47,15 +47,20 @@ def review(t: Transaction, status: str, category=None, kind=None, party_name: st
         raise ValueError(gettext("Set an amount before confirming."))
     if category:
         t.category = Category.objects.filter(pk=category).first() or t.category
-    # Money coming in: the inbox asks what it was (income / repaid to me / borrowed) instead of a category.
-    if kind in Transaction.MONEY_IN:
+    # The inbox asks what the money was: coming in (income / repaid to me / borrowed) or going out
+    # (spent / transfer / lent / repaid by me). It can't flip a debit into a credit.
+    if kind in (Transaction.MONEY_IN if t.kind in Transaction.MONEY_IN else Transaction.OUT_KINDS):
         name = " ".join((party_name or "").split())
         if kind in Transaction.LOAN_KINDS and not name:
             raise ValueError(gettext("Who? Lent/borrowed/repaid needs a person or company."))
         t.kind = kind
         t.party = party_named(name) if name else t.party
+        if kind in Transaction.LOAN_KINDS:
+            t.category = None  # the SMS's auto-category ("Food") would mislabel a loan
+        if kind == "transfer":  # blank to_account = sent to someone else
+            t.to_account = Account.objects.filter(pk=to_account or None).exclude(pk=t.account_id).first()
     t.status = status
-    t.save(update_fields=["status", "category", "kind", "party"])
+    t.save(update_fields=["status", "category", "kind", "party", "to_account"])
 
 
 class TxnForm(forms.ModelForm):

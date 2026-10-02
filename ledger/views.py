@@ -292,6 +292,8 @@ def inbox(request):
         "page": page,
         "categories": Category.objects.all(),
         "money_in": [(k, v) for k, v in Transaction.KINDS if k in Transaction.MONEY_IN],
+        "money_out": [(k, v) for k, v in Transaction.KINDS if k in Transaction.OUT_KINDS],
+        "accounts": Account.objects.all(),
     })
 
 
@@ -301,7 +303,8 @@ def txn_status(request, pk):
     """Inbox one-click confirm/ignore. HTMX swaps the card out with the empty response."""
     t = get_object_or_404(Transaction, pk=pk)
     try:
-        review(t, request.POST.get("status"), request.POST.get("category"), request.POST.get("kind"), request.POST.get("party_name", ""))
+        review(t, request.POST.get("status"), request.POST.get("category"), request.POST.get("kind"), request.POST.get("party_name", ""),
+               request.POST.get("to_account"))
     except ValueError as e:
         return HttpResponseBadRequest(str(e))
     if request.headers.get("HX-Request"):

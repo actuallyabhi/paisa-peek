@@ -7,6 +7,10 @@ DEFAULT_CATEGORIES = [
     gettext_noop("Bills & Recharge"), gettext_noop("Rent"), gettext_noop("Fuel & Transport"), gettext_noop("Health"),
     gettext_noop("Groceries"), gettext_noop("Subscriptions"), gettext_noop("Food & Outings"), gettext_noop("Shopping"),
     gettext_noop("Gifts & Family"), gettext_noop("Vehicle"), gettext_noop("Other"),
+    # 0010_more_categories
+    gettext_noop("Personal Care"), gettext_noop("Transfers"), gettext_noop("Education"), gettext_noop("Insurance"),
+    gettext_noop("EMI & Loans"), gettext_noop("Household"), gettext_noop("Entertainment"), gettext_noop("Travel"),
+    gettext_noop("Investments"), gettext_noop("Kids"), gettext_noop("Donations"), gettext_noop("Fees & Charges"),
 ]
 
 # Django's own date names and common form errors, listed here so OUR catalogs carry them. Two reasons:

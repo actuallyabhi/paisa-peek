@@ -136,6 +136,8 @@ class Transaction(models.Model):
     LOAN_KINDS = OWED_UP + OWED_DOWN
     # Effect on the account's balance (transfers: out of `account`, into `to_account`).
     MONEY_IN, MONEY_OUT = ("income", "repay_in", "borrow"), ("expense", "lend", "repay_out")
+    # What a debit SMS can turn out to be, in inbox order (transfer: to your own account, or sent to family/friends).
+    OUT_KINDS = ("expense", "transfer", "lend", "repay_out")
 
     date = models.DateField(db_index=True)
     time = models.TimeField(null=True, blank=True)  # when it happened, if known (blank for old/imported entries)

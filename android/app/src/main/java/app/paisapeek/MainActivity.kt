@@ -70,6 +70,10 @@ class MainActivity : ComponentActivity() {
                 Notify.test(this@MainActivity, title, body)
                 return true
             }
+
+            // The login page reports false, logged-in pages true (login.html / base.html): logging out of the
+            // site stops SMS capture instead of quietly uploading bank SMS for a logged-out app.
+            @JavascriptInterface fun signedIn(yes: Boolean) = Prefs.saveSignedIn(this@MainActivity, yes)
         }, "PaisapeekApp")
         // Back walks the page history first; with nothing left it falls through to the system (predictive back home).
         val back = onBackPressedDispatcher.addCallback(this, enabled = false) { web.goBack() }

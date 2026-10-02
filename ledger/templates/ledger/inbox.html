@@ -23,7 +23,7 @@
     <pre class="my-3 whitespace-pre-wrap rounded bg-sunk p-2 text-xs">{{ t.raw_text }}</pre>
     <div class="flex flex-wrap items-center gap-2">
       {% if t.amount %}
-      <form hx-post="{% url 'txn_status' t.pk %}" hx-target="#t{{ t.pk }}" hx-swap="outerHTML" class="flex gap-2">
+      <form hx-post="{% url 'txn_status' t.pk %}" hx-target="#t{{ t.pk }}" hx-swap="outerHTML" class="flex flex-wrap gap-2">
         <input type="hidden" name="status" value="confirmed">
         {% if t.sign == '+' %}
         <select name="kind" aria-label="{% translate "What is this?" %}" class="w-auto"
@@ -33,10 +33,19 @@
         <input name="party_name" list="party-names" value="{{ t.party.name|default:t.merchant }}" autocomplete="off"
                placeholder="{% translate "From whom?" %}" aria-label="{% translate "From whom?" %}" class="w-36">
         {% else %}
+        <select name="kind" aria-label="{% translate "What is this?" %}" class="w-auto" onchange="debitKind(this)">
+          {% for k, label in money_out %}<option value="{{ k }}" {% if k == t.kind %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
         <select name="category" aria-label="{% translate "Category" %}" class="w-auto">
           <option value="">— {% translate "category" %} —</option>
           {% for c in categories %}<option value="{{ c.pk }}" {% if c.pk == t.category_id %}selected{% endif %}>{% translate c.name %}</option>{% endfor %}
         </select>
+        <select name="to_account" aria-label="{% translate "To account" %}" class="w-auto" hidden disabled>
+          <option value="">{% translate "To someone else" %}</option>
+          {% for a in accounts %}{% if a.pk != t.account_id %}<option value="{{ a.pk }}">→ {{ a }}</option>{% endif %}{% endfor %}
+        </select>
+        <input name="party_name" list="party-names" value="{{ t.party.name }}" autocomplete="off" hidden disabled
+               placeholder="{% translate "To whom?" %}" aria-label="{% translate "To whom?" %}" class="w-36">
         {% endif %}
         <button class="btn">{% translate "Confirm" %}</button>
       </form>
@@ -53,4 +62,14 @@
 {% endfor %}
 </div>
 {% include "ledger/_pagination.html" %}
+<script>
+  // Debit cards: spent → category; transfer → own account or a person; lent / repaid by me → a person (required).
+  function debitKind(s) {
+    const f = s.form, k = s.value, show = (el, on) => { el.hidden = el.disabled = !on; };
+    show(f.category, k === "expense");
+    show(f.to_account, k === "transfer");
+    show(f.party_name, k !== "expense");
+    f.party_name.required = k === "lend" || k === "repay_out";
+  }
+</script>
 {% endblock %}

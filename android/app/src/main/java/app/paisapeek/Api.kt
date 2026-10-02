@@ -16,7 +16,10 @@ fun canNotify(c: Context) = android.os.Build.VERSION.SDK_INT < 33 ||
 object Prefs {
     private fun prefs(c: Context) = c.getSharedPreferences("paisapeek", Context.MODE_PRIVATE)
     fun base(c: Context) = prefs(c).getString("base", null)
-    fun token(c: Context) = prefs(c).getString("token", null)
+    /** The SMS token, or null while logged out of the site, so SMS capture and the native Inbox stop with it. */
+    fun token(c: Context) = savedToken(c).takeUnless { prefs(c).getBoolean("signed_out", false) }
+    fun savedToken(c: Context) = prefs(c).getString("token", null) // kept through a logout, for setup to show
+    fun saveSignedIn(c: Context, yes: Boolean) = prefs(c).edit().putBoolean("signed_out", !yes).apply()
     fun save(c: Context, base: String, token: String?) =
         prefs(c).edit().putString("base", base).putString("token", token).apply()
 

@@ -35,7 +35,15 @@
     <string name="help_borrow">You borrowed this, so now you owe them.</string>
     <string name="from_whom">From whom?</string>
     <string name="from_whom_optional">From whom? (optional)</string>
-    <string name="needs_person">Needed for borrowed or repaid money</string>
+    <string name="help_expense">Spent on something. Counts toward your spending.</string>
+    <string name="help_transfer">Moved to your own account, or sent to family or friends. Not counted as spending.</string>
+    <string name="help_lend">You lent this, so now they owe you.</string>
+    <string name="help_repay_out">You paid back money you had borrowed.</string>
+    <string name="to_whom">To whom?</string>
+    <string name="to_whom_optional">To whom? (optional)</string>
+    <string name="to_account">To account</string>
+    <string name="someone_else">Someone else (family, friends…)</string>
+    <string name="needs_person">Needed for lent, borrowed or repaid money</string>
     <string name="new_person_hint">New person, added when you confirm</string>
     <string name="add_new_person">Add “%1$s” as a new person</string>
     <string name="connect_title">Connect Paisapeek</string>

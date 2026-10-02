@@ -12,7 +12,7 @@ from ninja.security import APIKeyQuery, HttpBearer
 
 from .forms import review
 from .ingest import Skipped, ingest
-from .models import ApiToken, Category, Party, Transaction
+from .models import Account, ApiToken, Category, Party, Transaction
 from .templatetags.money import inr
 
 
@@ -106,6 +106,8 @@ class InboxOut(Schema):
     txns: list[TxnOut]
     categories: list[Choice]
     money_in_kinds: list[Choice]
+    money_out_kinds: list[Choice]
+    accounts: list[Choice]  # transfer targets
     parties: list[str]
 
 
@@ -117,6 +119,8 @@ def inbox(request):
         "txns": [_txn(t) for t in txns],
         "categories": [{"id": c.id, "name": gettext(c.name)} for c in Category.objects.all()],
         "money_in_kinds": [{"id": k, "name": str(v)} for k, v in Transaction.KINDS if k in Transaction.MONEY_IN],
+        "money_out_kinds": [{"id": k, "name": str(v)} for k, v in Transaction.KINDS if k in Transaction.OUT_KINDS],
+        "accounts": [{"id": a.id, "name": a.name} for a in Account.objects.all()],
         "parties": list(Party.objects.values_list("name", flat=True)),
     }
 
@@ -126,12 +130,13 @@ class StatusIn(Schema):
     category: int | None = None
     kind: str | None = None
     party_name: str = ""
+    to_account: int | None = None
 
 
 @api.post("/txns/{pk}/status")
 def txn_status(request, pk: int, payload: StatusIn):
     try:
-        review(get_object_or_404(Transaction, pk=pk), payload.status, payload.category, payload.kind, payload.party_name)
+        review(get_object_or_404(Transaction, pk=pk), payload.status, payload.category, payload.kind, payload.party_name, payload.to_account)
     except ValueError as e:
         raise HttpError(400, str(e))
     return {"pending": Transaction.objects.filter(status="pending").count()}

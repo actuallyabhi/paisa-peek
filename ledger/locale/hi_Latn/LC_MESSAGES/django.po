@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Paisapeek\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-02 00:01+0530\n"
+"POT-Creation-Date: 2026-10-02 23:20+0530\n"
 "PO-Revision-Date: 2026-10-01 01:35+0530\n"
 "Last-Translator: Paisapeek contributors\n"
 "Language-Team: Hinglish\n"
@@ -42,7 +42,7 @@ msgid "Description"
 msgstr "Kis cheez ka"
 
 #: forms.py:11 templates/ledger/categories.html:36
-#: templates/ledger/inbox.html:36
+#: templates/ledger/inbox.html:39
 msgid "Category"
 msgstr "Category"
 
@@ -50,7 +50,7 @@ msgstr "Category"
 msgid "Account"
 msgstr "Account"
 
-#: forms.py:11
+#: forms.py:11 templates/ledger/inbox.html:43
 msgid "To account"
 msgstr "Kis account mein"
 
@@ -111,43 +111,43 @@ msgstr "Naye transactions ke liye default account"
 msgid "Set an amount before confirming."
 msgstr "Pakka karne se pehle amount daalo."
 
-#: forms.py:54 forms.py:109
+#: forms.py:55 forms.py:114
 msgid "Who? Lent/borrowed/repaid needs a person or company."
 msgstr "Kiske saath? Udhaar ke liye banda ya company chahiye."
 
-#: forms.py:63
+#: forms.py:68
 msgid "Person / company"
 msgstr "Banda / company"
 
-#: forms.py:64
+#: forms.py:69
 msgid "e.g. Rohan"
 msgstr "jaise Rohan"
 
-#: forms.py:66
+#: forms.py:71
 msgid "Tags"
 msgstr "Tags"
 
-#: forms.py:66
+#: forms.py:71
 msgid "Goa trip, Office"
 msgstr "Goa trip, Office"
 
-#: forms.py:93 forms.py:225
+#: forms.py:98 forms.py:230
 msgid "Amount must be positive."
 msgstr "Amount zero se zyada hona chahiye."
 
-#: forms.py:112
+#: forms.py:117
 msgid "Only for transfers."
 msgstr "Sirf transfer ke liye."
 
-#: forms.py:114
+#: forms.py:119
 msgid "Pick a different account."
 msgstr "Koi doosra account chuno."
 
-#: forms.py:174
+#: forms.py:179
 msgid "Current balance"
 msgstr "Abhi ka balance"
 
-#: forms.py:175
+#: forms.py:180
 msgid ""
 "What your bank/app shows right now. For cards, credit lines and loans: the "
 "amount you owe."
@@ -155,47 +155,47 @@ msgstr ""
 "Jo abhi bank/app dikha raha hai. Card, credit line aur loan mein: jitna "
 "chukana hai."
 
-#: forms.py:177
+#: forms.py:182
 msgid "Last 4 digits"
 msgstr "Aakhri 4 digits"
 
-#: forms.py:178
+#: forms.py:183
 msgid "Up to 4 digits."
 msgstr "Zyada se zyada 4 digits."
 
-#: forms.py:179
+#: forms.py:184
 msgid "Matches bank SMS to this account."
 msgstr "Bank ke SMS isi account se judenge."
 
-#: forms.py:185
+#: forms.py:190
 msgid "Day of month the statement generates (cards)"
 msgstr "Mahine ka woh din jab statement banta hai (card)"
 
-#: forms.py:186
+#: forms.py:191
 msgid "Day of month payment is due"
 msgstr "Mahine ka woh din jab payment karna hai"
 
-#: forms.py:216
+#: forms.py:221
 msgid "Expense / bill"
 msgstr "Kharcha / bill"
 
-#: forms.py:216
+#: forms.py:221
 msgid "Income (salary, stipend, rent received…)"
 msgstr "Kamai (salary, stipend, kiraya mila…)"
 
-#: forms.py:217
+#: forms.py:222
 msgid "Transfer / sending money (not spending)"
 msgstr "Transfer / paise bhejna (kharcha nahi)"
 
-#: forms.py:235
+#: forms.py:240
 msgid "Daily “log today's spending” reminder"
 msgstr "Roz ka “aaj ka kharcha likho” reminder"
 
-#: forms.py:235 forms.py:236
+#: forms.py:240 forms.py:241
 msgid "at"
 msgstr "time"
 
-#: forms.py:236
+#: forms.py:241
 msgid "Bill, subscription and card statement reminders"
 msgstr "Bill, subscription aur card statement reminders"
 
@@ -243,193 +243,240 @@ msgstr "Gaadi"
 msgid "Other"
 msgstr "Baaki sab"
 
-#: i18n_data.py:17
+#: i18n_data.py:11
+msgid "Personal Care"
+msgstr "Personal care"
+
+#: i18n_data.py:11
+msgid "Transfers"
+msgstr "Transfers"
+
+#: i18n_data.py:11
+msgid "Education"
+msgstr "Padhai"
+
+#: i18n_data.py:11
+msgid "Insurance"
+msgstr "Insurance"
+
+#: i18n_data.py:12
+msgid "EMI & Loans"
+msgstr "EMI aur loan"
+
+#: i18n_data.py:12
+msgid "Household"
+msgstr "Ghar ka saamaan"
+
+#: i18n_data.py:12
+msgid "Entertainment"
+msgstr "Entertainment"
+
+#: i18n_data.py:12
+msgid "Travel"
+msgstr "Travel"
+
+#: i18n_data.py:13
+msgid "Investments"
+msgstr "Investment"
+
+#: i18n_data.py:13
+msgid "Kids"
+msgstr "Bachche"
+
+#: i18n_data.py:13
+msgid "Donations"
+msgstr "Daan"
+
+#: i18n_data.py:13
+msgid "Fees & Charges"
+msgstr "Fees aur charges"
+
+#: i18n_data.py:21
 msgid "January"
 msgstr "January"
 
-#: i18n_data.py:17
+#: i18n_data.py:21
 msgid "February"
 msgstr "February"
 
-#: i18n_data.py:17
+#: i18n_data.py:21
 msgid "March"
 msgstr "March"
 
-#: i18n_data.py:17
+#: i18n_data.py:21
 msgid "April"
 msgstr "April"
 
-#: i18n_data.py:17
+#: i18n_data.py:21
 msgid "May"
 msgstr "May"
 
-#: i18n_data.py:18
+#: i18n_data.py:22
 msgid "June"
 msgstr "June"
 
-#: i18n_data.py:18
+#: i18n_data.py:22
 msgid "July"
 msgstr "July"
 
-#: i18n_data.py:18
+#: i18n_data.py:22
 msgid "August"
 msgstr "August"
 
-#: i18n_data.py:18
+#: i18n_data.py:22
 msgid "September"
 msgstr "September"
 
-#: i18n_data.py:18
+#: i18n_data.py:22
 msgid "October"
 msgstr "October"
 
-#: i18n_data.py:19
+#: i18n_data.py:23
 msgid "November"
 msgstr "November"
 
-#: i18n_data.py:19
+#: i18n_data.py:23
 msgid "December"
 msgstr "December"
 
-#: i18n_data.py:20
+#: i18n_data.py:24
 msgid "jan"
 msgstr "jan"
 
-#: i18n_data.py:20
+#: i18n_data.py:24
 msgid "feb"
 msgstr "feb"
 
-#: i18n_data.py:20
+#: i18n_data.py:24
 msgid "mar"
 msgstr "mar"
 
-#: i18n_data.py:20
+#: i18n_data.py:24
 msgid "apr"
 msgstr "apr"
 
-#: i18n_data.py:20
+#: i18n_data.py:24
 msgid "may"
 msgstr "may"
 
-#: i18n_data.py:20
+#: i18n_data.py:24
 msgid "jun"
 msgstr "jun"
 
-#: i18n_data.py:21
+#: i18n_data.py:25
 msgid "jul"
 msgstr "jul"
 
-#: i18n_data.py:21
+#: i18n_data.py:25
 msgid "aug"
 msgstr "aug"
 
-#: i18n_data.py:21
+#: i18n_data.py:25
 msgid "sep"
 msgstr "sep"
 
-#: i18n_data.py:21
+#: i18n_data.py:25
 msgid "oct"
 msgstr "oct"
 
-#: i18n_data.py:21
+#: i18n_data.py:25
 msgid "nov"
 msgstr "nov"
 
-#: i18n_data.py:21
+#: i18n_data.py:25
 msgid "dec"
 msgstr "dec"
 
-#: i18n_data.py:22
+#: i18n_data.py:26
 msgid "Monday"
 msgstr "Monday"
 
-#: i18n_data.py:22
+#: i18n_data.py:26
 msgid "Tuesday"
 msgstr "Tuesday"
 
-#: i18n_data.py:22
+#: i18n_data.py:26
 msgid "Wednesday"
 msgstr "Wednesday"
 
-#: i18n_data.py:22
+#: i18n_data.py:26
 msgid "Thursday"
 msgstr "Thursday"
 
-#: i18n_data.py:22
+#: i18n_data.py:26
 msgid "Friday"
 msgstr "Friday"
 
-#: i18n_data.py:23
+#: i18n_data.py:27
 msgid "Saturday"
 msgstr "Saturday"
 
-#: i18n_data.py:23
+#: i18n_data.py:27
 msgid "Sunday"
 msgstr "Sunday"
 
-#: i18n_data.py:24
+#: i18n_data.py:28
 msgid "Mon"
 msgstr "Mon"
 
-#: i18n_data.py:24
+#: i18n_data.py:28
 msgid "Tue"
 msgstr "Tue"
 
-#: i18n_data.py:24
+#: i18n_data.py:28
 msgid "Wed"
 msgstr "Wed"
 
-#: i18n_data.py:24
+#: i18n_data.py:28
 msgid "Thu"
 msgstr "Thu"
 
-#: i18n_data.py:24
+#: i18n_data.py:28
 msgid "Fri"
 msgstr "Fri"
 
-#: i18n_data.py:24
+#: i18n_data.py:28
 msgid "Sat"
 msgstr "Sat"
 
-#: i18n_data.py:25
+#: i18n_data.py:29
 msgid "Sun"
 msgstr "Sun"
 
-#: i18n_data.py:25
+#: i18n_data.py:29
 msgid "AM"
 msgstr "AM"
 
-#: i18n_data.py:25
+#: i18n_data.py:29
 msgid "PM"
 msgstr "PM"
 
-#: i18n_data.py:25
+#: i18n_data.py:29
 msgid "a.m."
 msgstr "a.m."
 
-#: i18n_data.py:25
+#: i18n_data.py:29
 msgid "p.m."
 msgstr "p.m."
 
-#: i18n_data.py:28
+#: i18n_data.py:32
 msgid "This field is required."
 msgstr "Yeh bharna zaroori hai."
 
-#: i18n_data.py:28
+#: i18n_data.py:32
 msgid "Enter a valid date."
 msgstr "Sahi date daalo."
 
-#: i18n_data.py:28
+#: i18n_data.py:32
 msgid "Enter a valid time."
 msgstr "Sahi time daalo."
 
-#: i18n_data.py:29
+#: i18n_data.py:33
 msgid "Enter a number."
 msgstr "Koi number daalo."
 
-#: i18n_data.py:29
-msgid ""
-"Select a valid choice. That choice is not one of the available choices."
+#: i18n_data.py:33
+msgid "Select a valid choice. That choice is not one of the available choices."
 msgstr "Sahi option chuno. Yeh option list mein nahi hai."
 
 #: models.py:14
@@ -509,54 +556,54 @@ msgstr "pakka"
 msgid "ignored"
 msgstr "chhod diya"
 
-#: models.py:212
+#: models.py:214
 msgid "day(s)"
 msgstr "din"
 
-#: models.py:212
+#: models.py:214
 msgid "week(s)"
 msgstr "hafte"
 
-#: models.py:212
+#: models.py:214
 msgid "month(s)"
 msgstr "mahine"
 
-#: models.py:212
+#: models.py:214
 msgid "year(s)"
 msgstr "saal"
 
-#: models.py:252
+#: models.py:254
 msgid "every day"
 msgstr "har din"
 
-#: models.py:252
+#: models.py:254
 #, python-format
 msgid "every %(n)d days"
 msgstr "har %(n)d din"
 
-#: models.py:252
+#: models.py:254
 msgid "every week"
 msgstr "har hafte"
 
-#: models.py:252
+#: models.py:254
 #, python-format
 msgid "every %(n)d weeks"
 msgstr "har %(n)d hafte"
 
-#: models.py:253
+#: models.py:255
 msgid "every month"
 msgstr "har mahine"
 
-#: models.py:253
+#: models.py:255
 #, python-format
 msgid "every %(n)d months"
 msgstr "har %(n)d mahine"
 
-#: models.py:253
+#: models.py:255
 msgid "every year"
 msgstr "har saal"
 
-#: models.py:253
+#: models.py:255
 #, python-format
 msgid "every %(n)d years"
 msgstr "har %(n)d saal"
@@ -609,8 +656,8 @@ msgstr "Din-ba-din"
 msgid "avg %(amount)s/day"
 msgstr "avg %(amount)s/din"
 
-#: templates/ledger/_chart_daily.html:26
-#: templates/ledger/_chart_months.html:36 templates/ledger/_chart_owed.html:46
+#: templates/ledger/_chart_daily.html:26 templates/ledger/_chart_months.html:36
+#: templates/ledger/_chart_owed.html:46
 msgid "Show as table"
 msgstr "Table mein dekho"
 
@@ -618,14 +665,12 @@ msgstr "Table mein dekho"
 msgid "Spent vs came in"
 msgstr "Kharcha vs kamai"
 
-#: templates/ledger/_chart_months.html:7
-#: templates/ledger/_chart_months.html:19
+#: templates/ledger/_chart_months.html:7 templates/ledger/_chart_months.html:19
 #: templates/ledger/_chart_months.html:38 templates/ledger/home.html:68
 msgid "Spent"
 msgstr "Kharch hua"
 
-#: templates/ledger/_chart_months.html:8
-#: templates/ledger/_chart_months.html:22
+#: templates/ledger/_chart_months.html:8 templates/ledger/_chart_months.html:22
 #: templates/ledger/_chart_months.html:38 templates/ledger/home.html:73
 msgid "Came in"
 msgstr "Aaya"
@@ -716,7 +761,7 @@ msgstr "%(total)s mein se %(a)s–%(b)s"
 msgid "Added"
 msgstr "Jud gaya"
 
-#: templates/ledger/_ramble_added.html:4 templates/ledger/inbox.html:44
+#: templates/ledger/_ramble_added.html:4 templates/ledger/inbox.html:53
 msgid "Edit"
 msgstr "Badlo"
 
@@ -738,8 +783,7 @@ msgstr "Chune hue jodo"
 
 #: templates/ledger/_ramble_review.html:16
 msgid ""
-"Couldn't find any amounts in that. Try something like “450 petrol "
-"yesterday”."
+"Couldn't find any amounts in that. Try something like “450 petrol yesterday”."
 msgstr "Isme koi amount nahi mila. Kuch aisa likho: “kal 450 petrol”."
 
 #: templates/ledger/_ramble_row.html:6 templates/ledger/people.html:47
@@ -834,7 +878,7 @@ msgstr "Naya account"
 
 #: templates/ledger/account_edit.html:4 templates/ledger/accounts.html:2
 #: templates/ledger/accounts.html:6 templates/ledger/search.html:65
-#: views.py:330
+#: views.py:333
 msgid "Accounts"
 msgstr "Accounts"
 
@@ -913,7 +957,7 @@ msgstr ""
 "transactions ke liye ek ko default banao."
 
 #: templates/ledger/categories.html:2 templates/ledger/categories.html:4
-#: views.py:331
+#: views.py:334
 msgid "Budgets & rules"
 msgstr "Budget aur rules"
 
@@ -940,8 +984,8 @@ msgstr "Hamesha yahi category"
 #: templates/ledger/categories.html:21
 msgid ""
 "When a merchant, description or bank SMS contains the text, it gets the "
-"category: SMS can then be confirmed in one tap. Without a rule, the category"
-" you last confirmed for that merchant is used."
+"category: SMS can then be confirmed in one tap. Without a rule, the category "
+"you last confirmed for that merchant is used."
 msgstr ""
 "Jab kisi merchant, description ya bank SMS mein yeh text ho, toh use yeh "
 "category milegi: phir SMS ek tap mein pakka ho jaata hai. Rule na ho toh us "
@@ -974,8 +1018,8 @@ msgstr "Namaste! 👋"
 
 #: templates/ledger/home.html:8
 msgid ""
-"Moving in from another phone or server? Restore your backup. Starting fresh?"
-" Add your main account, then just tell Paisapeek what you spend."
+"Moving in from another phone or server? Restore your backup. Starting fresh? "
+"Add your main account, then just tell Paisapeek what you spend."
 msgstr ""
 "Doosre phone ya server se aa rahe ho? Apna backup wapas lao. Nayi shuruaat? "
 "Apna main account jodo, phir bas Paisapeek ko batao kya kharcha hua."
@@ -985,7 +1029,7 @@ msgid "Add an account"
 msgstr "Account jodo"
 
 #: templates/ledger/home.html:12 templates/ledger/import.html:2
-#: templates/ledger/import.html:4 views.py:332
+#: templates/ledger/import.html:4 views.py:335
 msgid "Import CSV"
 msgstr "CSV import karo"
 
@@ -1011,8 +1055,8 @@ msgstr "Aaj kya kharcha hua?"
 msgid ""
 "Say it or type it — “450 petrol, 200 chai with Rohan, lent 500 to Priya”."
 msgstr ""
-"Bolo ya likho — “450 petrol, 200 ki chai Rohan ke saath, Priya ko 500 udhaar"
-" diye”."
+"Bolo ya likho — “450 petrol, 200 ki chai Rohan ke saath, Priya ko 500 udhaar "
+"diye”."
 
 #: templates/ledger/home.html:42
 msgid "🎤 tap the mic on your keyboard…"
@@ -1121,9 +1165,9 @@ msgid ""
 "that already exist are flagged and unticked, so re-importing the same file "
 "is safe."
 msgstr ""
-"Pehle har row check ke liye dikhegi; jodne tak kuch save nahi hoga. Jo pehle"
-" se hain unpe nishaan lagega aur woh untick rahengi, isliye wahi file dobara"
-" import karna safe hai."
+"Pehle har row check ke liye dikhegi; jodne tak kuch save nahi hoga. Jo pehle "
+"se hain unpe nishaan lagega aur woh untick rahengi, isliye wahi file dobara "
+"import karna safe hai."
 
 #: templates/ledger/import.html:11
 msgid "CSV file"
@@ -1224,7 +1268,7 @@ msgstr "Screenshot jodo"
 msgid "Couldn't read amount"
 msgstr "Amount padh nahi paaye"
 
-#: templates/ledger/inbox.html:29
+#: templates/ledger/inbox.html:29 templates/ledger/inbox.html:36
 msgid "What is this?"
 msgstr "Yeh kya hai?"
 
@@ -1232,19 +1276,27 @@ msgstr "Yeh kya hai?"
 msgid "From whom?"
 msgstr "Kisse?"
 
-#: templates/ledger/inbox.html:37
+#: templates/ledger/inbox.html:40
 msgid "category"
 msgstr "category"
 
-#: templates/ledger/inbox.html:41
+#: templates/ledger/inbox.html:44
+msgid "To someone else"
+msgstr "Kisi aur ko"
+
+#: templates/ledger/inbox.html:48
+msgid "To whom?"
+msgstr "Kise?"
+
+#: templates/ledger/inbox.html:50
 msgid "Confirm"
 msgstr "Pakka karo"
 
-#: templates/ledger/inbox.html:47
+#: templates/ledger/inbox.html:56
 msgid "Ignore"
 msgstr "Chhodo"
 
-#: templates/ledger/inbox.html:52
+#: templates/ledger/inbox.html:61
 msgid "All caught up."
 msgstr "Sab ho gaya."
 
@@ -1278,8 +1330,8 @@ msgstr ""
 #: templates/ledger/party.html:20
 #, python-format
 msgid ""
-"Mark %(name)s as settled? No money is recorded as moving; their balance just"
-" goes to zero."
+"Mark %(name)s as settled? No money is recorded as moving; their balance just "
+"goes to zero."
 msgstr ""
 "%(name)s ka hisaab barabar karein? Koi len-den record nahi hoga; bas unka "
 "balance zero ho jayega."
@@ -1300,8 +1352,8 @@ msgstr "Unka baaki"
 #: templates/ledger/party.html:63
 #, python-format
 msgid ""
-"“They owe” is the running balance; negative means you owe them. "
-"Expenses/income with %(name)s are listed but don't change it."
+"“They owe” is the running balance; negative means you owe them. Expenses/"
+"income with %(name)s are listed but don't change it."
 msgstr ""
 "“Unka baaki” chalta hua hisaab hai; minus ka matlab aapko unhe dena hai. "
 "%(name)s ke saath kharcha/kamai yahan dikhte hain par is hisaab ko nahi "
@@ -1355,8 +1407,8 @@ msgid ""
 "No one yet. Add a person below, record a loan in Ramble (“lent 500 to "
 "Rohan”), or import a CSV."
 msgstr ""
-"Abhi koi nahi. Neeche kisi ko jodo, bolke udhaar likho (“Rohan ko 500 udhaar"
-" diye”), ya CSV import karo."
+"Abhi koi nahi. Neeche kisi ko jodo, bolke udhaar likho (“Rohan ko 500 udhaar "
+"diye”), ya CSV import karo."
 
 #: templates/ledger/people.html:40
 #, python-format
@@ -1380,8 +1432,8 @@ msgstr "Regular kamai aur bills"
 
 #: templates/ledger/recurring.html:5
 msgid ""
-"Salary, stipends, rent, recharges, subscriptions… You get a reminder on each"
-" date (time under More → Notifications). Tap Received / Paid to log it and "
+"Salary, stipends, rent, recharges, subscriptions… You get a reminder on each "
+"date (time under More → Notifications). Tap Received / Paid to log it and "
 "move to the next date."
 msgstr ""
 "Salary, stipend, kiraya, recharge, subscriptions… Har date pe reminder "
@@ -1569,8 +1621,8 @@ msgstr "Transactions nikalo (.csv)"
 msgid ""
 "The backup has everything — accounts & balances, people & companies with "
 "lent/borrowed history, transactions, tags, recurring bills, categories, SMS "
-"templates and notification settings — and restores on any Paisapeek install."
-" The CSV opens in Excel/Sheets and uses the same columns as <a "
+"templates and notification settings — and restores on any Paisapeek install. "
+"The CSV opens in Excel/Sheets and uses the same columns as <a "
 "class=\"underline\" href=\"%(import_url)s\">Import CSV</a>."
 msgstr ""
 "Backup mein sab kuch hai — accounts aur balance, log aur companies unke "
@@ -1678,11 +1730,11 @@ msgstr ""
 msgid "Allow notifications for Paisapeek, then try again."
 msgstr "Paisapeek ko notifications allow karo, phir try karo."
 
-#: templates/ledger/settings.html:103 views.py:357
+#: templates/ledger/settings.html:103 views.py:360
 msgid "Paisapeek says hi 👋"
 msgstr "Paisapeek ki taraf se namaste 👋"
 
-#: templates/ledger/settings.html:103 views.py:357
+#: templates/ledger/settings.html:103 views.py:360
 msgid "Notifications work. We'll nudge you, not nag you."
 msgstr ""
 "Notifications chal rahe hain. Hum yaad dilayenge, pareshaan nahi karenge."
@@ -1842,112 +1894,112 @@ msgstr[1] "Rule save ho gaya. %(n)d pending transactions par lagaya."
 msgid "Rule saved."
 msgstr "Rule save ho gaya."
 
-#: views.py:323
+#: views.py:326
 msgid "Notification settings saved."
 msgstr "Notification settings save ho gayi."
 
-#: views.py:330
+#: views.py:333
 msgid "Balances, cards, credit lines and the default account"
 msgstr "Balance, card, credit line aur default account"
 
-#: views.py:331
+#: views.py:334
 msgid "Monthly budgets per category; always categorize a merchant"
 msgstr ""
 "Har category ka monthly budget; kisi merchant ko hamesha ek category do"
 
-#: views.py:332
+#: views.py:335
 msgid "Bring in history from a spreadsheet"
 msgstr "Spreadsheet se purana hisaab lao"
 
-#: views.py:333
+#: views.py:336
 msgid "Admin"
 msgstr "Admin"
 
-#: views.py:333
+#: views.py:336
 msgid "Categories, tags, SMS templates, everything"
 msgstr "Categories, tags, SMS templates, sab kuch"
 
-#: views.py:391
+#: views.py:394
 msgid "Choose a backup file."
 msgstr "Backup file chuno."
 
-#: views.py:393
+#: views.py:396
 msgid "Tick “replace my current data” to restore over existing data."
 msgstr ""
 "Abhi ke data pe restore karne ke liye “mera abhi ka data badal do” pe tick "
 "karo."
 
-#: views.py:400
+#: views.py:403
 #, python-format
 msgid "Restored: %(items)s."
 msgstr "Wapas aa gaya: %(items)s."
 
-#: views.py:422
+#: views.py:425
 msgid "This account has transactions, so it can't be deleted."
 msgstr "Is account mein transactions hain, isliye ise hataya nahi ja sakta."
 
-#: views.py:429
+#: views.py:432
 msgid "Account saved."
 msgstr "Account save ho gaya."
 
-#: views.py:444
+#: views.py:447
 #, python-format
 msgid "%(name)s added 🗓️ — we'll remind you on time."
 msgstr "%(name)s jud gaya 🗓️ — time pe yaad dila denge."
 
-#: views.py:488
+#: views.py:491
 #, python-format
 msgid "Logged %(name)s as received; next on %(date)s."
 msgstr "%(name)s mil gaya likh liya; agli baar %(date)s ko."
 
-#: views.py:489
+#: views.py:492
 #, python-format
 msgid "Logged %(name)s as sent; next on %(date)s."
 msgstr "%(name)s bhej diya likh liya; agli baar %(date)s ko."
 
-#: views.py:490
+#: views.py:493
 #, python-format
 msgid "Logged %(name)s as paid; next on %(date)s."
 msgstr "%(name)s chuka diya likh liya; agli baar %(date)s ko."
 
-#: views.py:540
+#: views.py:543
 msgid "Tick at least one row to add."
 msgstr "Jodne ke liye kam se kam ek row chuno."
 
-#: views.py:544
+#: views.py:547
 #, python-format
 msgid "Added %(n)d transaction — nicely done 🪙"
 msgid_plural "Added %(n)d transactions — nicely done 🪙"
 msgstr[0] "%(n)d transaction jud gaya — shabaash 🪙"
 msgstr[1] "%(n)d transactions jud gaye — shabaash 🪙"
 
-#: views.py:552
+#: views.py:555
 msgid "Fix the highlighted rows."
 msgstr "Nishaan wali rows theek karo."
 
-#: views.py:585
+#: views.py:588
 msgid "Choose a CSV file."
 msgstr "CSV file chuno."
 
-#: views.py:587
+#: views.py:590
 msgid "File is over 2 MB; split it up."
 msgstr "File 2 MB se badi hai; ise tod lo."
 
-#: views.py:675
+#: views.py:678
 #, python-format
 msgid "Noted in %(name)s's ledger ✍️"
 msgstr "%(name)s ke hisaab mein likh liya ✍️"
 
-#: views.py:684
+#: views.py:687
 msgid "Settled, no money changed hands"
 msgstr "Hisaab barabar, koi paisa nahi diya-liya"
 
-#: views.py:685
+#: views.py:688
 #, python-format
 msgid "%(name)s is all settled 🤝"
 msgstr "%(name)s ka hisaab barabar 🤝"
 
-#: views.py:689
+#: views.py:692
 msgid "Has transactions; reassign or delete those first."
 msgstr "Isme transactions hain; pehle unhe badlo ya hatao."
 

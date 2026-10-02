@@ -34,7 +34,15 @@
     <string name="help_borrow">Ye aapne udhaar liya, ab aapko lautana hai.</string>
     <string name="from_whom">Kisse?</string>
     <string name="from_whom_optional">Kisse? (zaroori nahi)</string>
-    <string name="needs_person">Udhaar ya lautaye paise ke liye zaroori</string>
+    <string name="help_expense">Kisi cheez pe kharcha. Aapke kharche mein gina jayega.</string>
+    <string name="help_transfer">Apne doosre account mein daala, ya family/doston ko bheja. Kharche mein nahi gina jata.</string>
+    <string name="help_lend">Ye aapne udhaar diya, ab unhe lautana hai.</string>
+    <string name="help_repay_out">Aapne liya hua udhaar lautaya.</string>
+    <string name="to_whom">Kise?</string>
+    <string name="to_whom_optional">Kise? (zaroori nahi)</string>
+    <string name="to_account">Kis account mein</string>
+    <string name="someone_else">Kisi aur ko (family, dost…)</string>
+    <string name="needs_person">Udhaar diye, liye ya lautaye paise ke liye zaroori</string>
     <string name="new_person_hint">Naya banda, pakka karne pe jud jayega</string>
     <string name="add_new_person">“%1$s” ko naye bande ke roop mein jodo</string>
     <string name="connect_title">Paisapeek jodo</string>

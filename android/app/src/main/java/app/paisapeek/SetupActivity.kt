@@ -89,7 +89,7 @@ class SetupActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         edgeToEdge()
-        val saved = Prefs.base(this)?.let { b -> Prefs.token(this)?.let { "$b/api/ingest/sms?token=$it" } ?: b }.orEmpty()
+        val saved = Prefs.base(this)?.let { b -> Prefs.savedToken(this)?.let { "$b/api/ingest/sms?token=$it" } ?: b }.orEmpty()
         setContent {
             PaisapeekTheme {
                 SetupScreen(saved, canGoBack = Prefs.base(this) != null, onBack = ::finish) { link ->

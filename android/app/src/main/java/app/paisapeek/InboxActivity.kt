@@ -184,6 +184,8 @@ private fun InboxScreen(onBack: () -> Unit, onEdit: (Int) -> Unit) {
     val busy = remember { mutableStateListOf<Int>() }
     var categories by remember { mutableStateOf(listOf<Pair<Int, String>>()) }
     var kinds by remember { mutableStateOf(listOf<Pair<String, String>>()) }
+    var outKinds by remember { mutableStateOf(listOf<Pair<String, String>>()) }
+    var accounts by remember { mutableStateOf(listOf<Pair<Int, String>>()) }
     var parties by remember { mutableStateOf(listOf<String>()) }
     var loaded by remember { mutableStateOf(false) }
     var refreshing by remember { mutableStateOf(false) }
@@ -205,6 +207,9 @@ private fun InboxScreen(onBack: () -> Unit, onEdit: (Int) -> Unit) {
             categories = j.getJSONArray("categories").let { a -> (0 until a.length()).map { a.getJSONObject(it).run { getInt("id") to getString("name") } } }
             kinds = j.getJSONArray("money_in_kinds").let { a -> (0 until a.length()).map { a.getJSONObject(it).run { getString("id") to getString("name") } } }
             parties = j.getJSONArray("parties").let { a -> (0 until a.length()).map { a.getString(it) } }
+            // Absent on servers older than the debit kinds: debits then only get a category, as before.
+            outKinds = j.optJSONArray("money_out_kinds")?.let { a -> (0 until a.length()).map { a.getJSONObject(it).run { getString("id") to getString("name") } } }.orEmpty()
+            accounts = j.optJSONArray("accounts")?.let { a -> (0 until a.length()).map { a.getJSONObject(it).run { getInt("id") to getString("name") } } }.orEmpty()
             error = null
             loaded = true
         } catch (e: java.io.IOException) {
@@ -267,7 +272,7 @@ private fun InboxScreen(onBack: () -> Unit, onEdit: (Int) -> Unit) {
                 else -> LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     items(txns, key = { it.id }) { t ->
                         TxnCard(
-                            t, categories, kinds, parties, busy = t.id in busy,
+                            t, categories, if (t.moneyIn) kinds else outKinds, accounts, parties, busy = t.id in busy,
                             onConfirm = { body -> review(t, body.put("status", "confirmed"), confirmedMsg) },
                             onIgnore = { review(t, JSONObject().put("status", "ignored"), ignoredMsg) },
                             onEdit = { onEdit(t.id) },
@@ -298,14 +303,16 @@ private fun Message(emoji: String, title: String, body: String, action: @Composa
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun TxnCard(
-    t: Txn, categories: List<Pair<Int, String>>, kinds: List<Pair<String, String>>, parties: List<String>, busy: Boolean,
+    t: Txn, categories: List<Pair<Int, String>>, kinds: List<Pair<String, String>>, accounts: List<Pair<Int, String>>,
+    parties: List<String>, busy: Boolean,
     onConfirm: (JSONObject) -> Unit, onIgnore: () -> Unit, onEdit: () -> Unit, modifier: Modifier,
 ) {
     var expanded by rememberSaveable(t.id) { mutableStateOf(false) }
     var category by rememberSaveable(t.id) { mutableStateOf(t.category) }
     var kind by rememberSaveable(t.id) { mutableStateOf(t.kind) }
     var party by rememberSaveable(t.id) { mutableStateOf(t.partyName) }
-    val needsParty = t.moneyIn && kind != "income" && party.isBlank()
+    var toAccount by rememberSaveable(t.id) { mutableStateOf<Int?>(null) }
+    val needsParty = kind in LOAN_KINDS && party.isBlank()
     val colors = MaterialTheme.colorScheme
 
     Card(modifier.fillMaxWidth(), shape = MaterialTheme.shapes.extraLarge,
@@ -332,19 +339,28 @@ private fun TxnCard(
             }
 
             if (t.amount.isNotEmpty()) {
-                if (t.moneyIn) {
-                    KindPicker(kinds, kind) { kind = it }
-                    PersonField(party, { party = it }, parties, hint = t.merchant, required = kind != "income", isError = needsParty)
-                } else {
-                    CategoryPicker(categories, category) { category = it }
+                if (kinds.isNotEmpty()) KindPicker(kinds, kind) { kind = it }
+                when {
+                    t.moneyIn -> PersonField(party, { party = it }, parties, hint = t.merchant, outgoing = false,
+                        required = kind != "income", isError = needsParty)
+                    kind == "expense" -> CategoryPicker(categories, category) { category = it }
+                    else -> {
+                        // Transfer: to one of your accounts, or sent to family/friends. Lent / repaid: who.
+                        if (kind == "transfer") AccountPicker(accounts.filter { it.second != t.account }, toAccount) { toAccount = it }
+                        if (kind != "transfer" || toAccount == null) PersonField(party, { party = it }, parties, hint = "",
+                            outgoing = true, required = kind in LOAN_KINDS, isError = needsParty)
+                    }
                 }
             }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Button(
                     onClick = {
-                        onConfirm(if (t.moneyIn) JSONObject().put("kind", kind).put("party_name", party)
-                                  else JSONObject().apply { category?.let { put("category", it) } })
+                        onConfirm(JSONObject().apply {
+                            if (t.moneyIn || kinds.isNotEmpty()) put("kind", kind).put("party_name", party)
+                            if (kind == "expense") category?.let { put("category", it) }
+                            if (kind == "transfer") toAccount?.let { put("to_account", it) }
+                        })
                     },
                     enabled = t.amount.isNotEmpty() && !busy && !needsParty,
                     contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
@@ -377,11 +393,17 @@ private fun CategoryPicker(categories: List<Pair<Int, String>>, selected: Int?, 
     }
 }
 
-/** Icon + one-line meaning for each money-in kind; the names themselves come (translated) from the server. */
+private val LOAN_KINDS = setOf("lend", "borrow", "repay_in", "repay_out")
+
+/** Icon + one-line meaning for each kind; the names themselves come (translated) from the server. */
 private val KIND_HELP = mapOf(
     "income" to ("💰" to R.string.help_income),
     "repay_in" to ("↩️" to R.string.help_repay_in),
     "borrow" to ("🤝" to R.string.help_borrow),
+    "expense" to ("🛒" to R.string.help_expense),
+    "transfer" to ("🔁" to R.string.help_transfer),
+    "lend" to ("🤝" to R.string.help_lend),
+    "repay_out" to ("↪️" to R.string.help_repay_out),
 )
 
 /** Compact toggle buttons that wrap instead of truncating; only the picked one's meaning is spelled out below. */
@@ -408,10 +430,31 @@ private fun KindPicker(kinds: List<Pair<String, String>>, selected: String, onPi
     }
 }
 
+/** Which of your accounts a transfer went to; "Someone else" (null) for money sent to family/friends. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AccountPicker(accounts: List<Pair<Int, String>>, selected: Int?, onPick: (Int?) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    val someoneElse = stringResource(R.string.someone_else)
+    ExposedDropdownMenuBox(open, { open = it }) {
+        OutlinedTextField(
+            value = accounts.firstOrNull { it.first == selected }?.second ?: someoneElse, onValueChange = {}, readOnly = true,
+            label = { Text(stringResource(R.string.to_account)) }, trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(open) },
+            modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
+        )
+        ExposedDropdownMenu(open, { open = false }) {
+            DropdownMenuItem(text = { Text(someoneElse) }, leadingIcon = { Icon(Icons.Filled.Person, null) }, onClick = { onPick(null); open = false })
+            accounts.forEach { (id, name) -> DropdownMenuItem(text = { Text(name) }, onClick = { onPick(id); open = false }) }
+        }
+    }
+}
+
 /** Name field that suggests existing people as you type, or offers to add a new one (created on confirm). */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PersonField(value: String, onChange: (String) -> Unit, parties: List<String>, hint: String, required: Boolean, isError: Boolean) {
+private fun PersonField(
+    value: String, onChange: (String) -> Unit, parties: List<String>, hint: String, outgoing: Boolean, required: Boolean, isError: Boolean,
+) {
     var open by remember { mutableStateOf(false) }
     val typed = value.trim()
     val matches = parties.filter { typed.isEmpty() || it.contains(typed, ignoreCase = true) }.take(6)
@@ -420,7 +463,14 @@ private fun PersonField(value: String, onChange: (String) -> Unit, parties: List
         OutlinedTextField(
             value, { onChange(it); open = true },
             Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable).fillMaxWidth(),
-            label = { Text(stringResource(if (required) R.string.from_whom else R.string.from_whom_optional)) },
+            label = {
+                Text(stringResource(when {
+                    outgoing && required -> R.string.to_whom
+                    outgoing -> R.string.to_whom_optional
+                    required -> R.string.from_whom
+                    else -> R.string.from_whom_optional
+                }))
+            },
             leadingIcon = { Icon(Icons.Filled.Person, null) },
             placeholder = if (hint.isNotEmpty()) {{ Text(hint) }} else null,
             isError = isError, singleLine = true,
