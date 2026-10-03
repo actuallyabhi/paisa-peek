@@ -10,7 +10,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction as db_tx
-from django.db.models import Case, Count, DecimalField, F, Max, Q, Sum, Value, When
+from django.db.models import Case, Count, DecimalField, Exists, F, Max, OuterRef, Q, Sum, Value, When
 from django.db.models.functions import Coalesce
 from django.contrib.staticfiles import finders
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
@@ -18,12 +18,12 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.formats import date_format
-from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils.http import url_has_allowed_host_and_scheme, urlencode
 from django.utils.translation import gettext as _, gettext_lazy, ngettext
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
-from . import backup, charts, csv_import, llm, ocr, push, ramble as ramble_parser
+from . import backup, charts, csv_import, llm, ocr, push, ramble as ramble_parser, split
 from .ingest import Skipped, ingest
 from .paging import paginate
 from .forms import now_hm, party_named, review, AccountForm, NotifyForm, PartyForm, PartyTxnForm, RambleForm, RecurringForm, TxnForm
@@ -73,7 +73,7 @@ def _celebrate(request, message, txns=(), recurring=()):
 VERSION = tomllib.loads((settings.BASE_DIR / "pyproject.toml").read_text())["project"]["version"]
 
 TABS = [
-    ("home", gettext_lazy("Home"), {"home", "txn_edit"}, '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>'),
+    ("home", gettext_lazy("Home"), {"home", "txn_edit", "txn_split"}, '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>'),
     ("people", gettext_lazy("People"), {"people", "party"},
      '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.3a5 5 0 0 1 5.5 4.7"/>'),
     ("recurring", gettext_lazy("Recurring"), {"recurring", "recurring_edit"},
@@ -166,6 +166,8 @@ def home(request):
     form = TxnForm(request.POST or None, initial={"kind": "expense", "status": "confirmed"})
     if request.method == "POST" and form.is_valid():
         t = form.save()
+        if request.POST.get("split") and split.can_split(t):  # "Split this bill" ticked: on to who shares it
+            return redirect(f"{reverse('txn_split', args=[t.pk])}?{urlencode({'next': _home_for(request, t.date)})}")
         _celebrate(request, [_("Noted ✍️"), _("Logged. Every paisa accounted for."), _("Got it — future you approves.")][t.pk % 3], [t])
         return redirect(_home_for(request, t.date))
 
@@ -176,7 +178,7 @@ def home(request):
     today = timezone.localdate()
     elapsed = ((min(today, period["end"]) - period["start"]).days + 1) if period["start"] <= today else 0
     # Paginated, then grouped by day; day totals come from the whole day even if it spans two pages.
-    page = paginate(request, qs, per_page=30)
+    page = paginate(request, qs.annotate(is_split=Exists(Transaction.objects.filter(split_of=OuterRef("pk")))), per_page=30)
     day_totals = dict(confirmed.filter(kind="expense").order_by().values("date").annotate(s=Sum("amount"))
                       .values_list("date", "s"))
     days = [(day, list(items), day_totals.get(day, 0)) for day, items in groupby(page, key=lambda t: t.date)]
@@ -209,11 +211,14 @@ def txn_edit(request, pk):
     form = TxnForm(request.POST or None, instance=t)
     if request.method == "POST" and form.is_valid():
         t = form.save()
+        t.split_shares.update(date=t.date, time=t.time, account=t.account)  # a split's shares left the same account
         if request.POST.get("remember") and t.category and (key := (t.merchant or t.description).strip()[:100]):
             Rule.objects.update_or_create(pattern__iexact=key, defaults={"pattern": key, "category": t.category})
         return redirect(nxt)
     return render(request, "ledger/txn_edit.html", {"t": t, "form": form, "next": nxt,
-                                                     "rule_key": t.merchant or t.description})
+                                                     "rule_key": t.merchant or t.description,
+                                                     "can_split": split.can_split(t),
+                                                     "shares": t.split_shares.select_related("party").order_by("id")})
 
 
 @csrf_exempt  # the PWA share sheet and the Android app post here without a token; SameSite=Lax keeps it same-site
@@ -287,8 +292,52 @@ def txn_delete(request, pk):
     nxt = request.POST.get("next") or ""
     if not url_has_allowed_host_and_scheme(nxt, allowed_hosts={request.get_host()}):
         nxt = _home_for(request, t.date)
-    t.delete()
+    with db_tx.atomic():
+        if parent := t.split_of:  # someone dropped out of a split: their share is yours again
+            parent.amount += t.amount
+            parent.save(update_fields=["amount"])
+        t.delete()
     return redirect(nxt)
+
+
+@login_required
+def txn_split(request, pk):
+    """Split a bill you paid with people: equally, by percentage or by exact amounts."""
+    t = get_object_or_404(Transaction, pk=pk)
+    nxt = request.POST.get("next") or request.GET.get("next") or ""
+    if not url_has_allowed_host_and_scheme(nxt, allowed_hosts={request.get_host()}):
+        nxt = _home_for(request, t.date)
+    if not split.can_split(t):
+        messages.error(request, _("Only an expense you paid can be split."))
+        return redirect(nxt)
+    shares = list(t.split_shares.select_related("party").order_by("id"))
+    total = t.split_total
+    if request.POST.get("action") == "undo":
+        split.undo(t)
+        messages.success(request, _("Split removed; the whole bill is yours again."))
+        return redirect(nxt)
+    if request.method == "POST":
+        mode, mine = request.POST.get("mode", ""), request.POST.get("mine", "")
+        rows = list(zip(request.POST.getlist("name"), request.POST.getlist("value")))
+        try:
+            my_share, parts = split.compute(total, mode, mine, rows)
+        except ValueError as e:
+            messages.error(request, str(e))
+        else:
+            made = split.apply(t, my_share, parts)
+            _celebrate(request, ngettext("Split with %(n)d person. Your share: ₹%(mine)s",
+                                         "Split with %(n)d people. Your share: ₹%(mine)s", len(made))
+                       % {"n": len(made), "mine": my_share}, [t, *made])
+            return redirect(nxt)
+    elif shares:  # editing an existing split: start from the amounts as they are
+        mode, mine, rows = "amount", t.amount, [(s.party.name if s.party else "", s.amount) for s in shares]
+    else:
+        mode, mine, rows = "equal", "", []
+    return render(request, "ledger/txn_split.html", {
+        "t": t, "total": total, "next": nxt, "mode": mode, "mine": mine, "is_split": bool(shares),
+        "modes": [("equal", _("Equally")), ("percent", _("By %")), ("amount", _("By amount"))],
+        "rows": rows or [("", "")],
+    })
 
 
 @login_required

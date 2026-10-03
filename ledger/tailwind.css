@@ -112,3 +112,7 @@ button[onclick="toggleTheme()"]:active svg { transform: rotate(-35deg) scale(.9)
   .animate-wiggle, .animate-pop, .animate-flash, .animate-rise, .toast-leaving, input[type=checkbox]:checked { animation: none; }
   .coin { display: none; }
 }
+
+/* Typing on a phone: the tab bar would cover the field above the keyboard (see base.html); keep fields clear of the sticky header. */
+html { scroll-padding-top: calc(4.5rem + env(safe-area-inset-top)); scroll-padding-bottom: 1rem; }
+html.typing #tabbar { display: none; }

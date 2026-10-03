@@ -12,6 +12,7 @@ urlpatterns = [
     path("sw.js", views.service_worker),
     path("favicon.ico", RedirectView.as_view(url="/static/ledger/favicon-32.png", permanent=True)),  # browsers ask for it
     path("txns/<int:pk>/", views.txn_edit, name="txn_edit"),
+    path("txns/<int:pk>/split/", views.txn_split, name="txn_split"),
     path("txns/<int:pk>/delete/", views.txn_delete, name="txn_delete"),
     path("txns/<int:pk>/status/", views.txn_status, name="txn_status"),
     path("inbox/", views.inbox, name="inbox"),

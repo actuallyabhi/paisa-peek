@@ -202,6 +202,8 @@ class Transaction(models.Model):
     status = models.CharField(max_length=10, choices=STATUSES, default="confirmed")
     notes = models.CharField(max_length=500, blank=True)
     tags = models.ManyToManyField(Tag, blank=True)
+    # Split bill: the expense keeps your share; each other person's share is a "lend" pointing back here.
+    split_of = models.ForeignKey("self", null=True, blank=True, on_delete=models.CASCADE, related_name="split_shares")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -215,6 +217,11 @@ class Transaction(models.Model):
     def owed_delta(self):
         """Change to what the party owes me (0 for non-loan kinds)."""
         return self.amount if self.kind in self.OWED_UP else -self.amount if self.kind in self.OWED_DOWN else 0
+
+    @property
+    def split_total(self):
+        """The whole bill of a split expense: your share plus everyone else's."""
+        return self.amount + sum(s.amount for s in self.split_shares.all())
 
     @property
     def sign(self):

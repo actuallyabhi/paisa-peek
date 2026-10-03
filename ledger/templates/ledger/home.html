@@ -106,7 +106,9 @@
 
 <details class="card mb-6 p-4" {% if form.errors %}open{% endif %}>
   <summary class="cursor-pointer font-display font-semibold">{% translate "Add one manually" %}</summary>
-  <form method="post" class="mt-3 space-y-3">{% include "ledger/_form.html" %}<button class="btn w-full sm:w-auto">{% translate "Add it" %}</button></form>
+  <form method="post" class="mt-3 space-y-3">{% include "ledger/_form.html" %}
+    <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="split" value="1"> {% translate "Split this bill with people (next step)" %}</label>
+    <button class="btn w-full sm:w-auto">{% translate "Add it" %}</button></form>
   <p class="mt-3 text-center text-sm"><a href="{% url 'import_csv' %}" class="text-muted underline">{% translate "Got a spreadsheet? Import a CSV instead" %}</a></p>
 </details>
 
@@ -123,6 +125,7 @@
         <div class="truncate font-medium">{{ t.description|default:t.merchant|default:t.get_kind_display }}</div>
         <div class="truncate text-xs text-muted">
           {% if t.status == "pending" %}<span class="chip bg-gold-soft text-ink">{% translate "pending" %}</span>{% endif %}
+          {% if t.is_split or t.split_of_id %}<span class="chip bg-sunk text-ink">{% translate "split" %}</span>{% endif %}
           {% if t.time %}<span class="tabular-nums">{{ t.time|time:"g:i A" }}</span> · {% endif %}{% if t.kind != "expense" %}{{ t.get_kind_display }} · {% endif %}{% if t.category %}{% translate t.category.name %}{% endif %}{% if t.category and t.account %} · {% endif %}{{ t.account|default:"" }}{% if t.to_account %} → {{ t.to_account }}{% endif %}
           {% if t.party %}<span class="text-good">@{{ t.party }}</span>{% endif %}
           {% for tag in t.tags.all %}<span class="text-brand">#{{ tag }}</span>{% endfor %}

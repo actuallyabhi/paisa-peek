@@ -62,6 +62,15 @@ def parse_amount(s: str) -> Decimal | None:
 
 def parse_date(s: str, fallback: date) -> date:
     """SMS date if readable and not in the future, else the receive date."""
+    if m := re.fullmatch(r"(\d{1,2})[-/](\d{1,2})", s):  # no year ("03-10"): the latest such day not in the future
+        for year in (fallback.year, fallback.year - 1):
+            try:
+                d = date(year, int(m[2]), int(m[1]))
+            except ValueError:
+                continue
+            if d <= fallback + timedelta(days=1):
+                return d
+        return fallback
     for fmt in DATE_FORMATS:
         try:
             d = datetime.strptime(s, fmt).date()
@@ -223,6 +232,9 @@ def ingest(text: str, sender: str = "", source: str = "sms", received: date | No
             if p.ref:
                 near = near.filter(ref="")
             dup = near.filter(Q(raw_text__contains=text) | ~Q(source=source)).first()
+            if not dup:  # a split bill keeps only your share as its amount: the very same message still matches
+                dup = Transaction.objects.filter(raw_text__contains=text, account=account,
+                                                 date__range=(p.date - timedelta(days=1), p.date + timedelta(days=1))).first()
         if dup:
             if text not in dup.raw_text:
                 dup.raw_text += "\n---\n" + text

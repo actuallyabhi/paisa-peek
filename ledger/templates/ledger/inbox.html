@@ -50,6 +50,7 @@
         <button class="btn">{% translate "Confirm" %}</button>
       </form>
       {% endif %}
+      {% if t.kind == "expense" and t.amount %}<a href="{% url 'txn_split' t.pk %}?next={% url 'inbox' %}" class="text-sm hover:underline">➗ {% translate "Split" %}</a>{% endif %}
       <a href="{% url 'txn_edit' t.pk %}?next={% url 'inbox' %}" class="text-sm hover:underline">{% translate "Edit" %}</a>
       <form hx-post="{% url 'txn_status' t.pk %}" hx-target="#t{{ t.pk }}" hx-swap="outerHTML">
         <input type="hidden" name="status" value="ignored">

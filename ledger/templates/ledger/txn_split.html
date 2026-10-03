@@ -1,0 +1,158 @@
+{% extends "base.html" %}{% load money i18n %}
+{% block title %}{% translate "Split bill" %}{% endblock %}
+{% block content %}
+<a href="{{ next }}" class="text-sm text-muted hover:underline">← {% translate "Back" %}</a>
+<h1 class="mb-4 mt-1 text-2xl font-semibold">{% if is_split %}{% translate "Edit split" %}{% else %}{% translate "Split bill" %}{% endif %}</h1>
+
+<div class="card mb-4 flex items-center gap-3 p-4">
+  <span class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-sunk text-lg" aria-hidden="true">{{ t|emoji }}</span>
+  <div class="min-w-0 flex-1">
+    <div class="truncate font-medium">{{ t.description|default:t.merchant|default:t.get_kind_display }}</div>
+    <div class="truncate text-xs text-muted">{{ t.date|date:"d M Y" }}{% if t.account %} · {{ t.account }}{% endif %}</div>
+  </div>
+  <div class="font-display text-lg font-semibold tabular-nums">{{ total|inr }}</div>
+</div>
+
+<form method="post" id="split" class="card space-y-4 p-4" data-total="{{ total|stringformat:'s' }}">
+  {% csrf_token %}<input type="hidden" name="next" value="{{ next }}">
+  <fieldset>
+    <legend class="mb-2 text-sm text-muted">{% translate "Split" %}</legend>
+    <div class="grid grid-cols-3 gap-1 rounded-full bg-sunk p-1 text-sm font-medium">
+      {% for value, label in modes %}
+      <label class="cursor-pointer rounded-full px-2 py-2 text-center transition has-[:checked]:bg-card has-[:checked]:shadow-sm has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand">
+        <input type="radio" name="mode" value="{{ value }}" class="sr-only" {% if value == mode %}checked{% endif %}>{{ label }}
+      </label>
+      {% endfor %}
+    </div>
+  </fieldset>
+
+  <ul id="rows" class="divide-y divide-line">
+    <li class="grid grid-cols-[1fr_6.5rem_5.5rem_2rem] items-center gap-2 py-2">
+      <span class="font-medium">{% translate "You" %}</span>
+      <input name="mine" value="{{ mine }}" inputmode="decimal" autocomplete="off" aria-label="{% translate "Your share" %}" data-value class="mt-0!">
+      <span data-share class="text-right text-sm tabular-nums text-muted"></span>
+      <span></span>
+    </li>
+    {% for name, value in rows %}
+    <li data-person class="grid grid-cols-[1fr_6.5rem_5.5rem_2rem] items-center gap-2 py-2">
+      <input name="name" value="{{ name }}" data-names autocomplete="off" placeholder="{% translate "Name" %}" aria-label="{% translate "Name" %}" class="mt-0!">
+      <input name="value" value="{{ value }}" inputmode="decimal" autocomplete="off" aria-label="{% translate "Share" %}" data-value class="mt-0!">
+      <span data-share class="text-right text-sm tabular-nums text-muted"></span>
+      <button type="button" data-remove class="grid h-8 w-8 place-items-center rounded-full text-muted hover:bg-sunk" aria-label="{% translate "Remove" %}">✕</button>
+    </li>
+    {% endfor %}
+  </ul>
+  <button type="button" id="add-person" class="btn-secondary w-full text-sm">+ {% translate "Add person" %}</button>
+  <p class="text-xs text-muted">{% translate "Pick someone from your People or type a new name; new people are added for you." %}</p>
+  <p id="split-status" class="text-sm font-medium" aria-live="polite"></p>
+  <button class="btn w-full sm:w-auto">{% translate "Save split" %}</button>
+</form>
+
+{% if is_split %}
+<form method="post" class="mt-4" onsubmit="return confirm('{% translate "Remove the split and keep the whole bill as yours?" %}')">
+  {% csrf_token %}<input type="hidden" name="next" value="{{ next }}"><input type="hidden" name="action" value="undo">
+  <button class="text-sm text-bad hover:underline">{% translate "Remove split" %}</button>
+</form>
+{% endif %}
+
+<script>
+  // Live shares. By % / by amount: a row you type in stays as typed; the rest of the bill is shared equally
+  // by the rows you haven't touched, so the total never goes past what was spent (or 100%).
+  // The server does the same sums (ledger/split.py) and has the last word.
+  (() => {
+    const form = document.getElementById("split"), rows = document.getElementById("rows");
+    const total = Math.round(parseFloat(form.dataset.total) * 100);  // in paisa, so rounding matches the server
+    const money = (p) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(p / 100);
+    const status = document.getElementById("split-status");
+    const msg = {
+      equal: "{% translate 'Everyone pays the same.' %}", ok: "{% translate 'Adds up ✓' %}",
+      zero: "{% translate 'Your share is ₹0. If you paid for them entirely, record it as Lent instead.' %}",
+      pct: "{% translate '{n}% left to assign' %}", amt: "{% translate '{n} left to assign' %}",
+    };
+    const you = rows.querySelector("li"), valueOf = (li) => li.querySelector("[data-value]");
+    const mode = () => form.querySelector("[name=mode]:checked")?.value || "equal";
+    // Values in whole units: paisa (by amount) or hundredths of a percent (by %), so splitting stays exact.
+    const whole = () => (mode() === "percent" ? 10000 : total);
+    const read = (li) => { const v = parseFloat((valueOf(li).value || "").replace(/,/g, "")); return isNaN(v) || v < 0 ? 0 : Math.round(v * 100); };
+    const write = (li, units) => { valueOf(li).value = units ? (units / 100).toFixed(2).replace(/\.00$/, "") : "0"; };
+    let pinned = [];  // rows typed in, oldest first
+
+    const people = () => [...rows.querySelectorAll("[data-person]")];
+    // Who is in the split: you, everyone named, and any row with a typed share.
+    const members = () => [you, ...people().filter((li) => li.querySelector("[name=name]").value.trim() || pinned.includes(li))];
+
+    const rebalance = (edited) => {
+      const all = members();
+      pinned = pinned.filter((li) => all.includes(li) && li !== edited);
+      if (edited && all.includes(edited)) pinned.push(edited);
+      let free = all.filter((li) => !pinned.includes(li));
+      if (!free.length) free = [pinned.shift()];  // someone has to take up the difference
+      const fixed = pinned.reduce((s, li) => s + read(li), 0);
+      if (fixed > whole()) {  // too much typed: cap the row just edited at what is left
+        const li = edited && pinned.includes(edited) ? edited : pinned[pinned.length - 1];
+        write(li, Math.max(read(li) - (fixed - whole()), 0));
+      }
+      const left = whole() - pinned.reduce((s, li) => s + read(li), 0);
+      const each = Math.floor(left / free.length), extra = left - each * free.length;
+      free.forEach((li, i) => write(li, each + (i < extra ? 1 : 0)));  // leftover units go to you first
+      people().filter((li) => !all.includes(li)).forEach((li) => { valueOf(li).value = ""; });
+    };
+
+    const show = () => {
+      const m = mode(), all = members();
+      rows.querySelectorAll("[data-value]").forEach((el) => {
+        el.hidden = m === "equal";
+        el.placeholder = m === "percent" ? "%" : "₹";
+      });
+      const share = new Map();
+      if (m === "equal") {
+        const each = Math.floor(total / all.length);
+        all.slice(1).forEach((li) => share.set(li, each));
+      } else {
+        all.slice(1).forEach((li) => share.set(li, m === "percent" ? Math.round(total * read(li) / 10000) : read(li)));
+      }
+      const mine = total - [...share.values()].reduce((s, v) => s + v, 0);  // you absorb rounding, as on the server
+      you.querySelector("[data-share]").textContent = money(mine);
+      people().forEach((li) => { li.querySelector("[data-share]").textContent = share.has(li) ? money(share.get(li)) : ""; });
+      const left = m === "equal" ? 0 : whole() - all.reduce((s, li) => s + read(li), 0);
+      if (m !== "equal" && !left && mine <= 0) {
+        status.textContent = msg.zero;
+        status.className = "text-sm font-medium text-bad";
+        return;
+      }
+      status.textContent = m === "equal" ? msg.equal : left ? (m === "percent" ? msg.pct.replace("{n}", left / 100) : msg.amt.replace("{n}", money(left))) : msg.ok;
+      status.className = `text-sm font-medium ${m === "equal" ? "text-muted" : left ? "text-bad" : "text-good"}`;
+    };
+
+    const update = (edited) => { if (mode() !== "equal") rebalance(edited); show(); };
+
+    document.getElementById("add-person").onclick = () => {
+      const li = rows.querySelector("[data-person]").cloneNode(true);
+      li.querySelectorAll("input").forEach((el) => { el.value = ""; });
+      rows.append(li);
+      li.querySelector("[name=name]").focus();
+      update();
+    };
+    rows.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-remove]");
+      if (!btn) return;
+      const li = btn.closest("li");
+      if (people().length > 1) li.remove();
+      else li.querySelectorAll("input").forEach((el) => { el.value = ""; });
+      update();
+    });
+    form.addEventListener("input", (e) => {
+      if (e.target.name === "mode") return;
+      update(e.target.matches("[data-value]") ? e.target.closest("li") : null);
+    });
+    form.addEventListener("change", (e) => {
+      if (e.target.name !== "mode") return;
+      pinned = [];  // new mode: start from an even split
+      update();
+    });
+    // Editing an existing split: what's saved counts as typed, so it isn't reshuffled on load.
+    if (mode() !== "equal") pinned = members().slice(1).filter((li) => valueOf(li).value);
+    update();
+  })();
+</script>
+{% endblock %}

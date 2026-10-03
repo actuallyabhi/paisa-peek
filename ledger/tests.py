@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.utils import timezone
 
-from .ingest import Skipped, compile_templates, ingest, parse, parse_amount
+from .ingest import Skipped, compile_templates, ingest, parse, parse_amount, parse_date
 from .models import Account, ApiToken, Category, SmsTemplate, Transaction
 from .templatetags.money import inr
 
@@ -40,6 +40,8 @@ SMS_CASES = [
      "70.00", "expense", "Mohdnaseemsohameed", "8928", "627438040171", "slice", "2026-10-01"),
     ("VM-PNBSMS", "PNB Credit Card 5672 debited with Rs.150 [CODE:U67381] at MS KISAN SEWA KENDRASID1 on 30-09-2026 18:02 through UPI: 663918122382 Avl limit Rs. 41853.11. -PNB",
      "150.00", "expense", "MS KISAN SEWA KENDRASID1", "5672", "663918122382", "PNB", "2026-09-30"),
+    ("VM-HDFCBK", "Txn Rs.10.00\nOn HDFC Bank Card 6222\nAt q677934627@ybl \nby UPI 664254091388\nOn 03-10\nNot You?\nCall 18002586161/SMS BLOCK CC 6222 to 7308080808",
+     "10.00", "expense", "q677934627@ybl", "6222", "664254091388", "HDFC", "2026-10-03"),
     # No template for this bank: generic heuristic, date falls back to the receive date.
     ("XY-RBLBNK", "Your a/c no. XX7777 is debited for Rs.99.00 on 29-09-2026 towards YOUTUBE. Ref 526712345685",
      "99.00", "expense", "YOUTUBE", "7777", "526712345685", "", "2026-09-29"),
@@ -61,6 +63,9 @@ class ParseTests(TestCase):
         self.assertEqual(parse_amount("12,101.5"), Decimal("12101.50"))
         for bad in ["", "-5", "abc", "0"]:
             self.assertIsNone(parse_amount(bad))
+        self.assertEqual(parse_date("03-10", date(2026, 10, 3)), date(2026, 10, 3))  # no year: this year…
+        self.assertEqual(parse_date("31-12", date(2027, 1, 2)), date(2026, 12, 31))  # …or last, never the future
+        self.assertEqual(parse_date("29-02", date(2027, 3, 1)), date(2027, 3, 1))  # no such day lately: receive date
         self.assertEqual(inr(Decimal("1234567.8")), "₹12,34,567.80")
         self.assertEqual(inr(999), "₹999.00")
 
@@ -1355,3 +1360,89 @@ class InterestTests(TestCase):
         run_once(timezone.make_aware(datetime(2026, 12, 31, 0, 5)), send=lambda *m: sent.append(m))
         self.assertEqual(Transaction.objects.filter(source="interest").latest("date").status, "confirmed")
         self.assertIn("added", sent[-1][0])
+
+
+class SplitTests(TestCase):
+    def setUp(self):
+        from .models import Party
+        self.client.force_login(User.objects.create_user("u", password="x"))
+        self.acct = Account.objects.create(name="HDFC", kind="credit_card")
+        self.rohan = Party.objects.create(name="Rohan")
+        self.t = Transaction.objects.create(date=date(2026, 10, 1), amount=Decimal("1000"), kind="expense",
+                                            description="Dinner", account=self.acct)
+        self.url = f"/txns/{self.t.pk}/split/"
+
+    def post(self, mode, mine="", **people):
+        return self.client.post(self.url, {"mode": mode, "mine": mine, "name": list(people), "value": list(people.values()),
+                                           "next": "/inbox/"})
+
+    def shares(self):
+        return {s.party.name: s.amount for s in self.t.split_shares.select_related("party")}
+
+    def test_compute_modes(self):
+        from .split import compute
+        self.assertEqual(compute(Decimal("100"), "equal", "", [("A", ""), ("B", "")]),
+                         (Decimal("33.34"), [("A", Decimal("33.33")), ("B", Decimal("33.33"))]))  # leftover paisa: yours
+        self.assertEqual(compute(Decimal("999"), "percent", "50", [("A", "25"), ("B", "25")]),
+                         (Decimal("499.50"), [("A", Decimal("249.75")), ("B", Decimal("249.75"))]))
+        self.assertEqual(compute(Decimal("500"), "amount", "100", [("A", "400"), ("", "")])[1], [("A", Decimal("400.00"))])
+        for mode, mine, rows in [("percent", "50", [("A", "40")]), ("amount", "100", [("A", "300")]), ("equal", "", []),
+                                 ("amount", "0", [("A", "500")]), ("equal", "", [("A", ""), ("a", "")]),
+                                 ("amount", "500", [("A", "0")]), ("percent", "", [("A", "x")])]:
+            with self.subTest(mode=mode, rows=rows), self.assertRaises(ValueError):
+                compute(Decimal("500"), mode, mine, rows)
+
+    def test_split_equally_with_existing_and_new_people(self):
+        r = self.post("equal", rohan="", **{"Meera K": ""})
+        self.assertRedirects(r, "/inbox/", fetch_redirect_response=False)
+        self.t.refresh_from_db()
+        self.assertEqual(self.t.amount, Decimal("333.34"))
+        self.assertEqual(self.shares(), {"Rohan": Decimal("333.33"), "Meera K": Decimal("333.33")})
+        self.assertEqual(self.t.split_total, Decimal("1000"))
+        self.assertEqual(self.acct.balance, Decimal("-1000"))  # the card still paid the whole bill
+        r = self.client.get(f"/people/{self.rohan.pk}/")
+        self.assertContains(r, "Rohan owes you ₹333.33")
+
+    def test_resplit_by_amount_then_undo(self):
+        self.post("equal", Rohan="")
+        r = self.client.get(self.url)
+        self.assertEqual((r.context["mode"], r.context["mine"]), ("amount", Decimal("500")))
+        self.post("amount", "700", Rohan="300")
+        self.t.refresh_from_db()
+        self.assertEqual((self.t.amount, self.shares()), (Decimal("700"), {"Rohan": Decimal("300")}))
+        self.client.post(self.url, {"action": "undo"})
+        self.t.refresh_from_db()
+        self.assertEqual((self.t.amount, self.t.split_shares.count()), (Decimal("1000"), 0))
+
+    def test_bad_split_changes_nothing(self):
+        r = self.post("percent", "50", Rohan="40")
+        self.assertContains(r, "add up to 90%")
+        self.t.refresh_from_db()
+        self.assertEqual((self.t.amount, self.t.split_shares.count()), (Decimal("1000"), 0))
+
+    def test_pending_sms_split_confirms_it_and_deleting_a_share_returns_it(self):
+        self.t.status = "pending"
+        self.t.save()
+        self.post("equal", Rohan="")
+        self.t.refresh_from_db()
+        self.assertEqual(self.t.status, "confirmed")
+        share = self.t.split_shares.get()
+        self.client.post(f"/txns/{share.pk}/delete/")
+        self.t.refresh_from_db()
+        self.assertEqual(self.t.amount, Decimal("1000"))
+
+    def test_only_expenses_split(self):
+        self.t.kind = "income"
+        self.t.save()
+        self.post("equal", Rohan="")
+        self.assertEqual(self.t.split_shares.count(), 0)
+
+    def test_manual_add_goes_on_to_split(self):
+        base = {"date": "2026-10-01", "amount": "600", "kind": "expense", "description": "Cab", "status": "confirmed",
+                "category": "", "account": self.acct.pk, "tag_names": "", "notes": "", "party_name": ""}
+        r = self.client.post("/", {**base, "split": "1"})
+        t = Transaction.objects.get(description="Cab")
+        self.assertTrue(r.url.startswith(f"/txns/{t.pk}/split/?next="))
+        self.assertContains(self.client.get(r.url), "Split bill")
+        self.assertContains(self.client.get("/?view=month&month=2026-10"), "Cab")
+

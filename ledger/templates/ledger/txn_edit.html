@@ -1,13 +1,26 @@
-{% extends "base.html" %}{% load i18n %}
+{% extends "base.html" %}{% load i18n money %}
 {% block title %}{% translate "Edit transaction" %}{% endblock %}
 {% block content %}
 <h1 class="mb-4 text-2xl font-semibold">{% translate "Edit transaction" %}</h1>
+{% if t.split_of_id %}
+<p class="card mb-4 p-3 text-sm">{% translate "Their share of a split bill." %}
+  <a href="{% url 'txn_split' t.split_of_id %}?next={{ next|urlencode }}" class="font-medium text-brand hover:underline">{% translate "Edit the split" %}</a></p>
+{% elif shares %}
+<div class="card mb-4 p-3 text-sm">
+  <p>{% blocktranslate with total=t.split_total|inr %}Split bill of {{ total }}; the amount below is your share.{% endblocktranslate %}</p>
+  <ul class="mt-1 text-muted">{% for s in shares %}<li>@{{ s.party }} · {{ s.amount|inr }}</li>{% endfor %}</ul>
+  <a href="{% url 'txn_split' t.pk %}?next={{ next|urlencode }}" class="mt-1 inline-block font-medium text-brand hover:underline">{% translate "Edit the split" %}</a>
+</div>
+{% endif %}
 <form method="post" class="space-y-3 card p-4">
   {% include "ledger/_form.html" %}
   <input type="hidden" name="next" value="{{ next }}">
   {% if rule_key %}<label class="flex items-center gap-2 text-sm"><input type="checkbox" name="remember" value="1" class="w-auto">
     {% blocktranslate %}Always use this category for “{{ rule_key }}”{% endblocktranslate %}</label>{% endif %}
-  <button class="btn">{% translate "Save" %}</button>
+  <div class="flex flex-wrap items-center gap-2">
+    <button class="btn">{% translate "Save" %}</button>
+    {% if can_split and not shares %}<a href="{% url 'txn_split' t.pk %}?next={{ next|urlencode }}" class="btn-secondary">➗ {% translate "Split bill" %}</a>{% endif %}
+  </div>
 </form>
 {% if t.raw_text %}
 <details open class="mt-4 card p-4">

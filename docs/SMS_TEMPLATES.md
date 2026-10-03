@@ -30,7 +30,7 @@ Add an entry to the end of `ledger/sms_templates.json`:
 | `date` | `01-Oct-26` | Must be one of the formats below. Unreadable or future dates fall back to the day the SMS arrived. |
 | `ref` | `627438040171` | UPI/bank reference, used to merge duplicates (e.g. SMS + screenshot of the same payment). |
 
-**Date formats** understood (`DATE_FORMATS` in [`ledger/ingest.py`](../ledger/ingest.py)): `29/09/26`, `29/09/2026`, `2026-09-29`, `29-09-26`, `29-09-2026`, `29-Sep-26`, `29-Sep-2026`, `29Sep26`. A bank using something else needs a new entry there.
+**Date formats** understood (`DATE_FORMATS` in [`ledger/ingest.py`](../ledger/ingest.py)): `29/09/26`, `29/09/2026`, `2026-09-29`, `29-09-26`, `29-09-2026`, `29-Sep-26`, `29-Sep-2026`, `29Sep26`, and `03-10` with no year (taken as the latest such day that isn't in the future). A bank using something else needs a new entry there.
 
 **Regex tips:**
 - Start with `(?is)`: case-insensitive, and `.` also matches newlines (some banks split the SMS over lines).

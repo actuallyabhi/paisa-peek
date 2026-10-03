@@ -26,5 +26,6 @@
   {"bank": "slice", "sender": "(?i)SLICE|SLCE", "kind": "expense",
    "body": "(?is)Rs\\.?\\s*(?P<amount>[\\d,]+(?:\\.\\d+)?)\\s+spent\\s+on\\s+your\\s+credit\\s+card\\s+[xX*]*(?P<last4>\\d{4})\\s+at\\s+(?P<merchant>.+?)\\s+on\\s+(?P<date>\\d{2}-\\w{3}-\\d{2,4})(?:\\s*\\(UPI\\s+Ref:?\\s*(?P<ref>\\d+))?"},
   {"bank": "PNB", "sender": "(?i)PNB|PUNB", "kind": "expense",
-   "body": "(?is)PNB\\s+Credit\\s+Card\\s+[xX*]*(?P<last4>\\d{4})\\s+debited\\s+with\\s+Rs\\.?\\s*(?P<amount>[\\d,]+(?:\\.\\d+)?)\\s+(?:\\[CODE:\\w+\\]\\s+)?at\\s+(?P<merchant>.+?)\\s+on\\s+(?P<date>\\d{2}-\\d{2}-\\d{4})(?:\\s+[\\d:]+)?(?:\\s+through\\s+UPI:?\\s*(?P<ref>\\d+))?"}
+   "body": "(?is)PNB\\s+Credit\\s+Card\\s+[xX*]*(?P<last4>\\d{4})\\s+debited\\s+with\\s+Rs\\.?\\s*(?P<amount>[\\d,]+(?:\\.\\d+)?)\\s+(?:\\[CODE:\\w+\\]\\s+)?at\\s+(?P<merchant>.+?)\\s+on\\s+(?P<date>\\d{2}-\\d{2}-\\d{4})(?:\\s+[\\d:]+)?(?:\\s+through\\s+UPI:?\\s*(?P<ref>\\d+))?"},
+{"bank": "HDFC", "sender": "(?i)HDFCBK", "kind": "expense", "body": "(?is)Txn\\s+Rs\\.?\\s*(?P<amount>[\\d,]+(?:\\.\\d+)?)\\s+On\\s+HDFC\\s+Bank\\s+Card\\s+[xX*]*(?P<last4>\\d{4})\\s+At\\s+(?P<merchant>.+?)(?:\\s+by\\s+UPI\\s+(?P<ref>\\d+))?\\s+On\\s+(?P<date>\\d{2}-\\d{2}(?:-\\d{2,4})?)"}
 ]

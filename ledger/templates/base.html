@@ -3,7 +3,7 @@
 <html lang="{{ LANG }}">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
   <meta name="theme-color" content="#fffcf6">
   <script>
     // Theme before first paint (no flash): saved choice, else the phone's setting.
@@ -79,7 +79,7 @@
 
   {% if user.is_authenticated %}
   {# Phones: thumb-reachable tab bar instead of the header links. #}
-  <nav class="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden" aria-label="{% translate "Main" %}">
+  <nav id="tabbar" class="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden" aria-label="{% translate "Main" %}">
     <div class="grid grid-cols-5 text-[11px]">
       {% for name, label, active, icon in tabs %}
       <a href="{% url name %}" class="flex flex-col items-center gap-0.5 py-2 {% if u in active %}font-semibold text-brand{% else %}text-muted{% endif %}" {% if u in active %}aria-current="page"{% endif %}>
@@ -123,6 +123,25 @@
       document.addEventListener("focusout", (e) => field(e) && !box.contains(e.relatedTarget) && hide());
       document.addEventListener("keydown", (e) => e.key === "Escape" && hide());
       addEventListener("resize", () => { const el = document.activeElement; el?.matches("[data-names]") ? show(el) : hide(); });
+    })();
+  </script>
+  <script>
+    // Typing on a phone: the keyboard shrinks the page, so the fixed tab bar would sit right on top of the field.
+    // Hide it while a field has focus, and once the keyboard has opened, bring the field to the middle of the screen.
+    (() => {
+      const NO_KEYBOARD = /^(checkbox|radio|button|submit|reset|hidden|file|range|color|date|time|datetime-local|month|week)$/;
+      const typing = (el) => el && (el.isContentEditable || el.tagName === "TEXTAREA" || (el.tagName === "INPUT" && !NO_KEYBOARD.test(el.type)));
+      const reveal = () => { const el = document.activeElement; typing(el) && el.scrollIntoView({ block: "center", behavior: "smooth" }); };
+      let timer;
+      document.addEventListener("focusin", (e) => {
+        if (!typing(e.target)) return;
+        document.documentElement.classList.add("typing");
+        clearTimeout(timer);
+        timer = setTimeout(reveal, 350); // in case the keyboard was already open and nothing resizes
+      });
+      document.addEventListener("focusout", () => setTimeout(() => typing(document.activeElement) || document.documentElement.classList.remove("typing")));
+      addEventListener("resize", reveal);
+      window.visualViewport?.addEventListener("resize", reveal);
     })();
   </script>
   <script>window.PaisapeekApp?.signedIn?.(true); // Android app: resume SMS capture after logging back in</script>
