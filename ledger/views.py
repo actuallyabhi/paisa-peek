@@ -283,8 +283,12 @@ def categories(request):
 @login_required
 @require_POST
 def txn_delete(request, pk):
-    get_object_or_404(Transaction, pk=pk).delete()
-    return redirect("home")
+    t = get_object_or_404(Transaction, pk=pk)
+    nxt = request.POST.get("next") or ""
+    if not url_has_allowed_host_and_scheme(nxt, allowed_hosts={request.get_host()}):
+        nxt = _home_for(request, t.date)
+    t.delete()
+    return redirect(nxt)
 
 
 @login_required
@@ -424,7 +428,8 @@ def accounts(request):
 def account_edit(request, pk=None):
     a = get_object_or_404(Account, pk=pk) if pk else None
     if request.POST.get("action") == "delete" and a:
-        if a.transaction_set.exists() or a.transfers_in.exists():
+        # Dismissed (ignored) entries are hidden everywhere, so they don't count; SET_NULL detaches them.
+        if a.transaction_set.exclude(status="ignored").exists() or a.transfers_in.exclude(status="ignored").exists():
             messages.error(request, _("This account has transactions, so it can't be deleted."))
             return redirect("account_edit", pk=a.pk)
         a.delete()
@@ -693,9 +698,11 @@ def party(request, pk):
         _celebrate(request, _("%(name)s is all settled 🤝") % {"name": p.name}, [t])
         return redirect("party", pk=pk)
     if action == "delete":
-        if p.entries or p.transactions.exists():
+        if p.entries:
             messages.error(request, _("Has transactions; reassign or delete those first."))
             return redirect("party", pk=pk)
+        # Keep dismissed entries (they stop the same SMS coming back) but detach them so PROTECT allows the delete.
+        p.transactions.update(party=None)
         p.delete()
         return redirect("people")
 

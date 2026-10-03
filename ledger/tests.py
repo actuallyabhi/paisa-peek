@@ -316,6 +316,33 @@ class PartyTests(TestCase):
         self.client.post(url, {"action": "settle"})  # already settled: no-op
         self.assertEqual(self.om.transactions.count(), 2)
 
+    def test_delete_ignores_dismissed_entries(self):
+        from .models import Party
+        acct = Account.objects.create(name="Wallet", kind="cash")
+        t = self.add("expense", 50, status="ignored")
+        t.account = acct
+        t.save()
+        self.client.post(f"/accounts/{acct.pk}/", {"action": "delete"})
+        self.assertFalse(Account.objects.filter(pk=acct.pk).exists())
+        self.client.post(f"/people/{self.om.pk}/", {"action": "delete"})
+        self.assertFalse(Party.objects.filter(pk=self.om.pk).exists())
+        t.refresh_from_db()  # kept, so the same SMS isn't captured again
+        self.assertEqual((t.party, t.account), (None, None))
+
+    def test_delete_blocked_by_live_entries(self):
+        self.add("lend", 100)
+        self.client.post(f"/people/{self.om.pk}/", {"action": "delete"})
+        self.assertTrue(type(self.om).objects.filter(pk=self.om.pk).exists())
+
+    def test_txn_delete_returns_to_next(self):
+        acct = Account.objects.create(name="Wallet", kind="cash")
+        t = self.add("expense", 50)
+        self.assertRedirects(self.client.post(f"/txns/{t.pk}/delete/", {"next": f"/accounts/{acct.pk}/"}),
+                             f"/accounts/{acct.pk}/", fetch_redirect_response=False)
+        t = self.add("expense", 50)
+        r = self.client.post(f"/txns/{t.pk}/delete/", {"next": "https://evil.example/"})
+        self.assertTrue(r.url.startswith("/?"))
+
     def test_loan_needs_party_and_creates_it(self):
         base = {"date": "2026-09-01", "amount": "500", "kind": "lend", "description": "", "status": "confirmed",
                 "category": "", "account": "", "tag_names": "", "notes": ""}
