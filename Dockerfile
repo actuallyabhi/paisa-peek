@@ -17,4 +17,4 @@ ENV DATA_DIR=/data
 VOLUME /data
 EXPOSE 8000
 # createsuperuser --noinput reads DJANGO_SUPERUSER_USERNAME/PASSWORD; it fails harmlessly once the user exists.
-CMD ["sh", "-c", "python manage.py migrate --noinput && (python manage.py createsuperuser --noinput 2>/dev/null || true) && exec gunicorn config.wsgi -b 0.0.0.0:8000 -w 2"]
+CMD ["sh", "-c", "python manage.py migrate --noinput && (python manage.py createsuperuser --noinput 2>/dev/null || true) && exec gunicorn config.wsgi -b 0.0.0.0:8000 -w 2 --access-logfile -"]

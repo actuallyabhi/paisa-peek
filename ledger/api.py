@@ -1,3 +1,4 @@
+import logging
 import secrets
 from datetime import datetime
 from typing import Literal
@@ -14,6 +15,9 @@ from .forms import review
 from .ingest import Skipped, ingest
 from .models import Account, ApiToken, Category, Party, Transaction
 from .templatetags.money import inr
+
+
+log = logging.getLogger(__name__)
 
 
 def _valid(token: str | None) -> bool:
@@ -95,6 +99,7 @@ def ingest_sms(request, payload: SmsIn):
         txn, dup = ingest(payload.text, sender=payload.sender, source="sms", received=at.date(),
                           received_time=at.time().replace(second=0, microsecond=0))
     except Skipped:
+        log.warning("sms skipped sender=%r text=%r", payload.sender, payload.text)
         return {"status": "skipped"}
     return {"status": "duplicate" if dup else "created", "id": txn.id, "txn": None if dup else _txn(txn)}
 
