@@ -1,6 +1,9 @@
 from django.contrib import admin
 
-from .models import Account, Category, Party, Rule, SmsTemplate, Tag, Transaction
+from .models import (
+    Account, ApiToken, Category, NotifySettings, Party, PushSubscription, Recurring, Rule, SentReminder, SmsTemplate, Tag,
+    Transaction,
+)
 
 admin.site.register(Category, list_display=["name", "essential", "budget"])
 admin.site.register(Rule, list_display=["pattern", "category"])
@@ -15,3 +18,8 @@ admin.site.register(
     search_fields=["description", "merchant", "raw_text", "ref"],
     date_hierarchy="date",
 )
+admin.site.register(Recurring, list_display=["name", "amount", "kind", "next_due", "every", "unit", "active"], list_filter=["kind", "active"])
+admin.site.register(ApiToken)
+admin.site.register(NotifySettings)
+admin.site.register(PushSubscription, list_display=["user_agent", "created_at"])
+admin.site.register(SentReminder, list_display=["key", "sent_at"], search_fields=["key"])
